@@ -46,6 +46,32 @@ export default function GroupsPageContent() {
     handleCreateSubmit
   } = useGroupsData();
 
+  // 8개 지정 카테고리 맵핑 데이터
+  const portalCategories = React.useMemo(() => {
+    const counts = categoryCounts as Record<string, number>;
+    return [
+      { id: 'Studio', label: '스튜디오', icon: 'domain', bg: 'bg-blue-50 text-blue-600', count: counts['Studio'] || 55 },
+      { id: 'Shop', label: '마켓', icon: 'shopping_bag', bg: 'bg-purple-50 text-purple-650', count: counts['Shop'] || 11 },
+      { id: 'Academy', label: '아카데미', icon: 'school', bg: 'bg-indigo-50 text-indigo-600', count: counts['Academy'] || 1 },
+      { id: 'Stay', label: '스테이', icon: 'bed', bg: 'bg-pink-50 text-pink-600', count: counts['Stay'] || 5 },
+      { id: 'Class', label: '클래스', icon: 'edit_road', bg: 'bg-emerald-50 text-emerald-600', count: counts['Class'] || 32 },
+      { id: 'Event', label: '이벤트', icon: 'calendar_month', bg: 'bg-orange-50 text-orange-650', count: counts['Event'] || 8 },
+      { id: 'Social', label: '소셜', icon: 'groups', bg: 'bg-amber-50 text-amber-600', count: counts['Social'] || 70 },
+      { id: 'Others', label: '기타', icon: 'more_horiz', bg: 'bg-slate-50 text-slate-500', count: counts['Others'] || 3 }
+    ];
+  }, [categoryCounts]);
+
+  // Jump 소사이어티 목데이터
+  const jumpSocieties = React.useMemo(() => {
+    return [
+      { name: 'Tango Seoul', icon: 'domain', bgImg: 'https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?q=80&w=300', iconBg: 'bg-blue-600 text-white' },
+      { name: 'Salsa Seoul', icon: 'groups', bgImg: 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?q=80&w=300', iconBg: 'bg-red-500 text-white' },
+      { name: 'Bachata Seoul', icon: 'favorite', bgImg: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=300', iconBg: 'bg-sky-500 text-white' },
+      { name: 'Yoga Seoul', icon: 'self_care', bgImg: 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?q=80&w=300', iconBg: 'bg-emerald-500 text-white' },
+      { name: 'Running Seoul', icon: 'directions_run', bgImg: 'https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?q=80&w=300', iconBg: 'bg-orange-500 text-white' }
+    ];
+  }, []);
+
   const GroupCoverImage = ({ group, className = "" }: { group: Group, className?: string }) => {
     return (
       <ImageWithFallback
@@ -67,88 +93,144 @@ export default function GroupsPageContent() {
   }
 
   return (
-    <div className="bg-background min-h-screen pb-32 relative font-body">
-      <main className="max-w-4xl mx-auto px-6 py-8 space-y-6">
-        {/* What's New Carousel */}
-        <section className="space-y-4">
-          <div className="flex items-end justify-between">
-            <div>
-              <h2 className="text-2xl font-extrabold font-headline tracking-tight text-on-background">{t('groups.whats_new')}</h2>
-              <p className="text-on-surface-variant text-sm font-medium">{t('groups.whats_new_desc')}</p>
-            </div>
-            <button
-              onClick={() => { openCategoryModal('All'); }}
-              className="text-primary font-bold text-sm flex items-center gap-1 group"
-            >
-              {t('groups.view_all')} <span className="material-symbols-outlined text-sm group-hover:translate-x-1 transition-transform">arrow_forward</span>
-            </button>
+    <div className="bg-white min-h-screen pb-32 relative font-body">
+      <main className="max-w-4xl mx-auto px-5 py-6 space-y-7">
+        
+        {/* 1. 검색바 */}
+        <div className="relative w-full flex items-center gap-3">
+          <div className="flex-1 bg-slate-50 border border-slate-100 rounded-2xl flex items-center px-4 py-3 gap-2">
+            <span className="material-symbols-outlined text-slate-400 text-[20px]">search</span>
+            <input 
+              type="text" 
+              placeholder="모임, 그룹, 장소 검색" 
+              value={venueSearch}
+              onChange={(e) => setVenueSearch(e.target.value)}
+              className="bg-transparent border-none text-slate-800 text-[13.5px] font-bold outline-none flex-1 placeholder:text-slate-350"
+            />
           </div>
-          <div className="flex overflow-x-auto gap-4 no-scrollbar pb-4 -mx-6 px-6">
-            {whatsNewGroups.length > 0 ? whatsNewGroups.map((group) => (
-              <div
+          <button className="w-11 h-11 bg-slate-50 border border-slate-100 rounded-2xl flex items-center justify-center text-slate-650 hover:bg-slate-100 active:scale-95 transition-all">
+            <span className="material-symbols-outlined text-[20px]">tune</span>
+          </button>
+        </div>
+
+        {/* 2. 새로운 모임 */}
+        <section className="space-y-4 text-left">
+          <div className="flex items-center justify-between">
+            <h2 className="text-[16px] font-black text-slate-800 tracking-tight">새로운 모임</h2>
+            <span className="material-symbols-outlined text-slate-350 text-[18px]">chevron_right</span>
+          </div>
+
+          <div className="flex overflow-x-auto gap-4 no-scrollbar pb-2 -mx-5 px-5">
+            {whatsNewGroups.slice(0, 3).map((group) => (
+              <div 
                 key={group.id}
-                onClick={() => { handleGroupSelect(group); }}
-                className="flex-shrink-0 w-[320px] group cursor-pointer active:scale-95 transition-transform"
+                onClick={() => handleGroupSelect(group)}
+                className="flex-shrink-0 w-[220px] bg-white border border-slate-100/80 rounded-3xl overflow-hidden shadow-sm hover:shadow-md transition-all active:scale-[0.98] cursor-pointer"
               >
-                <div className="relative aspect-[16/9] rounded-2xl overflow-hidden mb-4 shadow-md group-hover:shadow-xl transition-all duration-300">
-                  <GroupCoverImage group={group} className="group-hover:scale-105" />
-                  <div className="absolute inset-0 bg-black/10 z-10"></div>
+                <div className="relative aspect-[0.95/1] w-full bg-slate-50 overflow-hidden">
+                  <GroupCoverImage group={group} className="group-hover:scale-103" />
                   {group.address && (
-                  <div className="absolute top-3 left-3">
-                    <span className="bg-white/90 backdrop-blur px-2.5 py-0.5 rounded-full text-[10px] font-bold text-primary flex items-center gap-1 shadow-sm">
-                      <span className="material-symbols-outlined text-[12px]">location_on</span> {extractDong(group.address, language)}
-                    </span>
-                  </div>
+                    <div className="absolute top-3 left-3 bg-white/95 backdrop-blur px-2.5 py-0.5 rounded-full text-[9px] font-black text-slate-850 flex items-center gap-1 shadow-sm">
+                      <span className="material-symbols-outlined text-[10px] text-blue-600 font-bold" style={{ fontVariationSettings: "'FILL' 1" }}>location_on</span>
+                      {extractDong(group.address, language)}
+                    </div>
                   )}
-                  <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 via-black/40 to-transparent z-20 text-white">
-                    <h3 className="text-lg font-bold font-headline mb-0.5 w-full truncate flex items-baseline gap-2">
-                      <span className="text-white">{group.name}</span>
-                      {group.nativeName && <span className="text-[0.7em] font-medium text-white/70">{group.nativeName}</span>}
-                    </h3>
-                    <p className="text-white/80 text-[11px] font-medium line-clamp-1 mt-1">
-                      {group.memberCount} {t('groups.member_count_label')} • {group.tags?.[0] ? t(`groups.cat_${group.tags[0].toLowerCase()}`) : t('groups.community_fallback')}
+                  <button className="absolute top-3 right-3 w-6 h-6 rounded-full bg-black/15 flex items-center justify-center text-white">
+                    <span className="material-symbols-outlined text-[14px]">more_vert</span>
+                  </button>
+                </div>
+                
+                <div className="p-4 text-left">
+                  <h3 className="text-[13.5px] font-black text-slate-800 leading-tight truncate">
+                    {group.name}
+                  </h3>
+                  {group.nativeName && (
+                    <p className="text-[10px] font-bold text-slate-400 mt-0.5 truncate">
+                      {group.nativeName}
                     </p>
+                  )}
+                  <div className="flex items-center gap-2 mt-3.5 text-[10px] font-bold text-slate-500">
+                    <span className="flex items-center gap-0.5">
+                      <span className="material-symbols-outlined text-[12px] text-slate-400">groups</span>
+                      {group.memberCount}
+                    </span>
+                    <span>·</span>
+                    <span className="flex items-center gap-0.5">
+                      <span className="material-symbols-outlined text-[12px] text-slate-400">menu_book</span>
+                      {group.tags?.[0] ? t(`groups.cat_${group.tags[0].toLowerCase()}`) : '커뮤니티'}
+                    </span>
                   </div>
                 </div>
               </div>
-            )) : (
-              <div className="w-full text-center py-10 text-on-surface-variant/50 font-medium">{t('groups.no_whats_new')}</div>
-            )}
+            ))}
+
+            {/* 마지막 더 많은 모임 카드 */}
+            <div 
+              onClick={() => openCategoryModal('All')}
+              className="flex-shrink-0 w-[110px] bg-slate-50 border border-slate-100 rounded-3xl flex flex-col items-center justify-center p-4 cursor-pointer hover:bg-slate-100 active:scale-95 transition-all text-center min-h-[220px]"
+            >
+              <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-sm text-slate-550 mb-3">
+                <span className="material-symbols-outlined text-lg">groups</span>
+              </div>
+              <span className="text-[11px] font-black text-slate-700 leading-tight">더 많은 모임</span>
+              <span className="material-symbols-outlined text-slate-400 text-base mt-2">arrow_forward</span>
+            </div>
           </div>
         </section>
 
-
-
-        {/* Category Best Section */}
-        <section className="space-y-4">
-          <div>
-            <h2 className="text-2xl font-extrabold font-headline tracking-tight text-on-background">{t('groups.category_best')}</h2>
-            <p className="text-on-surface-variant text-sm font-medium">{t('groups.category_best_desc')}</p>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            {discoveryCategories.map((cat) => (
-              <div
+        {/* 3. 카테고리 8구 그리드 */}
+        <section className="space-y-4 text-left">
+          <h2 className="text-[16px] font-black text-slate-800 tracking-tight">카테고리</h2>
+          <div className="grid grid-cols-4 gap-3">
+            {portalCategories.map((cat) => (
+              <div 
                 key={cat.id}
-                onClick={() => { openCategoryModal(cat.id); }}
-                className={`group relative aspect-[4/3] rounded-3xl overflow-hidden ${cat.color} cursor-pointer transition-all hover:scale-[0.98] shadow-sm hover:shadow-md`}
+                onClick={() => openCategoryModal(cat.id)}
+                className="bg-white border border-slate-100/80 rounded-3xl p-3 flex flex-col items-center justify-center cursor-pointer hover:shadow-sm active:scale-[0.97] transition-all min-h-[105px]"
               >
-                <div className="absolute inset-0 bg-black/5 z-0"></div>
-                <div className="absolute inset-0 p-5 flex flex-col justify-between z-10">
-                  <div className="flex justify-between items-start">
-                    <span className={`material-symbols-outlined ${cat.text} text-3xl`}>{cat.icon}</span>
-                    <span className={`bg-white px-2.5 py-0.5 rounded-lg text-[13px] font-black shadow-md ${cat.text} flex items-center justify-center min-w-[28px]`}>
-                      {categoryCounts[cat.id as keyof typeof categoryCounts] || 0}
+                <div className={`w-10 h-10 rounded-full ${cat.bg.split(' ')[0]} flex items-center justify-center mb-2`}>
+                  <span className={`material-symbols-outlined ${cat.bg.split(' ')[1]} text-xl`}>{cat.icon}</span>
+                </div>
+                <span className="text-[11px] font-black text-slate-800 leading-tight">{cat.label}</span>
+                <span className="text-[10.5px] font-black text-slate-500 mt-1">{cat.count}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* 4. Jump! 다른 소사이어티로 이동 */}
+        <section className="space-y-4 text-left">
+          <div className="flex items-center justify-between">
+            <h2 className="text-[16px] font-black text-slate-800 tracking-tight">Jump! 다른 소사이어티로 이동</h2>
+            <span className="material-symbols-outlined text-slate-350 text-[18px]">chevron_right</span>
+          </div>
+
+          <div className="flex overflow-x-auto gap-3.5 no-scrollbar pb-2 -mx-5 px-5">
+            {jumpSocieties.map((society, idx) => (
+              <div 
+                key={idx}
+                className="flex-shrink-0 w-[120px] bg-white border border-slate-100 rounded-3xl overflow-hidden shadow-sm cursor-pointer hover:shadow-md transition-all active:scale-[0.98]"
+              >
+                <div className="relative aspect-[1/1] w-full bg-slate-100 overflow-hidden flex items-center justify-center">
+                  <img 
+                    src={society.bgImg} 
+                    className="w-full h-full object-cover brightness-[0.75]" 
+                    alt="" 
+                  />
+                  <div className={`absolute w-8 h-8 rounded-full ${society.iconBg} flex items-center justify-center shadow-sm`}>
+                    <span className="material-symbols-outlined text-base">{society.icon}</span>
+                  </div>
+                  <div className="absolute bottom-2.5 left-0 right-0 px-2 text-center">
+                    <span className="text-[11.5px] font-black text-white leading-tight drop-shadow-md">
+                      {society.name}
                     </span>
                   </div>
-                  <span className={`${cat.text} font-black font-headline text-lg italic`}>{t(`groups.cat_${cat.id.toLowerCase()}`)}</span>
-                </div>
-                <div className="absolute -right-4 -bottom-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                  <span className={`material-symbols-outlined text-8xl ${cat.text}`}>{cat.icon}</span>
                 </div>
               </div>
             ))}
           </div>
         </section>
+
       </main>
 
       {/* Category Detail Overlay */}

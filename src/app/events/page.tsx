@@ -61,6 +61,8 @@ const getFlagImageUrl = (countryName: string) => {
 export default function EventsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const viewParam = searchParams.get('view'); // 'calendar' | 'list' | null
+  const monthParam = searchParams.get('month'); // YYYY-MM (e.g. '2026-07')
   const { toggleDrawer, setSubHeader } = useNavigation();
   const { location } = useLocation();
   const { user, profile, setShowLogin } = useAuth();
@@ -78,8 +80,12 @@ export default function EventsPage() {
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [currentDate, setCurrentDate] = useState(new Date());
   
-  // New Header Filter States
-  const [activeTab, setActiveTab] = useState<'calendar' | 'upcoming' | 'favorite'>('calendar');
+  // URL 쿼리에 맞춘 탭 결정 (view가 calendar면 calendar, list면 upcoming, 미지정 시 메인 렌더링에 영향)
+  const activeTab = useMemo<'calendar' | 'upcoming' | 'favorite'>(() => {
+    if (viewParam === 'calendar') return 'calendar';
+    return 'upcoming';
+  }, [viewParam]);
+
   const [isWorldEvent, setIsWorldEvent] = useState(true);
 
   // Society context: URL param → sessionStorage fallback
@@ -287,82 +293,114 @@ export default function EventsPage() {
 
   // SubHeader Injection
   useEffect(() => {
+    // 1) 메인 포털 홈 상태 (viewParam이 없는 경우)
+    if (!viewParam) {
+      const filterBar = (
+        <div className="relative w-full bg-white h-11 px-4 flex items-center justify-end border-b border-slate-100 z-30">
+          <div className="flex items-center bg-slate-100 rounded-lg p-0.5 border border-slate-200/50">
+            <button
+              onClick={() => setIsWorldEvent(false)}
+              className={`px-3 py-1 rounded-md text-[11px] font-bold uppercase tracking-widest transition-all duration-200 ${
+                !isWorldEvent
+                  ? 'bg-white text-blue-600 shadow-sm border border-slate-200/80'
+                  : 'text-slate-400 hover:text-slate-500'
+              }`}
+            >
+              Local
+            </button>
+            <button
+              onClick={() => setIsWorldEvent(true)}
+              className={`px-3 py-1 rounded-md text-[11px] font-bold uppercase tracking-widest transition-all duration-200 ${
+                isWorldEvent
+                  ? 'bg-white text-blue-600 shadow-sm border border-slate-200/80'
+                  : 'text-slate-400 hover:text-slate-500'
+              }`}
+            >
+              World
+            </button>
+          </div>
+        </div>
+      );
+      setSubHeader(filterBar, 44);
+      return () => setSubHeader(null);
+    }
+
+    // 2) 개별 리스트/캘린더 뷰 상태 (viewParam이 있는 경우)
     const filterBar = (
       <div className="relative w-full bg-white flex flex-col shadow-[0_20px_40px_-15px_rgba(0,0,0,0.15)] z-30">
         {/* Row 1: Scrollable Tabs */}
         <div className="w-full px-3 py-2 flex items-center gap-2 overflow-x-auto no-scrollbar">
           {[
-            { id: 'calendar', label: t('event.tab_calendar') },
-            { id: 'upcoming', label: t('event.tab_upcoming') },
-            { id: 'favorite', label: t('event.tab_favorites') }
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
-              className={`flex-shrink-0 px-2.5 py-1 rounded-xl text-[12px] font-bold tracking-tight transition-all whitespace-nowrap border ${
-                activeTab === tab.id
-                  ? 'bg-blue-600 text-white border-blue-600 shadow-sm shadow-blue-100'
-                  : 'bg-slate-50/50 text-slate-500 border-slate-100 hover:bg-slate-100/80'
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
+            { id: 'calendar', label: t('event.tab_calendar'), path: '/events?view=calendar' },
+            { id: 'upcoming', label: t('event.tab_upcoming'), path: '/events?view=list' }
+          ].map((tab) => {
+            const isTabActive = tab.id === activeTab;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => router.push(tab.path)}
+                className={`flex-shrink-0 px-2.5 py-1 rounded-xl text-[12px] font-bold tracking-tight transition-all whitespace-nowrap border ${
+                  isTabActive
+                    ? 'bg-blue-600 text-white border-blue-600 shadow-sm shadow-blue-100'
+                    : 'bg-slate-50/50 text-slate-500 border-slate-100 hover:bg-slate-100/80'
+                }`}
+              >
+                {tab.label}
+              </button>
+            );
+          })}
         </div>
         
         {/* Row 2: Month Filter and/or World Event Toggle */}
-        {(activeTab === 'calendar' || activeTab === 'upcoming') && (
-          <div className={`w-full h-11 px-4 flex items-center ${activeTab === 'calendar' ? 'justify-between' : 'justify-end'}`}>
-            {activeTab === 'calendar' && (
-              <div className="flex items-center gap-2 bg-slate-50 rounded-lg px-1.5 py-0.5 border border-slate-100">
-                <button 
-                  onClick={() => setCurrentDate(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1))} 
-                  className="w-6 h-6 flex items-center justify-center hover:bg-white rounded-md transition-all text-slate-400"
-                >
-                  <span className="material-symbols-outlined text-[16px]">chevron_left</span>
-                </button>
-                <span className="text-[13px] font-bold text-slate-900 uppercase tracking-tight w-[80px] text-center">
-                  {formattedMonth}
-                </span>
-                <button 
-                  onClick={() => setCurrentDate(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1))} 
-                  className="w-6 h-6 flex items-center justify-center hover:bg-white rounded-md transition-all text-slate-400"
-                >
-                  <span className="material-symbols-outlined text-[16px]">chevron_right</span>
-                </button>
-              </div>
-            )}
-            <div className="flex items-center bg-slate-100 rounded-lg p-0.5 border border-slate-200/50">
-              <button
-                onClick={() => setIsWorldEvent(false)}
-                className={`px-3 py-1 rounded-md text-[11px] font-bold uppercase tracking-widest transition-all duration-200 ${
-                  !isWorldEvent
-                    ? 'bg-white text-blue-600 shadow-sm border border-slate-200/80'
-                    : 'text-slate-400 hover:text-slate-500'
-                }`}
+        <div className={`w-full h-11 px-4 flex items-center ${activeTab === 'calendar' ? 'justify-between' : 'justify-end'}`}>
+          {activeTab === 'calendar' && (
+            <div className="flex items-center gap-2 bg-slate-50 rounded-lg px-1.5 py-0.5 border border-slate-100">
+              <button 
+                onClick={() => setCurrentDate(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1))} 
+                className="w-6 h-6 flex items-center justify-center hover:bg-white rounded-md transition-all text-slate-400"
               >
-                Local
+                <span className="material-symbols-outlined text-[16px]">chevron_left</span>
               </button>
-              <button
-                onClick={() => setIsWorldEvent(true)}
-                className={`px-3 py-1 rounded-md text-[11px] font-bold uppercase tracking-widest transition-all duration-200 ${
-                  isWorldEvent
-                    ? 'bg-white text-blue-600 shadow-sm border border-slate-200/80'
-                    : 'text-slate-400 hover:text-slate-500'
-                }`}
+              <span className="text-[13px] font-bold text-slate-900 uppercase tracking-tight w-[80px] text-center">
+                {formattedMonth}
+              </span>
+              <button 
+                onClick={() => setCurrentDate(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1))} 
+                className="w-6 h-6 flex items-center justify-center hover:bg-white rounded-md transition-all text-slate-400"
               >
-                World
+                <span className="material-symbols-outlined text-[16px]">chevron_right</span>
               </button>
             </div>
+          )}
+          <div className="flex items-center bg-slate-100 rounded-lg p-0.5 border border-slate-200/50">
+            <button
+              onClick={() => setIsWorldEvent(false)}
+              className={`px-3 py-1 rounded-md text-[11px] font-bold uppercase tracking-widest transition-all duration-200 ${
+                !isWorldEvent
+                  ? 'bg-white text-blue-600 shadow-sm border border-slate-200/80'
+                  : 'text-slate-400 hover:text-slate-500'
+              }`}
+            >
+              Local
+            </button>
+            <button
+              onClick={() => setIsWorldEvent(true)}
+              className={`px-3 py-1 rounded-md text-[11px] font-bold uppercase tracking-widest transition-all duration-200 ${
+                isWorldEvent
+                  ? 'bg-white text-blue-600 shadow-sm border border-slate-200/80'
+                  : 'text-slate-400 hover:text-slate-500'
+              }`}
+            >
+              World
+            </button>
           </div>
-        )}
+        </div>
       </div>
     );
     
-    const height = (activeTab === 'calendar' || activeTab === 'upcoming') ? 88 : 44; // Tabs + Filter (44+44) vs Tabs (44)
-    setSubHeader(filterBar, height);
+    setSubHeader(filterBar, 88);
     return () => setSubHeader(null);
-  }, [activeTab, currentDate, formattedMonth, isWorldEvent, t, setSubHeader]);
+  }, [activeTab, currentDate, formattedMonth, isWorldEvent, t, setSubHeader, viewParam, router]);
 
   const STACK_COLORS = [
     { bg: '#0057bd', text: '#ffffff' },   // primary
@@ -375,7 +413,17 @@ export default function EventsPage() {
   // Prepare monthly grouped upcoming events
   const upcomingEvents = useMemo(() => {
     const today = startOfDay(new Date());
-    const validEvents = sortedEvents.filter(e => getNormalizedDate(e.endDate || e.startDate) >= today);
+    let validEvents = sortedEvents.filter(e => getNormalizedDate(e.endDate || e.startDate) >= today);
+    
+    // YYYY-MM 형식의 monthParam이 주어지면, 해당 연/월에 시작하는 이벤트만 필터링하여 노출
+    if (viewParam === 'list' && monthParam) {
+      validEvents = validEvents.filter(e => {
+        const start = getNormalizedDate(e.startDate);
+        const y = start.getFullYear();
+        const m = String(start.getMonth() + 1).padStart(2, '0');
+        return `${y}-${m}` === monthParam;
+      });
+    }
     
     const grouped: Record<string, Event[]> = {};
     validEvents.forEach(e => {
@@ -389,13 +437,262 @@ export default function EventsPage() {
       month,
       events: evts
     }));
-  }, [sortedEvents]);
+  }, [sortedEvents, viewParam, monthParam]);
 
   // Featured Banner Event (First upcoming)
   const featuredEvent = useMemo(() => {
     const today = startOfDay(new Date());
     return sortedEvents.find(e => getNormalizedDate(e.endDate || e.startDate) >= today);
   }, [sortedEvents]);
+
+  // 미니 캘린더 일자 스트립 가공
+  const miniCalendarStrip = useMemo(() => {
+    const today = new Date();
+    const days = [];
+    const weekDayNames = language === 'KR' 
+      ? ['일', '월', '화', '수', '목', '금', '토']
+      : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      
+    for (let i = 0; i < 6; i++) {
+      const d = addDays(today, i);
+      days.push({
+        label: i === 0 ? (language === 'KR' ? '오늘' : 'Today') : weekDayNames[d.getDay()],
+        dateNum: d.getDate(),
+        isToday: i === 0
+      });
+    }
+    return days;
+  }, [language]);
+
+  // 월별 포털 전용 정밀 이벤트 데이터 (최대 상위 2개 월)
+  const monthlyPortalEvents = useMemo(() => {
+    const today = startOfDay(new Date());
+    const validEvents = sortedEvents.filter(e => getNormalizedDate(e.endDate || e.startDate) >= today);
+    
+    const grouped: Record<string, Event[]> = {};
+    validEvents.forEach(e => {
+      const start = getNormalizedDate(e.startDate);
+      const y = start.getFullYear();
+      const m = String(start.getMonth() + 1).padStart(2, '0');
+      const key = `${y}-${m}`;
+      if (!grouped[key]) grouped[key] = [];
+      grouped[key].push(e);
+    });
+    
+    return Object.entries(grouped)
+      .map(([key, evts]) => {
+        const [year, month] = key.split('-');
+        const title = language === 'KR' 
+          ? `${year}년 ${parseInt(month)}월` 
+          : `${format(new Date(parseInt(year), parseInt(month) - 1, 1), 'MMMM yyyy')}`;
+        return {
+          monthKey: key,
+          title,
+          events: evts
+        };
+      })
+      .sort((a, b) => a.monthKey.localeCompare(b.monthKey))
+      .slice(0, 2);
+  }, [sortedEvents, language]);
+
+  // 통합 탐색 메인 홈 렌더러
+  const renderEventMainHome = () => {
+    return (
+      <div className="space-y-7 pb-10">
+        {/* 1. 다가오는 대표 이벤트 Hero */}
+        {featuredEvent ? (
+          <div 
+            onClick={() => setSelectedEvent(featuredEvent)}
+            className="relative w-full h-56 rounded-3xl overflow-hidden shadow-md group cursor-pointer"
+          >
+            <img 
+              src={featuredEvent.imageUrl || 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=600'} 
+              className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-103"
+              alt=""
+            />
+            <div 
+              className="absolute inset-0 flex flex-col justify-end p-5"
+              style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.3) 60%, transparent 100%)' }}
+            >
+              <span className="w-fit bg-blue-600 text-white text-[9.5px] font-black px-2 py-0.5 rounded-md mb-2 shadow-sm uppercase tracking-wide">
+                다가오는 대표 이벤트
+              </span>
+              <h3 className="text-white text-[16px] font-black leading-snug tracking-tight text-left">
+                {language === 'KR' && featuredEvent.titleNative ? featuredEvent.titleNative : featuredEvent.title}
+              </h3>
+              
+              <div className="flex flex-col gap-0.5 mt-2 text-[11px] font-bold text-white/80 text-left">
+                <p className="flex items-center gap-1.5">
+                  <span className="material-symbols-outlined text-[13px] text-white/60">calendar_today</span>
+                  {language === 'KR'
+                    ? `${getNormalizedDate(featuredEvent.startDate).getFullYear()}. ${getNormalizedDate(featuredEvent.startDate).getMonth() + 1}. ${getNormalizedDate(featuredEvent.startDate).getDate()} (${['일','월','화','수','목','금','토'][getNormalizedDate(featuredEvent.startDate).getDay()]})`
+                    : format(getNormalizedDate(featuredEvent.startDate), 'yyyy. M. d (EEE)')}
+                </p>
+                <p className="flex items-center gap-1.5">
+                  <span className="material-symbols-outlined text-[13px] text-white/60">location_on</span>
+                  {featuredEvent.location}
+                </p>
+              </div>
+
+              <div className="flex justify-between items-center mt-4">
+                <span className="bg-white hover:bg-slate-50 text-blue-900 text-[10.5px] font-black px-4.5 py-1.5 rounded-xl shadow-sm transition-all active:scale-95">
+                  상세 보기
+                </span>
+                
+                {/* 슬라이드 인디케이터 도트 */}
+                <div className="flex gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-white"></span>
+                  <span className="w-1.5 h-1.5 rounded-full bg-white/40"></span>
+                  <span className="w-1.5 h-1.5 rounded-full bg-white/40"></span>
+                  <span className="w-1.5 h-1.5 rounded-full bg-white/40"></span>
+                  <span className="w-1.5 h-1.5 rounded-full bg-white/40"></span>
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="py-12 text-center text-slate-400 bg-slate-50 rounded-3xl border border-slate-100/50">
+            <p className="text-xs font-bold">진행 예정인 대표 이벤트가 없습니다.</p>
+          </div>
+        )}
+
+        {/* 2. 캘린더 보기 미니 카드 */}
+        <div 
+          onClick={() => router.push('/events?view=calendar')}
+          className="flex items-center justify-between p-4 bg-white border border-slate-100 rounded-3xl shadow-sm shadow-slate-100/50 cursor-pointer hover:shadow-md active:scale-[0.99] transition-all"
+        >
+          <div className="flex items-center gap-3.5 text-left">
+            <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center flex-shrink-0">
+              <span className="material-symbols-outlined text-blue-600 text-xl font-bold">calendar_month</span>
+            </div>
+            <div>
+              <h4 className="text-[13px] font-black text-slate-800">캘린더 보기</h4>
+              <p className="text-[10px] font-bold text-slate-400 mt-0.5">전체 일정을 한눈에 확인하세요</p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {/* 요일 미니 스트립 */}
+            <div className="flex gap-1.5 overflow-hidden">
+              {miniCalendarStrip.map((day, idx) => (
+                <div 
+                  key={idx} 
+                  className={`flex flex-col items-center justify-center rounded-xl w-8.5 h-10 border transition-all ${
+                    day.isToday 
+                      ? 'bg-blue-50 text-blue-600 border-blue-200 shadow-sm shadow-blue-50/50' 
+                      : 'bg-slate-50/50 text-slate-700 border-slate-100/60'
+                  }`}
+                >
+                  <span className="text-[8.5px] font-black leading-none opacity-80">{day.label}</span>
+                  <span className="text-[11.5px] font-black leading-none mt-1">{day.dateNum}</span>
+                </div>
+              ))}
+            </div>
+            <span className="material-symbols-outlined text-slate-350 text-[18px] ml-1">chevron_right</span>
+          </div>
+        </div>
+
+        {/* 3. 월별 이벤트 목록 */}
+        {monthlyPortalEvents.length === 0 ? (
+          <div className="py-12 text-center text-slate-400 bg-slate-50 rounded-3xl border border-slate-100/50">
+            <p className="text-xs font-bold">등록된 이벤트 일정이 없습니다.</p>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {monthlyPortalEvents.map((monthGroup) => {
+              // 7월은 최대 3개, 그 외(8월 등)는 최대 2개 노출
+              const isJuly = monthGroup.monthKey.endsWith('-07');
+              const displayLimit = isJuly ? 3 : 2;
+              const displayEvents = monthGroup.events.slice(0, displayLimit);
+
+              return (
+                <div key={monthGroup.monthKey} className="space-y-4 text-left">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-1 h-3 bg-blue-500 rounded-full" />
+                      <h3 className="text-[15px] font-black text-slate-800 tracking-tight">
+                        {monthGroup.title}
+                      </h3>
+                    </div>
+                    <button 
+                      onClick={() => router.push(`/events?view=list&month=${monthGroup.monthKey}`)}
+                      className="text-[11px] font-black text-slate-400 hover:text-slate-600 flex items-center gap-0.5 transition-colors"
+                    >
+                      전체 보기
+                      <span className="material-symbols-outlined text-[14px]">chevron_right</span>
+                    </button>
+                  </div>
+
+                  <div className="flex flex-col gap-3">
+                    {displayEvents.map((event) => {
+                      const start = getNormalizedDate(event.startDate);
+                      const end = event.endDate ? getNormalizedDate(event.endDate) : null;
+                      const flagUrl = getFlagImageUrl(event.location?.split(',').pop()?.trim() || '');
+                      const dateStr = end && !isSameDay(start, end)
+                        ? `${formatDate(start, 'shortMonthDay')} – ${formatDate(end, 'shortMonthDay')}`
+                        : language === 'KR'
+                          ? formatDate(start, 'shortMonthDay')
+                          : formatDate(start, 'MMM d, EEE');
+
+                      return (
+                        <div 
+                          key={event.id}
+                          onClick={() => setSelectedEvent(event)}
+                          className="group relative flex gap-3.5 bg-white border border-slate-100 rounded-2xl p-3 shadow-sm shadow-slate-100/20 cursor-pointer hover:border-blue-200 hover:shadow-md transition-all active:scale-[0.99]"
+                        >
+                          <div className="w-14 h-14 rounded-xl overflow-hidden flex-none bg-slate-50 border border-slate-50 relative">
+                            {event.imageUrl ? (
+                              <img src={event.imageUrl} className="w-full h-full object-cover group-hover:scale-104 transition-transform duration-500" alt="" />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center">
+                                <span className="material-symbols-outlined text-slate-300 text-xl">event</span>
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="flex flex-col justify-center min-w-0 flex-1 py-0.5 text-left">
+                            <span className="text-[8.5px] font-black text-blue-600 bg-blue-50 border border-blue-100 w-fit px-1.5 py-0.5 rounded-md uppercase tracking-wider mb-1">
+                              {dateStr}
+                            </span>
+                            <h4 className="font-bold text-slate-800 text-[13px] leading-snug truncate">
+                              {language === 'KR' && event.titleNative ? event.titleNative : event.title}
+                            </h4>
+                            <div className="flex items-center gap-1.5 mt-1 text-[10px] font-bold text-slate-400 truncate">
+                              {event.location && (
+                                <span className="flex items-center gap-1">
+                                  {flagUrl && <img src={flagUrl} alt="" className="w-2.5 h-1.5 object-cover rounded-[1px]" />}
+                                  <span className="truncate max-w-[85px]">{event.location.split(',')[0]}</span>
+                                </span>
+                              )}
+                              {event.location && event.hostName && <span>·</span>}
+                              {event.hostName && <span className="truncate max-w-[85px] text-slate-500 font-semibold">{event.hostName}</span>}
+                            </div>
+                          </div>
+
+                          <div className="flex items-center justify-center pr-1 flex-shrink-0">
+                            {/* 흐릿한 회색 하트 아웃라인 유지 */}
+                            <button 
+                              onClick={(e) => handleToggleLike(e, event.id)}
+                              className={`w-7 h-7 rounded-full flex items-center justify-center transition-colors active:scale-90 ${
+                                likedEventIds.includes(event.id) ? 'text-red-500' : 'text-slate-300 hover:text-slate-400'
+                              }`}
+                            >
+                              <span className="material-symbols-rounded text-[16px]" style={{ fontVariationSettings: likedEventIds.includes(event.id) ? "'FILL' 1" : "'FILL' 0" }}>favorite</span>
+                            </button>
+                            <span className="material-symbols-outlined text-slate-350 text-[16px] ml-1">chevron_right</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    );
+  };
 
   return (
     <>
@@ -451,263 +748,199 @@ export default function EventsPage() {
       <div className="w-full relative bg-slate-50/30 min-h-screen">
         <main className="pb-32 overflow-x-hidden">
           
-          {/* UPCOMING TAB: FEATURED BANNER */}
-          {activeTab === 'upcoming' && featuredEvent && (
-            <div
-              onClick={() => setSelectedEvent(featuredEvent)}
-              className="relative w-full h-64 rounded-none overflow-hidden shadow-sm group block cursor-pointer mb-6 animate-in fade-in slide-in-from-top-4 duration-500"
-            >
-              <img
-                alt={featuredEvent.title}
-                className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
-                src={featuredEvent.imageUrl || 'https://lh3.googleusercontent.com/aida-public/AB6AXuAM-qcbRNMJdZLS9Ca7Gp1EjVkOyWQhtKBiYOVV8jYdBKKdmtYDvyKh8uAbGKuFuWSqYG_cwZyguPHzTslh1whMR66-pyycVhSWNYgJjvbFatGIX03BxE1lE-1iBMQjH7_2F8g6-LvoJIcnlB0MGrlKJYOVJZFWQyKma420t8TJpTbYWVZog86VoGm2oqMpqqloZzF_17DT9iJk6dbzfGibveQrX7XmbdfyWCQaGlMZuD8TON4K8v5PG8jgMr8kEfGxpq99xneK9p4'}
-              />
-              <div className="absolute inset-0 flex flex-col justify-end p-6"
-                style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.3) 50%, transparent 100%)' }}>
-                <p className="text-white mb-1 tracking-tight"
-                  style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: '1.25rem', lineHeight: '1.75rem', fontWeight: 800, textShadow: '0 2px 10px rgba(0,0,0,0.9), 0 0 4px rgba(0,0,0,0.5)' }}>
-                  {language === 'KR' && featuredEvent.titleNative ? featuredEvent.titleNative : featuredEvent.title}
-                  {featuredEvent.titleNative && language !== 'KR' && (
-                    <span className="ml-2 font-normal" style={{ fontSize: '0.875rem', opacity: 0.85 }}>{featuredEvent.titleNative}</span>
-                  )}
-                </p>
-                <div className="flex flex-col gap-1 mb-4">
-                  <p className="text-white/90 uppercase flex items-center gap-1.5"
-                    style={{ fontFamily: 'Inter, sans-serif', fontSize: '0.75rem', lineHeight: '1.25rem', fontWeight: 600, letterSpacing: '0.05em' }}>
-                    <span className="material-symbols-outlined text-[14px]" style={{ fontVariationSettings: "'opsz' 20" }}>calendar_today</span>
-                    {language === 'KR'
-                      ? `${getNormalizedDate(featuredEvent.startDate).getFullYear()}년 ${getNormalizedDate(featuredEvent.startDate).getMonth() + 1}월 ${getNormalizedDate(featuredEvent.startDate).getDate()}일`
-                      : format(getNormalizedDate(featuredEvent.startDate), 'MMM dd, yyyy')}
-                  </p>
-                  <p className="text-white/90 flex items-center gap-1.5"
-                    style={{ fontFamily: 'Inter, sans-serif', fontSize: '0.75rem', lineHeight: '1.25rem', fontWeight: 600 }}>
-                    <span className="material-symbols-outlined text-[14px]" style={{ fontVariationSettings: "'opsz' 20" }}>location_on</span>
-                    {featuredEvent.location}
-                  </p>
-                </div>
-                <div>
-                  <span className="inline-block px-5 py-2 bg-white font-bold text-xs rounded-xl shadow-md transition-all duration-300"
-                    style={{ color: '#004190' }}>
-                    {t('event.view_details')}
-                  </span>
-                </div>
-              </div>
-              <div className="absolute inset-0 pointer-events-none opacity-10 mix-blend-overlay"
-                style={{ backgroundImage: "url('https://www.transparenttextures.com/patterns/canvas-orange.png')" }} />
+          {/* 1) 메인 통합 홈 (viewParam이 없는 경우) */}
+          {!viewParam ? (
+            <div className="px-5 py-6">
+              {renderEventMainHome()}
             </div>
-          )}
-
-          {/* TAB CONTENTS */}
-          <div className="px-4 space-y-6 pt-4">
-
-            {/* CALENDAR TAB */}
-            {activeTab === 'calendar' && (
-              <section className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-                <div className="bg-surface-container-lowest rounded-xl overflow-hidden shadow-sm border border-outline-variant">
-                  <div className="grid grid-cols-7 bg-surface-container-low border-b border-outline-variant">
-                    {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => (
-                      <div key={day} className="py-2 text-center text-[12px] font-semibold text-on-surface-variant uppercase">{day}</div>
-                    ))}
+          ) : (
+            /* 2) 개별 목록/캘린더 뷰 (viewParam이 있는 경우) */
+            <>
+              {/* UPCOMING TAB: FEATURED BANNER */}
+              {activeTab === 'upcoming' && featuredEvent && !monthParam && (
+                <div
+                  onClick={() => setSelectedEvent(featuredEvent)}
+                  className="relative w-full h-64 rounded-none overflow-hidden shadow-sm group block cursor-pointer mb-6 animate-in fade-in slide-in-from-top-4 duration-500"
+                >
+                  <img
+                    alt={featuredEvent.title}
+                    className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
+                    src={featuredEvent.imageUrl || 'https://lh3.googleusercontent.com/aida-public/AB6AXuAM-qcbRNMJdZLS9Ca7Gp1EjVkOyWQhtKBiYOVV8jYdBKKdmtYDvyKh8uAbGKuFuWSqYG_cwZyguPHzTslh1whMR66-pyycVhSWNYgJjvbFatGIX03BxE1lE-1iBMQjH7_2F8g6-LvoJIcnlB0MGrlKJYOVJZFWQyKma420t8TJpTbYWVZog86VoGm2oqMpqqloZzF_17DT9iJk6dbzfGibveQrX7XmbdfyWCQaGlMZuD8TON4K8v5PG8jgMr8kEfGxpq99xneK9p4'}
+                  />
+                  <div className="absolute inset-0 flex flex-col justify-end p-6"
+                    style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.3) 50%, transparent 100%)' }}>
+                    <p className="text-white mb-1 tracking-tight"
+                      style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: '1.25rem', lineHeight: '1.75rem', fontWeight: 800, textShadow: '0 2px 10px rgba(0,0,0,0.9), 0 0 4px rgba(0,0,0,0.5)' }}>
+                      {language === 'KR' && featuredEvent.titleNative ? featuredEvent.titleNative : featuredEvent.title}
+                      {featuredEvent.titleNative && language !== 'KR' && (
+                        <span className="ml-2 font-normal" style={{ fontSize: '0.875rem', opacity: 0.85 }}>{featuredEvent.titleNative}</span>
+                      )}
+                    </p>
+                    <div className="flex flex-col gap-1 mb-4">
+                      <p className="text-white/90 uppercase flex items-center gap-1.5"
+                        style={{ fontFamily: 'Inter, sans-serif', fontSize: '0.75rem', lineHeight: '1.25rem', fontWeight: 600, letterSpacing: '0.05em' }}>
+                        <span className="material-symbols-outlined text-[14px]" style={{ fontVariationSettings: "'opsz' 20" }}>calendar_today</span>
+                        {language === 'KR'
+                          ? `${getNormalizedDate(featuredEvent.startDate).getFullYear()}년 ${getNormalizedDate(featuredEvent.startDate).getMonth() + 1}월 ${getNormalizedDate(featuredEvent.startDate).getDate()}일`
+                          : format(getNormalizedDate(featuredEvent.startDate), 'MMM dd, yyyy')}
+                      </p>
+                      <p className="text-white/90 flex items-center gap-1.5"
+                        style={{ fontFamily: 'Inter, sans-serif', fontSize: '0.75rem', lineHeight: '1.25rem', fontWeight: 600 }}>
+                        <span className="material-symbols-outlined text-[14px]" style={{ fontVariationSettings: "'opsz' 20" }}>location_on</span>
+                        {featuredEvent.location}
+                      </p>
+                    </div>
+                    <div>
+                      <span className="inline-block px-5 py-2 bg-white font-bold text-xs rounded-xl shadow-md transition-all duration-300"
+                        style={{ color: '#004190' }}>
+                        {t('event.view_details')}
+                      </span>
+                    </div>
                   </div>
-                  <div className="calendar-grid">
-                    {calendarRange.days.map((date, i) => {
-                      const isCurrentMonth = date.getMonth() === currentDate.getMonth();
-                      const isToday = isSameDay(date, new Date());
-                      const dayEvents = filteredLocationEvents.filter(e => {
-                        const start = getNormalizedDate(e.startDate);
-                        const end = getNormalizedDate(e.endDate || e.startDate);
-                        return date >= start && date <= end;
-                      });
-                      const dayMaxSlot = dayEvents.reduce((max, e) => Math.max(max, eventSlots[e.id] ?? 0), -1);
-                      const cellMinHeight = Math.max(100, 28 + (dayMaxSlot + 1) * 26 + 8);
-                      return (
-                        <div key={i} className={`calendar-cell ${!isCurrentMonth ? 'bg-gray-50/30' : ''}`} style={{ minHeight: `${cellMinHeight}px` }}>
-                          <span className={`text-[10px] font-bold ${isToday ? 'text-[#0057bd] w-5 h-5 bg-[#d3e4fe] rounded-full flex items-center justify-center' : 'text-gray-400'}`}>
-                            {date.getDate()}
-                          </span>
-                          <div className="event-container">
-                            {dayEvents.map(event => {
-                              const start = getNormalizedDate(event.startDate);
-                              const end = getNormalizedDate(event.endDate || event.startDate);
-                              const isStartOfBar = isSameDay(date, start) || getDay(date) === 1;
-                              if (isStartOfBar) {
-                                const dayOfWeek = (getDay(date) + 6) % 7;
-                                const remainingInWeek = 7 - dayOfWeek;
-                                const totalDuration = differenceInCalendarDays(end, date) + 1;
-                                const span = Math.min(totalDuration, remainingInWeek);
-                                const slotIdx = eventSlots[event.id] ?? 0;
-                                const colorSet = STACK_COLORS[slotIdx % STACK_COLORS.length];
-                                return (
-                                  <div
-                                    key={event.id}
-                                    onClick={() => setSelectedEvent(event)}
-                                    className="event-bar"
-                                    style={{ backgroundColor: colorSet.bg, color: colorSet.text, width: `calc(${span * 100}% - 4px)`, top: `${slotIdx * 26}px`, left: '2px', zIndex: 10 }}
-                                  >
-                                    {event.location ? (() => { const flagUrl = getFlagImageUrl(event.location.split(',').pop()?.trim() || ''); return flagUrl ? <img src={flagUrl} alt="flag" className="inline-block mr-1 w-3.5 h-[10.5px] object-cover rounded-sm shadow-sm" /> : null; })() : null}
-                                    <span className="truncate">{language === 'KR' && event.titleNative ? event.titleNative : event.title}</span>
-                                  </div>
-                                );
-                              }
-                              return null;
-                            })}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
+                  <div className="absolute inset-0 pointer-events-none opacity-10 mix-blend-overlay"
+                    style={{ backgroundImage: "url('https://www.transparenttextures.com/patterns/canvas-orange.png')" }} />
                 </div>
+              )}
 
-
-              </section>
-            )}
-
-            {/* UPCOMING TAB */}
-            {activeTab === 'upcoming' && (
-              <section className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                {upcomingEvents.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-16 text-on-surface-variant">
-                    <span className="material-symbols-outlined text-4xl mb-2 opacity-30">event_busy</span>
-                    <p className="text-sm font-medium">{t('event.no_upcoming')}</p>
-                  </div>
-                ) : (
-                  upcomingEvents.map(({ month, events: monthEvents }) => (
-                    <div key={month} className="space-y-3">
-                      <div className="flex items-center gap-3 px-1 mb-2">
-                        <div className="w-1 h-3 bg-blue-500 rounded-full" />
-                        <span className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">
-                          {month}
-                        </span>
-                        <div className="flex-1 h-[1px] bg-slate-100" />
+              {/* TAB CONTENTS */}
+              <div className="px-4 space-y-6 pt-4">
+                {/* CALENDAR TAB */}
+                {activeTab === 'calendar' && (
+                  <section className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                    <div className="bg-surface-container-lowest rounded-xl overflow-hidden shadow-sm border border-outline-variant">
+                      <div className="grid grid-cols-7 bg-surface-container-low border-b border-outline-variant">
+                        {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => (
+                          <div key={day} className="py-2 text-center text-[12px] font-semibold text-on-surface-variant uppercase">{day}</div>
+                        ))}
                       </div>
-                      
-                      <div className="flex flex-col gap-3">
-                        {monthEvents.map(event => {
-                          const start = getNormalizedDate(event.startDate);
-                          const end = event.endDate ? getNormalizedDate(event.endDate) : null;
-                          const flagUrl = getFlagImageUrl(event.location?.split(',').pop()?.trim() || '');
-                          const dateStr = end && !isSameDay(start, end)
-                            ? `${formatDate(start, 'shortMonthDay')} – ${formatDate(end, 'shortMonthDay')}`
-                            : language === 'KR'
-                              ? formatDate(start, 'shortMonthDay')
-                              : formatDate(start, 'MMM d, EEE');
-                            
+                      <div className="calendar-grid">
+                        {calendarRange.days.map((date, i) => {
+                          const isCurrentMonth = date.getMonth() === currentDate.getMonth();
+                          const isToday = isSameDay(date, new Date());
+                          const dayEvents = filteredLocationEvents.filter(e => {
+                            const start = getNormalizedDate(e.startDate);
+                            const end = getNormalizedDate(e.endDate || e.startDate);
+                            return date >= start && date <= end;
+                          });
+                          const dayMaxSlot = dayEvents.reduce((max, e) => Math.max(max, eventSlots[e.id] ?? 0), -1);
+                          const cellMinHeight = Math.max(100, 28 + (dayMaxSlot + 1) * 26 + 8);
                           return (
-                            <div
-                              key={event.id}
-                              onClick={() => setSelectedEvent(event)}
-                              className="group relative flex gap-3 bg-white border border-slate-100 rounded-2xl p-3 shadow-sm cursor-pointer hover:border-blue-200 hover:shadow-md transition-all active:scale-[0.98]"
-                            >
-                              <div className="w-20 h-20 rounded-xl overflow-hidden flex-none bg-slate-50 border border-slate-50 relative">
-                                {event.imageUrl
-                                  ? <img src={event.imageUrl} alt={event.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                                  : <div className="w-full h-full flex items-center justify-center"><span className="material-symbols-outlined text-slate-300 text-2xl">event</span></div>
-                                }
+                            <div key={i} className={`calendar-cell ${!isCurrentMonth ? 'bg-gray-50/30' : ''}`} style={{ minHeight: `${cellMinHeight}px` }}>
+                              <span className={`text-[10px] font-bold ${isToday ? 'text-[#0057bd] w-5 h-5 bg-[#d3e4fe] rounded-full flex items-center justify-center' : 'text-gray-400'}`}>
+                                {date.getDate()}
+                              </span>
+                              <div className="event-container">
+                                {dayEvents.map(event => {
+                                  const start = getNormalizedDate(event.startDate);
+                                  const end = getNormalizedDate(event.endDate || event.startDate);
+                                  const isStartOfBar = isSameDay(date, start) || getDay(date) === 1;
+                                  if (isStartOfBar) {
+                                    const dayOfWeek = (getDay(date) + 6) % 7;
+                                    const remainingInWeek = 7 - dayOfWeek;
+                                    const totalDuration = differenceInCalendarDays(end, date) + 1;
+                                    const span = Math.min(totalDuration, remainingInWeek);
+                                    const slotIdx = eventSlots[event.id] ?? 0;
+                                    const colorSet = STACK_COLORS[slotIdx % STACK_COLORS.length];
+                                    return (
+                                      <div
+                                        key={event.id}
+                                        onClick={() => setSelectedEvent(event)}
+                                        className="event-bar"
+                                        style={{ backgroundColor: colorSet.bg, color: colorSet.text, width: `calc(${span * 100}% - 4px)`, top: `${slotIdx * 26}px`, left: '2px', zIndex: 10 }}
+                                      >
+                                        {event.location ? (() => { const flagUrl = getFlagImageUrl(event.location.split(',').pop()?.trim() || ''); return flagUrl ? <img src={flagUrl} alt="flag" className="inline-block mr-1 w-3.5 h-[10.5px] object-cover rounded-sm shadow-sm" /> : null; })() : null}
+                                        <span className="truncate">{language === 'KR' && event.titleNative ? event.titleNative : event.title}</span>
+                                      </div>
+                                    );
+                                  }
+                                  return null;
+                                })}
                               </div>
-                              <div className="flex flex-col justify-center min-w-0 flex-1 py-0.5">
-                                <span className="text-[10px] font-bold text-blue-600 bg-blue-50 border border-blue-100 w-fit px-1.5 py-0.5 rounded uppercase tracking-wider mb-1.5">{dateStr}</span>
-                                <h3 className="font-bold text-slate-900 text-[14px] leading-snug truncate">{language === 'KR' && event.titleNative ? event.titleNative : event.title}</h3>
-                                {event.titleNative && language !== 'KR' && <p className="text-[11px] text-slate-400 truncate mt-0.5">{event.titleNative}</p>}
-                                <div className="flex items-center gap-2 mt-1.5 text-[11px] font-medium text-slate-500">
-                                  {event.location && (
-                                    <span className="flex items-center gap-1">
-                                      {flagUrl && <img src={flagUrl} alt="flag" className="w-3 h-2 object-cover rounded-[1px] shadow-sm" />}
-                                      <span className="truncate max-w-[80px]">{event.location.split(',')[0]}</span>
-                                    </span>
-                                  )}
-                                  {event.location && event.hostName && <span className="text-slate-300">•</span>}
-                                  {event.hostName && <span className="truncate max-w-[80px] text-slate-600 font-semibold">{event.hostName}</span>}
-                                </div>
-                              </div>
-                              <button 
-                                onClick={(e) => handleToggleLike(e, event.id)}
-                                className={`absolute top-3 right-3 w-7 h-7 rounded-full flex items-center justify-center transition-colors active:scale-90 ${
-                                  likedEventIds.includes(event.id) ? 'bg-red-50 text-red-500' : 'bg-slate-50 text-slate-300 hover:text-red-400'
-                                }`}
-                              >
-                                <span className="material-symbols-rounded text-[16px]" style={{ fontVariationSettings: likedEventIds.includes(event.id) ? "'FILL' 1" : "'FILL' 0" }}>favorite</span>
-                              </button>
                             </div>
                           );
                         })}
                       </div>
                     </div>
-                  ))
+                  </section>
                 )}
-              </section>
-            )}
 
-            {/* FAVORITES TAB */}
-            {activeTab === 'favorite' && (
-              <section className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                {(() => {
-                  const likedEvents = sortedEvents.filter(e => likedEventIds.includes(e.id));
-                  if (likedEvents.length === 0) {
-                    return (
-                      <div className="flex flex-col items-center justify-center py-20 text-center">
-                        <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mb-4">
-                          <span className="material-symbols-outlined text-3xl text-red-300">favorite</span>
-                        </div>
-                        <h3 className="text-base font-bold text-slate-800 mb-1">{t('event.no_saved')}</h3>
-                        <p className="text-xs text-slate-400 max-w-[200px] leading-relaxed">{t('event.no_saved_desc')}</p>
+                {/* UPCOMING TAB */}
+                {activeTab === 'upcoming' && (
+                  <section className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                    {upcomingEvents.length === 0 ? (
+                      <div className="flex flex-col items-center justify-center py-16 text-on-surface-variant">
+                        <span className="material-symbols-outlined text-4xl mb-2 opacity-30">event_busy</span>
+                        <p className="text-sm font-medium">{t('event.no_upcoming')}</p>
                       </div>
-                    );
-                  }
-                  
-                  return (
-                    <div className="flex flex-col gap-3">
-                      {likedEvents.map(event => {
-                        const start = getNormalizedDate(event.startDate);
-                        const end = event.endDate ? getNormalizedDate(event.endDate) : null;
-                        const flagUrl = getFlagImageUrl(event.location?.split(',').pop()?.trim() || '');
-                        const dateStr = end && !isSameDay(start, end)
-                          ? `${formatDate(start, 'shortMonthDay')} – ${formatDate(end, 'shortMonthDay')}`
-                          : language === 'KR'
-                            ? formatDate(start, 'shortMonthDay')
-                            : formatDate(start, 'MMM d, EEE');
-                          
-                        return (
-                          <div
-                            key={event.id}
-                            onClick={() => setSelectedEvent(event)}
-                            className="group relative flex gap-3 bg-white border border-slate-100 rounded-2xl p-3 shadow-sm cursor-pointer hover:border-blue-200 hover:shadow-md transition-all active:scale-[0.98]"
-                          >
-                            <div className="w-20 h-20 rounded-xl overflow-hidden flex-none bg-slate-50 border border-slate-50 relative">
-                              {event.imageUrl
-                                ? <img src={event.imageUrl} alt={event.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                                : <div className="w-full h-full flex items-center justify-center"><span className="material-symbols-outlined text-slate-300 text-2xl">event</span></div>
-                              }
-                            </div>
-                            <div className="flex flex-col justify-center min-w-0 flex-1 py-0.5">
-                              <span className="text-[10px] font-bold text-blue-600 bg-blue-50 border border-blue-100 w-fit px-1.5 py-0.5 rounded uppercase tracking-wider mb-1.5">{dateStr}</span>
-                              <h3 className="font-bold text-slate-900 text-[14px] leading-snug truncate">{language === 'KR' && event.titleNative ? event.titleNative : event.title}</h3>
-                              {event.titleNative && language !== 'KR' && <p className="text-[11px] text-slate-400 truncate mt-0.5">{event.titleNative}</p>}
-                              <div className="flex items-center gap-2 mt-1.5 text-[11px] font-medium text-slate-500">
-                                {event.location && (
-                                  <span className="flex items-center gap-1">
-                                    {flagUrl && <img src={flagUrl} alt="flag" className="w-3 h-2 object-cover rounded-[1px] shadow-sm" />}
-                                    <span className="truncate max-w-[80px]">{event.location.split(',')[0]}</span>
-                                  </span>
-                                )}
-                                {event.location && event.hostName && <span className="text-slate-300">•</span>}
-                                {event.hostName && <span className="truncate max-w-[80px] text-slate-600 font-semibold">{event.hostName}</span>}
-                              </div>
-                            </div>
-                            <button 
-                              onClick={(e) => handleToggleLike(e, event.id)}
-                              className="absolute top-3 right-3 w-7 h-7 rounded-full flex items-center justify-center transition-colors active:scale-90 bg-red-50 text-red-500"
-                            >
-                              <span className="material-symbols-rounded text-[16px]" style={{ fontVariationSettings: "'FILL' 1" }}>favorite</span>
-                            </button>
+                    ) : (
+                      upcomingEvents.map(({ month, events: monthEvents }) => (
+                        <div key={month} className="space-y-3">
+                          <div className="flex items-center gap-3 px-1 mb-2">
+                            <div className="w-1 h-3 bg-blue-500 rounded-full" />
+                            <span className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">
+                              {month}
+                            </span>
+                            <div className="flex-1 h-[1px] bg-slate-100" />
                           </div>
-                        );
-                      })}
-                    </div>
-                  );
-                })()}
-              </section>
-            )}
-          </div>
+                          
+                          <div className="flex flex-col gap-3">
+                            {monthEvents.map(event => {
+                              const start = getNormalizedDate(event.startDate);
+                              const end = event.endDate ? getNormalizedDate(event.endDate) : null;
+                              const flagUrl = getFlagImageUrl(event.location?.split(',').pop()?.trim() || '');
+                              const dateStr = end && !isSameDay(start, end)
+                                ? `${formatDate(start, 'shortMonthDay')} – ${formatDate(end, 'shortMonthDay')}`
+                                : language === 'KR'
+                                  ? formatDate(start, 'shortMonthDay')
+                                  : formatDate(start, 'MMM d, EEE');
+                                
+                              return (
+                                <div
+                                  key={event.id}
+                                  onClick={() => setSelectedEvent(event)}
+                                  className="group relative flex gap-3 bg-white border border-slate-100 rounded-2xl p-3 shadow-sm cursor-pointer hover:border-blue-200 hover:shadow-md transition-all active:scale-[0.98]"
+                                >
+                                  <div className="w-20 h-20 rounded-xl overflow-hidden flex-none bg-slate-50 border border-slate-50 relative">
+                                    {event.imageUrl
+                                      ? <img src={event.imageUrl} alt={event.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                                      : <div className="w-full h-full flex items-center justify-center"><span className="material-symbols-outlined text-slate-300 text-2xl">event</span></div>
+                                    }
+                                  </div>
+                                  <div className="flex flex-col justify-center min-w-0 flex-1 py-0.5">
+                                    <span className="text-[10px] font-bold text-blue-600 bg-blue-50 border border-blue-100 w-fit px-1.5 py-0.5 rounded uppercase tracking-wider mb-1.5">{dateStr}</span>
+                                    <h3 className="font-bold text-slate-900 text-[14px] leading-snug truncate">{language === 'KR' && event.titleNative ? event.titleNative : event.title}</h3>
+                                    {event.titleNative && language !== 'KR' && <p className="text-[11px] text-slate-400 truncate mt-0.5">{event.titleNative}</p>}
+                                    <div className="flex items-center gap-2 mt-1.5 text-[11px] font-medium text-slate-500">
+                                      {event.location && (
+                                        <span className="flex items-center gap-1">
+                                          {flagUrl && <img src={flagUrl} alt="flag" className="w-3 h-2 object-cover rounded-[1px] shadow-sm" />}
+                                          <span className="truncate max-w-[80px]">{event.location.split(',')[0]}</span>
+                                        </span>
+                                      )}
+                                      {event.location && event.hostName && <span className="text-slate-300">•</span>}
+                                      {event.hostName && <span className="truncate max-w-[80px] text-slate-600 font-semibold">{event.hostName}</span>}
+                                    </div>
+                                  </div>
+                                  <button 
+                                    onClick={(e) => handleToggleLike(e, event.id)}
+                                    className={`absolute top-3 right-3 w-7 h-7 rounded-full flex items-center justify-center transition-colors active:scale-90 ${
+                                      likedEventIds.includes(event.id) ? 'bg-red-50 text-red-500' : 'bg-slate-50 text-slate-300 hover:text-red-400'
+                                    }`}
+                                  >
+                                    <span className="material-symbols-rounded text-[16px]" style={{ fontVariationSettings: likedEventIds.includes(event.id) ? "'FILL' 1" : "'FILL' 0" }}>favorite</span>
+                                  </button>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </section>
+                )}
+              </div>
+            </>
+          )}
         </main>
 
         <AnimatePresence>

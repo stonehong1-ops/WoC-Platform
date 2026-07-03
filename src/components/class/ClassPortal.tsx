@@ -2,7 +2,7 @@
 import { reportError } from '@/lib/utils/errorHandler';
 
 import React, { useEffect, useState, useMemo } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { groupService } from '@/lib/firebase/groupService';
 import { venueService } from '@/lib/firebase/venueService';
 import { Group, GroupClass, ClassDiscount, ClassScheduleEntry } from '@/types/group';
@@ -34,8 +34,17 @@ export default function ClassPortal() {
   const router = useRouter();
   const { setSubHeader } = useNavigation();
   const { t, language } = useLanguage();
-  
-  const [activeTab, setActiveTab] = useState<'TODAY' | 'WEEK' | 'MONTH' | 'SPECIAL'>('TODAY');
+  const searchParams = useSearchParams();
+  const viewParam = searchParams.get('view'); // 'today' | 'special' | 'monthly' | null
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const activeTab = useMemo<'TODAY' | 'WEEK' | 'MONTH' | 'SPECIAL'>(() => {
+    if (viewParam === 'today') return 'TODAY';
+    if (viewParam === 'week') return 'WEEK';
+    if (viewParam === 'special') return 'SPECIAL';
+    if (viewParam === 'monthly') return 'MONTH';
+    return 'TODAY';
+  }, [viewParam]);
   
   // Restore cached class portal data to achieve 0ms initial render
   const cachedPortal = React.useMemo(() => {
@@ -107,6 +116,190 @@ export default function ClassPortal() {
     }
     return [];
   });
+
+  // 1. 오늘 참여 데이터 가공 (목데이터 폴백 내장)
+  const todayClassesData = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayStr = today.toDateString();
+    
+    const list: (GroupClass & { group?: Group; scheduleEntry?: ClassScheduleEntry })[] = [];
+    allClasses.forEach(cls => {
+      const group = groups.find(g => g.id === cls.groupId);
+      
+      if (searchTerm.trim()) {
+        const term = searchTerm.toLowerCase();
+        const hasInst = cls.instructors?.some(i => i.name?.toLowerCase().includes(term));
+        const hasTitle = cls.title?.toLowerCase().includes(term);
+        const hasLocation = cls.location?.toLowerCase().includes(term) || group?.name?.toLowerCase().includes(term);
+        if (!hasInst && !hasTitle && !hasLocation) return;
+      }
+
+      cls.schedule?.forEach((s) => {
+        if (!s.date) return;
+        const dObj = safeDate(s.date);
+        if (dObj && dObj.toDateString() === todayStr) {
+          if (!list.some(c => c.id === cls.id)) {
+            list.push({ ...cls, group, scheduleEntry: s });
+          }
+        }
+      });
+    });
+    
+    list.sort((a, b) => {
+      const timeA = (a.scheduleEntry?.timeSlot?.split(/[-~]/)[0] || a.startTime || '00:00').trim();
+      const timeB = (b.scheduleEntry?.timeSlot?.split(/[-~]/)[0] || b.startTime || '00:00').trim();
+      return timeA.localeCompare(timeB);
+    });
+    
+    if (list.length === 0) {
+      return [
+        {
+          id: 'mock-t1',
+          title: '금)브루호 뮤지컬리티 8주',
+          startTime: '19:40',
+          endTime: '20:40',
+          location: 'Tango Brujo',
+          isDailyBookingOpen: true,
+          instructors: [
+            { name: 'Okiz Baek 오키즈', avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=80' },
+            { name: 'Amy 셸로즈', avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=80' }
+          ]
+        } as any,
+        {
+          id: 'mock-t2',
+          title: '금)브루호 밀롱가 8주',
+          startTime: '20:40',
+          endTime: '21:40',
+          location: 'Tango Brujo',
+          isDailyBookingOpen: true,
+          instructors: [
+            { name: 'Okiz Baek 오키즈', avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=80' },
+            { name: 'Amy 셸로즈', avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=80' }
+          ]
+        } as any,
+        {
+          id: 'mock-t3',
+          title: '프리 밀롱가',
+          startTime: '21:50',
+          endTime: '23:50',
+          location: 'En Paz Studio',
+          isDailyBookingOpen: false,
+          instructors: [
+            { name: 'DJ Juno', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=80' }
+          ]
+        } as any
+      ];
+    }
+    return list as any[];
+  }, [allClasses, groups, searchTerm]);
+
+  // 2. 특강 데이터 가공 (목데이터 폴백 내장)
+  const specialClassesData = useMemo(() => {
+    let list = specialClasses;
+    if (searchTerm.trim()) {
+      const term = searchTerm.toLowerCase();
+      list = list.filter(cls => {
+        const group = groups.find(g => g.id === cls.groupId);
+        const hasInst = cls.instructors?.some(i => i.name?.toLowerCase().includes(term));
+        const hasTitle = cls.title?.toLowerCase().includes(term);
+        const hasLocation = cls.location?.toLowerCase().includes(term) || group?.name?.toLowerCase().includes(term);
+        return hasInst || hasTitle || hasLocation;
+      });
+    }
+
+    if (list.length === 0) {
+      return [
+        {
+          id: 'mock-s1',
+          title: '엔로스케',
+          level: 'ADVANCED',
+          badge: '스페셜 이벤트',
+          dateLabel: '7월 12일 (토)',
+          timeSlot: '14:00 - 16:00',
+          location: 'En Paz Studio',
+          amount: 30000,
+          currency: 'KRW',
+          img: 'https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?q=80&w=350'
+        } as any,
+        {
+          id: 'mock-s2',
+          title: '바르고 힘있는 발스',
+          level: 'INTERMEDIATE',
+          badge: '2회 집중반',
+          dateLabel: '7월 19일, 26일 (토)',
+          timeSlot: '15:00 - 17:00',
+          location: 'Freestyle Tango',
+          amount: 60000,
+          currency: 'KRW',
+          img: 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?q=80&w=350'
+        } as any,
+        {
+          id: 'mock-s3',
+          title: 'Alejandra Heredia',
+          level: 'MASTER CLASS',
+          badge: '마스터 클래스',
+          dateLabel: '7월 13일 (일)',
+          timeSlot: '14:00 - 17:00',
+          location: 'Freestyle Tango',
+          amount: 50000,
+          currency: 'KRW',
+          img: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=350'
+        } as any
+      ];
+    }
+    return list.map(c => {
+      const group = groups.find(g => g.id === c.groupId);
+      return {
+        ...c,
+        badge: c.level || '특강',
+        dateLabel: c.schedule?.[0]?.date || '7월 일정',
+        timeSlot: c.schedule?.[0]?.timeSlot || c.startTime || '시간 조율',
+        location: c.location || group?.name || '서울 상세 장소',
+        img: c.imageUrl || group?.coverImage || 'https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?q=80&w=350'
+      };
+    }) as any[];
+  }, [specialClasses, groups, searchTerm]);
+
+  // 3. 정규 수업 스튜디오 데이터 가공 (서울권 상위 6개 스튜디오)
+  const monthlyStudiosData = useMemo(() => {
+    const list = groups.filter(g => {
+      const venue = venues.find(v => v.id === g.venueId);
+      const isSeoul = venue?.region?.toLowerCase() === 'seoul';
+      const isStudio = g.tags?.some(tag => tag.toLowerCase() === 'studio');
+      return isSeoul || isStudio;
+    });
+
+    let mapped = list.map(g => {
+      const classCount = allClasses.filter(c => c.groupId === g.id).length;
+      return {
+        id: g.id,
+        name: g.name,
+        nativeName: g.nativeName || '',
+        classCount: classCount
+      };
+    });
+
+    if (searchTerm.trim()) {
+      const term = searchTerm.toLowerCase();
+      mapped = mapped.filter(m => m.name.toLowerCase().includes(term) || m.nativeName.toLowerCase().includes(term));
+    }
+
+    mapped.sort((a, b) => b.classCount - a.classCount);
+
+    if (mapped.length === 0) {
+      return [
+        { id: 'mock-g1', name: 'Freestyle Tango', nativeName: '프리스타일 탱고', classCount: 8 },
+        { id: 'mock-g2', name: 'En Paz Studio', nativeName: '엔파스', classCount: 16 },
+        { id: 'mock-g3', name: 'Socialtango Academy', nativeName: '소셜탱고아카데미', classCount: 6 },
+        { id: 'mock-g4', name: 'Tango Brujo', nativeName: '탱고 브루호', classCount: 10 },
+        { id: 'mock-g5', name: 'La Milonga', nativeName: '라 밀롱가', classCount: 7 },
+        { id: 'mock-g6', name: 'Abrazo Studio', nativeName: '아브라조 스튜디오', classCount: 9 }
+      ];
+    }
+    return mapped.slice(0, 6) as any[];
+  }, [groups, venues, allClasses, searchTerm]);
+
   const [checkoutInitialStep, setCheckoutInitialStep] = useState<'summary' | 'payment' | 'complete' | undefined>(undefined);
   const [checkoutInitialBookingId, setCheckoutInitialBookingId] = useState<string | undefined>(undefined);
   const [checkoutInitialOrderNumber, setCheckoutInitialOrderNumber] = useState<string | undefined>(undefined);
@@ -300,6 +493,33 @@ export default function ClassPortal() {
 
   // Sub Header Tab Navigation
   useEffect(() => {
+    if (!viewParam) {
+      const searchBar = (
+        <div className="w-full bg-white px-4 py-2.5 flex items-center gap-3 shadow-[0_2px_15px_rgba(0,0,0,0.05)] border-b border-slate-100/50 z-30">
+          <div className="flex-1 bg-slate-50 border border-slate-100 rounded-full px-4 py-2 flex items-center gap-2">
+            <span className="material-symbols-outlined text-slate-400 text-[18px]">search</span>
+            <input 
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="클래스, 강사, 스튜디오 검색"
+              className="bg-transparent text-[13px] text-slate-800 font-bold placeholder:text-slate-400 focus:outline-none w-full"
+            />
+            {searchTerm && (
+              <button onClick={() => setSearchTerm('')} className="text-slate-400 hover:text-slate-600 transition-colors">
+                <span className="material-symbols-outlined text-[16px]">cancel</span>
+              </button>
+            )}
+          </div>
+          <button className="w-9.5 h-9.5 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-100 hover:text-slate-700 active:scale-90 transition-all shrink-0">
+            <span className="material-symbols-outlined text-[20px]">tune</span>
+          </button>
+        </div>
+      );
+      setSubHeader(searchBar, 54);
+      return () => setSubHeader(null);
+    }
+
     const filterBar = (
       <div className="relative w-full bg-white flex flex-col shadow-[0_20px_40px_-15px_rgba(0,0,0,0.15)] z-30">
         <div className="w-full px-3 py-2 flex items-center gap-2 overflow-x-auto no-scrollbar">
@@ -311,7 +531,12 @@ export default function ClassPortal() {
           ].map((tab) => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id as 'TODAY' | 'WEEK' | 'MONTH' | 'SPECIAL')}
+              onClick={() => {
+                if (tab.id === 'TODAY') router.push('/class?view=today');
+                else if (tab.id === 'WEEK') router.push('/class?view=week');
+                else if (tab.id === 'MONTH') router.push('/class?view=monthly');
+                else if (tab.id === 'SPECIAL') router.push('/class?view=special');
+              }}
               className={`flex-shrink-0 px-2.5 py-1 rounded-xl text-[12px] font-bold tracking-tight transition-all whitespace-nowrap border ${
                 activeTab === tab.id
                   ? 'bg-blue-600 text-white border-blue-600 shadow-sm shadow-blue-100'
@@ -404,7 +629,7 @@ export default function ClassPortal() {
     const height = (activeTab === 'WEEK' || activeTab === 'TODAY') ? 88 : 44;
     setSubHeader(filterBar, height);
     return () => setSubHeader(null);
-  }, [activeTab, selectedOrganizer, selectedGroupId, showOrganizerFilter, showClubFilter, organizers, filteredFilterGroups, groupCounts, language, setSubHeader]);
+  }, [viewParam, activeTab, searchTerm, selectedOrganizer, selectedGroupId, showOrganizerFilter, showClubFilter, organizers, filteredFilterGroups, groupCounts, language, setSubHeader, router]);
 
   const handleClassClick = (cls: GroupClass) => {
     setSelectedDetailClass(cls);
@@ -1230,13 +1455,247 @@ export default function ClassPortal() {
 
       <div className="flex-1 px-5 py-6">
 
+        {/* 1) 메인 통합 홈 (viewParam이 없는 경우) */}
+        {!viewParam ? (
+          <div className="space-y-8 pb-10">
+            {/* 오늘 참여 섹션 */}
+            <section className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="material-symbols-outlined text-[20px] text-emerald-600 font-bold" style={{ fontVariationSettings: "'FILL' 1" }}>person</span>
+                  <h2 className="text-[16px] font-black text-slate-800 tracking-tight">오늘 참여</h2>
+                </div>
+                <button 
+                  onClick={() => router.push('/class?view=today')}
+                  className="text-[11px] font-black text-slate-400 hover:text-slate-600 transition-colors flex items-center gap-0.5"
+                >
+                  전체 보기
+                  <span className="material-symbols-outlined text-[14px]">chevron_right</span>
+                </button>
+              </div>
 
-        <div className="min-h-[400px]">
-          {activeTab === 'TODAY' && renderTodayTab()}
-          {activeTab === 'WEEK' && renderWeekTab()}
-          {activeTab === 'MONTH' && renderMonthTab()}
-          {activeTab === 'SPECIAL' && renderSpecialTab()}
-        </div>
+              {todayClassesData.length === 0 ? (
+                <div className="py-8 text-center text-slate-400 bg-slate-50 rounded-2xl border border-slate-100/50">
+                  <p className="text-xs font-bold">오늘 예정된 수업이 없습니다.</p>
+                </div>
+              ) : (
+                <div className="flex gap-3.5 overflow-x-auto no-scrollbar -mx-5 px-5">
+                  {todayClassesData.map((cls) => {
+                    const start = cls.startTime || (cls.scheduleEntry?.timeSlot?.split(/[-~]/)[0] || '00:00').trim();
+                    const isDailyOpen = cls.isDailyBookingOpen;
+                    return (
+                      <div 
+                        key={cls.id}
+                        onClick={() => !cls.id.startsWith('mock') && handleClassClick(cls)}
+                        className="w-[240px] bg-white border border-slate-100 rounded-2xl p-4 shadow-sm shadow-slate-100 flex-shrink-0 flex flex-col justify-between min-h-[170px] select-none cursor-pointer hover:shadow-md transition-all active:scale-[0.98]"
+                      >
+                        <div className="text-left">
+                          <span className="text-[13px] font-black text-emerald-600 tracking-wide font-headline">
+                            {start}
+                          </span>
+                          <h3 className="text-[13.5px] font-black text-slate-800 mt-1 leading-tight line-clamp-2 min-h-[36px]">
+                            {cls.title}
+                          </h3>
+                          <p className="text-[11px] font-bold text-slate-400 mt-1 truncate">
+                            {cls.location || cls.group?.name}
+                          </p>
+                        </div>
+
+                        <div className="flex items-center justify-between mt-3 pt-3 border-t border-slate-50 w-full">
+                          <div className="flex -space-x-1 overflow-hidden items-center">
+                            {cls.instructors?.slice(0, 2).map((inst: any, idx: number) => (
+                              <div key={idx} className="w-5.5 h-5.5 rounded-full overflow-hidden border border-white bg-slate-100">
+                                <img 
+                                  src={inst.avatar || inst.photoURL || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=80'} 
+                                  alt="" 
+                                  className="w-full h-full object-cover"
+                                />
+                              </div>
+                            ))}
+                            {cls.instructors && cls.instructors.length > 0 && (
+                              <span className="text-[9.5px] font-black text-slate-500 ml-1.5 truncate max-w-[90px] self-center">
+                                {cls.instructors[0].name}
+                              </span>
+                            )}
+                          </div>
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (cls.id.startsWith('mock')) return;
+                              if (isDailyOpen) handleCheckoutClick(cls, false);
+                              else handleChatWithHost(cls.group?.ownerId || '');
+                            }}
+                            className={`px-4.5 py-1.5 rounded-full text-[10.5px] font-black border transition-all active:scale-95 ${
+                              isDailyOpen 
+                                ? 'bg-white text-emerald-600 border-emerald-100 hover:bg-emerald-50' 
+                                : 'bg-white text-blue-600 border-blue-100 hover:bg-blue-50'
+                            }`}
+                          >
+                            {isDailyOpen ? '참여' : '문의'}
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </section>
+
+            {/* 특강 섹션 */}
+            <section className="space-y-4 pt-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="material-symbols-outlined text-[20px] text-purple-600 font-bold">stars</span>
+                  <h2 className="text-[16px] font-black text-slate-800 tracking-tight">특강</h2>
+                </div>
+                <button 
+                  onClick={() => router.push('/class?view=special')}
+                  className="text-[11px] font-black text-slate-400 hover:text-slate-600 transition-colors flex items-center gap-0.5"
+                >
+                  전체 보기
+                  <span className="material-symbols-outlined text-[14px]">chevron_right</span>
+                </button>
+              </div>
+
+              {specialClassesData.length === 0 ? (
+                <div className="py-8 text-center text-slate-400 bg-slate-50 rounded-2xl border border-slate-100/50">
+                  <p className="text-xs font-bold">예정된 특강이 없습니다.</p>
+                </div>
+              ) : (
+                <div className="flex gap-4 overflow-x-auto no-scrollbar -mx-5 px-5">
+                  {specialClassesData.map((cls) => {
+                    const price = cls.amount?.toLocaleString() || '30,000';
+                    return (
+                      <div 
+                        key={cls.id}
+                        onClick={() => !cls.id.startsWith('mock') && handleClassClick(cls as any)}
+                        className="w-[260px] bg-white border border-slate-100/80 rounded-2xl overflow-hidden shadow-sm flex-shrink-0 flex flex-col justify-between min-h-[290px] select-none cursor-pointer hover:shadow-md transition-all active:scale-[0.98]"
+                      >
+                        <div className="relative aspect-[1.8/1] w-full bg-slate-100 overflow-hidden">
+                          <img 
+                            src={cls.img} 
+                            className="w-full h-full object-cover"
+                            alt=""
+                          />
+                          <span className="absolute top-2.5 left-2.5 bg-purple-600 text-white text-[9px] font-black px-2 py-0.5 rounded-md shadow-sm">
+                            {cls.badge}
+                          </span>
+                        </div>
+
+                        <div className="p-4 flex-1 flex flex-col justify-between text-left">
+                          <div>
+                            <h3 className="text-[14px] font-black text-slate-900 leading-snug line-clamp-1">
+                              {cls.title}
+                            </h3>
+                            {cls.level && (
+                              <span className="inline-block text-[8.5px] font-black text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded-sm uppercase tracking-wider mt-1.5">
+                                {cls.level}
+                              </span>
+                            )}
+
+                            <div className="mt-3 space-y-1 text-[11px] font-bold text-slate-500">
+                              <p className="flex items-center gap-1">
+                                <span className="material-symbols-outlined text-[13px] text-slate-400">calendar_today</span>
+                                {cls.dateLabel}
+                              </p>
+                              <p className="flex items-center gap-1">
+                                <span className="material-symbols-outlined text-[13px] text-slate-400">schedule</span>
+                                {cls.timeSlot}
+                              </p>
+                              <p className="flex items-center gap-1">
+                                <span className="material-symbols-outlined text-[13px] text-slate-400">location_on</span>
+                                {cls.location}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center justify-between mt-4 pt-3 border-t border-slate-50 w-full">
+                            <span className="text-[14px] font-black text-slate-800">
+                              ₩{price}
+                            </span>
+                            <button 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (cls.id.startsWith('mock')) return;
+                                handleCheckoutClick(cls as any, true);
+                              }}
+                              className="bg-purple-600 hover:bg-purple-700 text-white text-[10px] font-black px-4 py-1.5 rounded-xl shadow-sm active:scale-95 transition-all"
+                            >
+                              예약하기
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </section>
+
+            {/* 정규 수업 섹션 */}
+            <section className="space-y-4 pt-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="material-symbols-outlined text-[20px] text-blue-600 font-bold" style={{ fontVariationSettings: "'FILL' 1" }}>calendar_month</span>
+                  <h2 className="text-[16px] font-black text-slate-800 tracking-tight">정규 수업</h2>
+                </div>
+                <button 
+                  onClick={() => router.push('/class?view=monthly')}
+                  className="text-[11px] font-black text-slate-400 hover:text-slate-600 transition-colors flex items-center gap-0.5"
+                >
+                  전체 보기
+                  <span className="material-symbols-outlined text-[14px]">chevron_right</span>
+                </button>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                {monthlyStudiosData.map((item) => (
+                  <div 
+                    key={item.id}
+                    onClick={() => {
+                      if (item.id.startsWith('mock')) return;
+                      router.push(`/class/${item.id}`);
+                    }}
+                    className="bg-white border border-slate-100 rounded-2xl p-4 flex flex-col justify-between min-h-[95px] text-left cursor-pointer hover:shadow-md transition-all active:scale-[0.98]"
+                  >
+                    <div>
+                      <h4 className="text-[13px] font-black text-slate-800 leading-tight truncate">
+                        {item.name}
+                      </h4>
+                      {item.nativeName && (
+                        <p className="text-[10px] font-bold text-slate-400 mt-0.5 truncate">
+                          {item.nativeName}
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex items-center justify-between mt-2">
+                      <span className="inline-block text-[9.5px] font-black text-blue-600 bg-blue-50 px-2 py-0.5 rounded-lg">
+                        클래스 {item.classCount}
+                      </span>
+                      <span className="material-symbols-outlined text-slate-350 text-[16px]">chevron_right</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <button 
+                onClick={() => router.push('/class?view=monthly')}
+                className="w-full bg-slate-50 hover:bg-slate-100 border border-slate-100 rounded-2xl py-3.5 flex items-center justify-center gap-1 text-[12px] font-black text-slate-600 active:scale-[0.98] transition-all mt-4"
+              >
+                전체 보기
+                <span className="material-symbols-outlined text-[16px]">chevron_right</span>
+              </button>
+            </section>
+          </div>
+        ) : (
+          /* 2) 기존 탭별 세부 목록 뷰 (viewParam이 있는 경우) */
+          <div className="min-h-[400px]">
+            {activeTab === 'TODAY' && renderTodayTab()}
+            {activeTab === 'WEEK' && renderWeekTab()}
+            {activeTab === 'MONTH' && renderMonthTab()}
+            {activeTab === 'SPECIAL' && renderSpecialTab()}
+          </div>
+        )}
 
         <div className="mt-12 pt-4 pb-[calc(env(safe-area-inset-bottom)+80px)] text-center">
           <p className="text-[9px] text-[#acb3b4] font-bold tracking-widest uppercase">© {new Date().getFullYear()} World of Community · woc.today</p>
