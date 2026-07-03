@@ -38,445 +38,222 @@ export default function LivePortalHome() {
     router.push('/live?view=feed');
   };
 
-  // 1. 내 주변 라이브 데이터 생성
-  const getNearLives = () => {
-    if (posts.length === 0) {
-      return [
-        { id: '1', title: '제네바 탱고 클럽', category: '밀롱가', viewers: 58, distance: '0.6km', img: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=150' },
-        { id: '2', title: '엘 빠쏘 스튜디오', category: '클래스', viewers: 32, distance: '1.3km', img: 'https://images.unsplash.com/photo-1545128485-c400e7702796?q=80&w=150' },
-        { id: '3', title: '강남 밀롱가', category: '밀롱가', viewers: 24, distance: '2.1km', img: 'https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?q=80&w=150' }
-      ];
-    }
-    return posts.slice(0, 3).map((post) => {
-      const typeTag = post.tags?.find(t => ['social', 'class', 'event'].includes(t.type));
-      const typeName = typeTag ? (typeTag.type === 'class' ? '클래스' : (typeTag.type === 'event' ? '이벤트' : '소셜')) : '라이브';
-      const title = typeTag ? typeTag.name : (post.venueName || post.authorName);
-      const distanceVal = ((post.id.charCodeAt(0) % 20) / 10 + 0.5).toFixed(1);
-      return {
-        id: post.id,
-        title: title || 'Tango Live',
-        category: typeName,
-        viewers: post.likesCount * 3 + 12,
-        distance: `${distanceVal}km`,
-        img: post.media?.[0] || 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=150'
-      };
-    });
-  };
+  const getCollageCards = () => {
+    const defaultCards = [
+      {
+        id: 'c1',
+        type: 'milonga',
+        title: '밀롱가 풍경',
+        venue: 'La Viruta, Buenos Aires',
+        uploadedAt: '최근 업로드 · 2026.06.09',
+        tagLabel: 'Milonga',
+        numberLabel: '01',
+        img: 'https://images.unsplash.com/photo-1504609773096-104ff2c73ba4?q=80&w=400'
+      },
+      {
+        id: 'c2',
+        type: 'classDemo',
+        title: '수업시연',
+        venue: 'Tango Salon Seoul',
+        uploadedAt: '최근 업로드 · 2026.06.08',
+        tagLabel: 'Lesson',
+        numberLabel: '02',
+        img: 'https://images.unsplash.com/photo-1545128485-c400e7702796?q=80&w=400'
+      },
+      {
+        id: 'c3',
+        type: 'event',
+        title: '이벤트',
+        venue: 'Tango Festival Seoul 2026',
+        uploadedAt: '최근 업로드 · 2026.06.07',
+        tagLabel: 'Event',
+        numberLabel: '03',
+        img: 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?q=80&w=400'
+      }
+    ];
 
-  // 2. 지금 라이브 추천 데이터 생성
-  const getRecommendLives = () => {
-    if (posts.length === 0) {
-      return {
-        main: { id: 'm', title: 'Freestyle Tango is Live', meta: '밀롱가 · DJ TANGO · 22:30 시작', viewers: 142, img: 'https://images.unsplash.com/photo-1504609773096-104ff2c73ba4?q=80&w=600' },
-        sub1: { id: 's1', title: 'Ocho Milonga', meta: '밀롱가 · 21:30 시작', viewers: 78, img: 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?q=80&w=300' },
-        sub2: { id: 's2', title: 'ROCHE TANGO', meta: '이벤트 · 19:30 시작', viewers: 45, img: 'https://images.unsplash.com/photo-1464746133101-a2c3f88e0dd9?q=80&w=300' }
-      };
-    }
-    const mainPost = posts[0];
-    const mainTag = mainPost.tags?.find(t => ['social', 'class', 'event'].includes(t.type));
-    const mainMeta = `${mainTag ? mainTag.name : '밀롱가'} · DJ ${mainPost.authorName} · ON AIR`;
-    const main = {
-      id: mainPost.id,
-      title: mainPost.caption || mainPost.authorName,
-      meta: mainMeta,
-      viewers: mainPost.likesCount * 8 + 84,
-      img: mainPost.media?.[0] || 'https://images.unsplash.com/photo-1504609773096-104ff2c73ba4?q=80&w=600'
-    };
+    if (posts.length === 0) return defaultCards;
 
-    const sub1Post = posts[1] || posts[0];
-    const sub1Tag = sub1Post.tags?.find(t => ['social', 'class', 'event'].includes(t.type));
-    const sub1 = {
-      id: sub1Post.id,
-      title: sub1Post.caption ? (sub1Post.caption.length > 15 ? sub1Post.caption.slice(0, 15) + '...' : sub1Post.caption) : sub1Post.authorName,
-      meta: `${sub1Tag ? sub1Tag.name : '밀롱가'} · ${sub1Post.authorName}`,
-      viewers: sub1Post.likesCount * 5 + 42,
-      img: sub1Post.media?.[0] || 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?q=80&w=300'
-    };
-
-    const sub2Post = posts[2] || posts[0];
-    const sub2Tag = sub2Post.tags?.find(t => ['social', 'class', 'event'].includes(t.type));
-    const sub2 = {
-      id: sub2Post.id,
-      title: sub2Post.caption ? (sub2Post.caption.length > 15 ? sub2Post.caption.slice(0, 15) + '...' : sub2Post.caption) : sub2Post.authorName,
-      meta: `${sub2Tag ? sub2Tag.name : '이벤트'} · ${sub2Post.authorName}`,
-      viewers: sub2Post.likesCount * 4 + 26,
-      img: sub2Post.media?.[0] || 'https://images.unsplash.com/photo-1464746133101-a2c3f88e0dd9?q=80&w=300'
-    };
-
-    return { main, sub1, sub2 };
-  };
-
-  // 3. 최근 영상 데이터 생성
-  const getRecentVideos = () => {
     const videoPosts = posts.filter(p => {
       if (p.mediaTypes?.[0] === 'video') return true;
       const url = p.media?.[0] || '';
       return url.toLowerCase().includes('.mp4') || url.toLowerCase().includes('.mov') || url.toLowerCase().includes('video');
     });
-    const targetList = videoPosts.length > 0 ? videoPosts : posts;
 
-    if (targetList.length === 0) {
-      return [
-        { id: 'v1', time: '0:15', img: 'https://images.unsplash.com/photo-1545128485-c400e7702796?q=80&w=250' },
-        { id: 'v2', time: '0:20', img: 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?q=80&w=250' },
-        { id: 'v3', time: '0:18', img: 'https://images.unsplash.com/photo-1464746133101-a2c3f88e0dd9?q=80&w=250' },
-        { id: 'v4', time: '0:13', img: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=250' },
-        { id: 'v5', time: '0:22', img: 'https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?q=80&w=250' },
-        { id: 'v6', time: '0:17', img: 'https://images.unsplash.com/photo-1504609773096-104ff2c73ba4?q=80&w=250' }
-      ];
+    const getFormatDate = (dateVal: any) => {
+      if (!dateVal) return '2026.06.07';
+      const d = typeof dateVal.toDate === 'function' ? dateVal.toDate() : new Date(dateVal);
+      return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}`;
+    };
+
+    const milongaPost = videoPosts.find(p => p.tags?.some(t => t.type === 'social')) || posts.find(p => p.tags?.some(t => t.type === 'social'));
+    const classPost = videoPosts.find(p => p.tags?.some(t => t.type === 'class')) || posts.find(p => p.tags?.some(t => t.type === 'class'));
+    const eventPost = videoPosts.find(p => p.tags?.some(t => t.type === 'event')) || posts.find(p => p.tags?.some(t => t.type === 'event'));
+
+    if (milongaPost) {
+      defaultCards[0].img = milongaPost.media?.[0] || defaultCards[0].img;
+      defaultCards[0].title = milongaPost.caption ? (milongaPost.caption.slice(0, 12)) : defaultCards[0].title;
+      defaultCards[0].venue = milongaPost.venueName || milongaPost.authorName || defaultCards[0].venue;
+      defaultCards[0].uploadedAt = `최근 업로드 · ${getFormatDate(milongaPost.createdAt)}`;
+      defaultCards[0].id = milongaPost.id;
     }
-    return targetList.slice(0, 6).map((post) => {
-      const durationVal = `0:${(post.id.charCodeAt(0) % 15 + 10)}`;
-      return {
-        id: post.id,
-        time: durationVal,
-        img: post.media?.[0] || 'https://images.unsplash.com/photo-1545128485-c400e7702796?q=80&w=250'
-      };
-    });
+    if (classPost) {
+      defaultCards[1].img = classPost.media?.[0] || defaultCards[1].img;
+      defaultCards[1].title = classPost.caption ? (classPost.caption.slice(0, 12)) : defaultCards[1].title;
+      defaultCards[1].venue = classPost.venueName || classPost.authorName || defaultCards[1].venue;
+      defaultCards[1].uploadedAt = `최근 업로드 · ${getFormatDate(classPost.createdAt)}`;
+      defaultCards[1].id = classPost.id;
+    }
+    if (eventPost) {
+      defaultCards[2].img = eventPost.media?.[0] || defaultCards[2].img;
+      defaultCards[2].title = eventPost.caption ? (eventPost.caption.slice(0, 12)) : defaultCards[2].title;
+      defaultCards[2].venue = eventPost.venueName || eventPost.authorName || defaultCards[2].venue;
+      defaultCards[2].uploadedAt = `최근 업로드 · ${getFormatDate(eventPost.createdAt)}`;
+      defaultCards[2].id = eventPost.id;
+    }
+
+    return defaultCards;
   };
 
-  const nearLives = getNearLives();
-  const recommendLives = getRecommendLives();
-  const recentVideos = getRecentVideos();
+  const collageCards = getCollageCards();
 
   if (!mounted) {
-    return <div className="bg-slate-50 min-h-screen pb-24 font-body" />;
+    return <div className="bg-[#FAF9F6] min-h-screen pb-24 font-body" />;
   }
 
   return (
-    <div className="bg-slate-50 min-h-screen pb-24 font-body">
-      {/* 1) 상단 타이틀 영역 */}
-      <div className="px-5 pt-8 pb-4 text-left">
-        <div className="flex items-center gap-1">
-          <h1 className="text-3xl font-black text-slate-900 tracking-tight font-headline">
-            LIVE
-          </h1>
-          <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse mt-2"></span>
-        </div>
-        <p className="text-slate-500 text-sm mt-1 font-medium">
-          지금 이 순간, 당신 주변의 탱고
+    <div className="bg-[#FAF9F6] min-h-screen pb-24 font-body relative overflow-x-hidden">
+      
+      {/* 백그라운드 수채화 페인팅 터치 그래픽 (Water Color Blur Decor) */}
+      <div className="absolute top-[12%] left-[-25%] w-[90%] h-[320px] bg-red-200/30 rounded-full blur-[90px] pointer-events-none z-0 rotate-12" />
+      <div className="absolute bottom-[20%] right-[-25%] w-[90%] h-[350px] bg-blue-200/40 rounded-full blur-[110px] pointer-events-none z-0 -rotate-12" />
+
+      {/* 1) 상단 타이틀 영역 (Tango Moments) */}
+      <div className="relative z-10 px-6 pt-10 pb-5 text-left select-none">
+        <span className="text-[14px] font-black text-slate-800 tracking-wide font-headline uppercase opacity-90">
+          지금, 탱고의 순간
+        </span>
+        <h1 className="text-[72px] font-black text-[#1A2E5A] leading-none tracking-tighter mt-1">
+          LIVE
+        </h1>
+        <span className="text-[20px] font-bold text-blue-600 font-serif italic mt-0.5 block tracking-wide">
+          Tango Moments
+        </span>
+        <p className="text-[12px] text-slate-500 font-bold leading-relaxed mt-4 max-w-[280px] font-body">
+          세계 곳곳의 밀롱가와 수업, 이벤트<br />
+          가장 최근의 탱고 순간을 만나보세요.
         </p>
+
+        {/* 로고 배지 데코레이터 */}
+        <div className="absolute top-10 right-6 w-16 h-16 rounded-full border border-slate-300 flex items-center justify-center text-center p-1 select-none pointer-events-none scale-90 opacity-60">
+          <span className="text-[7.5px] font-black leading-tight text-slate-400 tracking-widest uppercase">
+            TANGO<br />WORLD<br />WOC
+          </span>
+        </div>
       </div>
 
-      {/* 메인 스크롤 콘텐츠 */}
-      <div className="px-4 md:px-6 space-y-6">
+      {/* 2) 메인 콜라주 포토카드 영역 */}
+      <div className="relative w-full h-[620px] z-10 px-4 mt-2">
         
-        {/* 2) 내 주변 라이브 - 폰에서 흐릿하지 않도록 더 진하고 채도 높은 보라색 그라데이션 적용 */}
-        <section className="bg-gradient-to-br from-[#4D24F3] to-[#805CFF] rounded-[24px] p-5 shadow-lg shadow-purple-200/50 relative overflow-hidden">
-          {/* 위치 기반 느낌의 레이더/노드 은은한 그래픽 배경 */}
-          <div className="absolute inset-0 opacity-15 pointer-events-none">
-            <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
-              <circle cx="50%" cy="40%" r="50" stroke="white" strokeWidth="1" fill="none" />
-              <circle cx="50%" cy="40%" r="100" stroke="white" strokeWidth="1" fill="none" />
-              <circle cx="50%" cy="40%" r="150" stroke="white" strokeWidth="1" strokeDasharray="4 4" fill="none" />
-              <line x1="10%" y1="10%" x2="90%" y2="90%" stroke="white" strokeWidth="0.5" />
-              <line x1="90%" y1="10%" x2="10%" y2="90%" stroke="white" strokeWidth="0.5" />
-              <circle cx="30%" cy="25%" r="4" fill="white" />
-              <circle cx="75%" cy="30%" r="5" fill="white" />
-              <circle cx="40%" cy="75%" r="3" fill="white" />
-              <circle cx="65%" cy="65%" r="4" fill="white" />
-            </svg>
+        {/* Card 01: 밀롱가 풍경 (우측 상단 배치) */}
+        <div 
+          onClick={handleEnterLive}
+          className="absolute right-4 top-2 w-[55%] rotate-[3deg] bg-white border border-slate-200/70 p-2.5 pb-4 rounded-xs shadow-[0_12px_32px_-8px_rgba(0,0,0,0.12)] cursor-pointer group active:scale-[0.98] transition-all z-20"
+        >
+          <div className="relative aspect-[1.12/1] w-full bg-slate-50 overflow-hidden border border-slate-100">
+            {collageCards[0].img.toLowerCase().includes('.mp4') || collageCards[0].img.toLowerCase().includes('.mov') ? (
+              <video src={getSafeStorageUrl(collageCards[0].img)} muted playsInline className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+            ) : (
+              <img src={getSafeStorageUrl(collageCards[0].img)} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" alt="" />
+            )}
           </div>
-
-          <div className="relative z-10">
-            {/* 헤더 */}
-            <div className="flex items-center justify-between mb-4">
-              <div className="text-left">
-                <h2 className="text-white font-black text-lg tracking-tight">내 주변 라이브</h2>
-                <p className="text-white/80 text-xs mt-0.5 font-medium">
-                  지금 {posts.length > 0 ? posts.length : 8}개의 라이브 진행 중
-                </p>
-              </div>
-              <button 
-                onClick={() => router.push('/venues')}
-                className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-white/15 backdrop-blur-md border border-white/10 text-white text-xs font-bold transition-all active:scale-95"
-              >
-                <span className="material-symbols-outlined text-[14px]">location_on</span>
-                위치 변경
-              </button>
-            </div>
-
-            {/* 실제 사용 가능한 리스트 3개 프리뷰 */}
-            <div className="bg-white rounded-2xl p-2 shadow-inner space-y-0.5">
-              {nearLives.map((item, idx) => {
-                const isVideo = item.img.toLowerCase().includes('.mp4') || 
-                                item.img.toLowerCase().includes('.mov') || 
-                                item.img.toLowerCase().includes('video');
-                return (
-                  <div key={item.id + idx} className="flex items-center justify-between p-3 border-b border-slate-100 last:border-0">
-                    <div className="flex items-center gap-3">
-                      <div className="relative w-11 h-11 rounded-full overflow-hidden flex-shrink-0 border border-slate-100">
-                        {isVideo ? (
-                          <video 
-                            src={getSafeStorageUrl(item.img)} 
-                            muted 
-                            playsInline 
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <img 
-                            src={getSafeStorageUrl(item.img)} 
-                            alt={item.title}
-                            className="w-full h-full object-cover"
-                          />
-                        )}
-                        <span className="absolute bottom-0 right-0 bg-red-500 text-white text-[8px] font-black px-1 rounded-sm tracking-tighter uppercase scale-90">
-                          LIVE
-                        </span>
-                      </div>
-                      <div className="text-left">
-                        <h4 className="text-slate-900 font-bold text-sm leading-tight mb-0.5 truncate max-w-[150px]">{item.title}</h4>
-                      <p className="text-slate-500 text-[11px] font-medium">{item.category} · {item.viewers}명 시청 중</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-slate-400 text-xs font-medium">{item.distance}</span>
-                    <button 
-                      onClick={handleEnterLive}
-                      className="px-4 py-1.5 rounded-full border border-purple-200 text-[#4D24F3] text-xs font-black hover:bg-slate-50 transition-colors active:scale-95"
-                    >
-                      입장
-                    </button>
-                  </div>
-                </div>
-              )})}
-            </div>
-
-            {/* 카드 하단 중앙 버튼 */}
-            <button 
-              onClick={handleEnterLive}
-              className="w-full text-center text-white/95 hover:text-white text-xs font-bold mt-4 flex items-center justify-center gap-1 active:scale-95"
-            >
-              모두 보기 
-              <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
+          <span className="absolute bottom-14 right-3 font-serif italic text-rose-500/25 text-[20px] font-bold select-none pointer-events-none">
+            {collageCards[0].tagLabel}
+          </span>
+          <span className="absolute top-1 right-2.5 font-serif font-black text-rose-500/90 text-2xl select-none">
+            {collageCards[0].numberLabel}
+          </span>
+          <div className="flex items-center gap-2 mt-3.5">
+            <button className="w-7.5 h-7.5 rounded-full bg-[#1A2E5A] text-white flex items-center justify-center shrink-0 shadow-md group-hover:scale-105 active:scale-95 transition-all">
+              <span className="material-symbols-outlined text-[16px]" style={{ fontVariationSettings: "'FILL' 1" }}>play_arrow</span>
             </button>
-          </div>
-        </section>
-
-        {/* 3) 지금 라이브 추천 */}
-        <section className="space-y-3">
-          <div className="flex items-center justify-between">
-            <h3 className="font-bold text-slate-800 text-base">지금 라이브 추천</h3>
-            <button 
-              onClick={handleEnterLive}
-              className="text-slate-400 font-bold text-xs flex items-center gap-0.5 hover:text-primary transition-colors"
-            >
-              전체 보기
-              <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-            </button>
-          </div>
-
-          <div className="space-y-3">
-            {/* 대표 추천 1개: 큰 가로 카드 */}
-            <div 
-              onClick={handleEnterLive}
-              className="relative aspect-[2.1/1] rounded-2xl overflow-hidden group cursor-pointer shadow-sm border border-slate-100"
-            >
-              {recommendLives.main.img.toLowerCase().includes('.mp4') || recommendLives.main.img.toLowerCase().includes('.mov') || recommendLives.main.img.toLowerCase().includes('video') ? (
-                <video 
-                  src={getSafeStorageUrl(recommendLives.main.img)} 
-                  muted 
-                  playsInline 
-                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-103"
-                />
-              ) : (
-                <img 
-                  src={getSafeStorageUrl(recommendLives.main.img)} 
-                  alt={recommendLives.main.title} 
-                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-103"
-                />
-              )}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent"></div>
-              
-              {/* 좌측 상단 배지 */}
-              <div className="absolute top-3 left-3 bg-red-600 text-white text-[10px] font-black px-2 py-0.5 rounded-md flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span>
-                LIVE {recommendLives.main.viewers}명 시청 중
-              </div>
-              {/* 우측 상단 배지 */}
-              <div className="absolute top-3 right-3 bg-[#6750A4] text-white text-[10px] font-black px-2 py-0.5 rounded-md">
-                추천
-              </div>
-
-              {/* 하단 메타 정보 */}
-              <div className="absolute bottom-3 left-3 right-3 text-left flex items-end justify-between">
-                <div className="text-white drop-shadow-sm pr-4">
-                  <h4 className="font-black text-base md:text-lg mb-0.5 leading-tight truncate max-w-[240px]">{recommendLives.main.title}</h4>
-                  <p className="text-white/80 text-[11px] font-semibold">{recommendLives.main.meta}</p>
-                </div>
-                {/* 재생 버튼 */}
-                <div className="w-9 h-9 rounded-full bg-white/25 backdrop-blur-md border border-white/20 flex items-center justify-center text-white shrink-0 group-hover:bg-white group-hover:text-primary transition-all duration-300">
-                  <span className="material-symbols-outlined text-[20px]" style={{ fontVariationSettings: "'FILL' 1" }}>play_arrow</span>
-                </div>
-              </div>
-            </div>
-
-            {/* 보조 추천 2개 (2열 카드) */}
-            <div className="grid grid-cols-2 gap-3">
-              {/* 보조 1 */}
-              <div 
-                onClick={handleEnterLive}
-                className="relative aspect-[1.3/1] rounded-2xl overflow-hidden group cursor-pointer shadow-sm border border-slate-100"
-              >
-                {recommendLives.sub1.img.toLowerCase().includes('.mp4') || recommendLives.sub1.img.toLowerCase().includes('.mov') || recommendLives.sub1.img.toLowerCase().includes('video') ? (
-                  <video 
-                    src={getSafeStorageUrl(recommendLives.sub1.img)} 
-                    muted 
-                    playsInline 
-                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-103"
-                  />
-                ) : (
-                  <img 
-                    src={getSafeStorageUrl(recommendLives.sub1.img)} 
-                    alt={recommendLives.sub1.title} 
-                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-103"
-                  />
-                )}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent"></div>
-                
-                {/* 배지 */}
-                <div className="absolute top-2.5 left-2.5 bg-blue-600 text-white text-[8px] font-black px-1.5 py-0.5 rounded-md flex items-center gap-0.5">
-                  <span className="w-1 h-1 rounded-full bg-white animate-pulse"></span>
-                  LIVE {recommendLives.sub1.viewers}명
-                </div>
-
-                <div className="absolute bottom-2.5 left-2.5 right-2.5 text-left flex items-end justify-between">
-                  <div className="text-white drop-shadow-sm pr-2">
-                    <h5 className="font-bold text-xs mb-0.5 truncate max-w-[90px]">{recommendLives.sub1.title}</h5>
-                    <p className="text-white/80 text-[9px] font-medium truncate max-w-[95px]">{recommendLives.sub1.meta}</p>
-                  </div>
-                  <div className="w-6 h-6 rounded-full bg-white/25 backdrop-blur-md border border-white/20 flex items-center justify-center text-white shrink-0 group-hover:bg-white group-hover:text-primary transition-all">
-                    <span className="material-symbols-outlined text-[14px]" style={{ fontVariationSettings: "'FILL' 1" }}>play_arrow</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* 보조 2 */}
-              <div 
-                onClick={handleEnterLive}
-                className="relative aspect-[1.3/1] rounded-2xl overflow-hidden group cursor-pointer shadow-sm border border-slate-100"
-              >
-                {recommendLives.sub2.img.toLowerCase().includes('.mp4') || recommendLives.sub2.img.toLowerCase().includes('.mov') || recommendLives.sub2.img.toLowerCase().includes('video') ? (
-                  <video 
-                    src={getSafeStorageUrl(recommendLives.sub2.img)} 
-                    muted 
-                    playsInline 
-                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-103"
-                  />
-                ) : (
-                  <img 
-                    src={getSafeStorageUrl(recommendLives.sub2.img)} 
-                    alt={recommendLives.sub2.title} 
-                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-103"
-                  />
-                )}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent"></div>
-                
-                {/* 배지 */}
-                <div className="absolute top-2.5 left-2.5 bg-purple-600 text-white text-[8px] font-black px-1.5 py-0.5 rounded-md flex items-center gap-0.5">
-                  <span className="w-1 h-1 rounded-full bg-white animate-pulse"></span>
-                  LIVE {recommendLives.sub2.viewers}명
-                </div>
-
-                <div className="absolute bottom-2.5 left-2.5 right-2.5 text-left flex items-end justify-between">
-                  <div className="text-white drop-shadow-sm pr-2">
-                    <h5 className="font-bold text-xs mb-0.5 truncate max-w-[90px]">{recommendLives.sub2.title}</h5>
-                    <p className="text-white/80 text-[9px] font-medium truncate max-w-[95px]">{recommendLives.sub2.meta}</p>
-                  </div>
-                  <div className="w-6 h-6 rounded-full bg-white/25 backdrop-blur-md border border-white/20 flex items-center justify-center text-white shrink-0 group-hover:bg-white group-hover:text-primary transition-all">
-                    <span className="material-symbols-outlined text-[14px]" style={{ fontVariationSettings: "'FILL' 1" }}>play_arrow</span>
-                  </div>
-                </div>
-              </div>
+            <div className="text-left min-w-0 flex-1">
+              <h3 className="text-[11px] font-black text-slate-800 leading-tight truncate">{collageCards[0].title}</h3>
+              <p className="text-[9px] font-bold text-slate-400 mt-0.5 truncate">{collageCards[0].venue}</p>
+              <p className="text-[8px] font-bold text-slate-350 mt-0.5">{collageCards[0].uploadedAt}</p>
             </div>
           </div>
-        </section>
+        </div>
 
-        {/* 4) 순간을 느끼다 (최근 영상) */}
-        <section className="space-y-3">
-          <div className="flex items-center justify-between">
-            <h3 className="font-bold text-slate-800 text-base">순간을 느끼다 (최근 영상)</h3>
-            <button 
-              onClick={handleEnterLive}
-              className="text-slate-400 font-bold text-xs flex items-center gap-0.5 hover:text-primary transition-colors"
-            >
-              전체 보기
-              <span className="material-symbols-outlined text-[14px]">chevron_right</span>
+        {/* Card 02: 수업시연 (좌측 중앙 배치) */}
+        <div 
+          onClick={handleEnterLive}
+          className="absolute left-4 top-[170px] w-[57%] -rotate-[4deg] bg-white border border-slate-200/70 p-2.5 pb-4 rounded-xs shadow-[0_15px_35px_-8px_rgba(0,0,0,0.1)] cursor-pointer group active:scale-[0.98] transition-all z-10"
+        >
+          <div className="relative aspect-[1.12/1] w-full bg-slate-50 overflow-hidden border border-slate-100">
+            {collageCards[1].img.toLowerCase().includes('.mp4') || collageCards[1].img.toLowerCase().includes('.mov') ? (
+              <video src={getSafeStorageUrl(collageCards[1].img)} muted playsInline className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+            ) : (
+              <img src={getSafeStorageUrl(collageCards[1].img)} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" alt="" />
+            )}
+          </div>
+          <span className="absolute bottom-14 right-3 font-serif italic text-blue-500/25 text-[20px] font-bold select-none pointer-events-none">
+            {collageCards[1].tagLabel}
+          </span>
+          <span className="absolute top-1 right-2.5 font-serif font-black text-[#1A2E5A] text-2xl select-none">
+            {collageCards[1].numberLabel}
+          </span>
+          <div className="flex items-center gap-2 mt-3.5">
+            <button className="w-7.5 h-7.5 rounded-full bg-[#1A2E5A] text-white flex items-center justify-center shrink-0 shadow-md group-hover:scale-105 active:scale-95 transition-all">
+              <span className="material-symbols-outlined text-[16px]" style={{ fontVariationSettings: "'FILL' 1" }}>play_arrow</span>
             </button>
-          </div>
-
-          {/* 가로 스크롤 리스트 */}
-          <div className="flex gap-3 overflow-x-auto no-scrollbar -mx-4 md:-mx-6 px-4 md:px-6">
-            {recentVideos.map((video, idx) => {
-              const isVideo = video.img.toLowerCase().includes('.mp4') || 
-                              video.img.toLowerCase().includes('.mov') || 
-                              video.img.toLowerCase().includes('video') || 
-                              video.img.startsWith('data:video');
-              return (
-                <div 
-                  key={video.id || idx}
-                  onClick={handleEnterLive}
-                  className="relative w-24 aspect-[0.7/1] rounded-xl overflow-hidden group cursor-pointer shadow-sm border border-slate-100 flex-shrink-0"
-                >
-                  {isVideo ? (
-                    <video 
-                      src={getSafeStorageUrl(video.img)} 
-                      muted 
-                      playsInline 
-                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                    />
-                  ) : (
-                    <img 
-                      src={getSafeStorageUrl(video.img)} 
-                      alt={`최근영상 ${idx}`} 
-                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" 
-                    />
-                  )}
-                  <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
-                    <div className="w-6 h-6 rounded-full bg-white/35 backdrop-blur-sm border border-white/20 flex items-center justify-center text-white group-hover:bg-white group-hover:text-primary transition-all">
-                      <span className="material-symbols-outlined text-[14px]" style={{ fontVariationSettings: "'FILL' 1" }}>play_arrow</span>
-                    </div>
-                  </div>
-                  <span className="absolute bottom-1.5 right-1.5 bg-black/60 text-white text-[8px] font-bold px-1 py-0.5 rounded">
-                    {video.time}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        </section>
-
-        {/* 5) LIVE 알림 설정 배너 */}
-        <section className="bg-[#FFF2F4] rounded-3xl p-5 relative overflow-hidden flex items-center justify-between border border-pink-100 shadow-sm">
-          <div className="text-left z-10 max-w-[65%]">
-            <h4 className="font-black text-[#FF2D55] text-sm mb-1">LIVE 알림 설정</h4>
-            <p className="text-slate-600 text-[11px] leading-relaxed mb-3 font-medium">
-              좋아하는 장소의 라이브, 놓치지 말고 받아보세요!
-            </p>
-            <button 
-              onClick={() => router.push('/notification')}
-              className="bg-[#FF2D55] text-white font-bold py-1.5 px-4 rounded-xl text-[10px] shadow-sm hover:bg-[#e02045] transition-colors active:scale-95"
-            >
-              설정하기
-            </button>
-          </div>
-          {/* 우측 핑크색/라벤더 종 비주얼 */}
-          <div className="absolute right-4 bottom-2 w-28 h-28 pointer-events-none z-0">
-            <div className="relative w-full h-full flex items-center justify-center">
-              {/* 귀여운 CSS/SVG 핑크 종 */}
-              <svg viewBox="0 0 100 100" className="w-20 h-20 text-[#FF9EAE] animate-bounce duration-1000">
-                <path fill="#FFB7C5" d="M50 15c-15 0-20 10-20 25v15l-8 8v4h56v-4l-8-8V40c0-15-5-25-20-25z" />
-                <circle cx="50" cy="72" r="8" fill="#FF5E7E" />
-                <path fill="#FFA4B4" d="M42 67h16c0 4-3.5 7-8 7s-8-3-8-7z" />
-              </svg>
-              {/* 데코 요소 */}
-              <span className="absolute top-2 right-6 w-2 h-2 rounded-full bg-pink-400 animate-ping"></span>
-              <span className="absolute bottom-6 left-4 w-1.5 h-1.5 rounded-full bg-pink-300"></span>
+            <div className="text-left min-w-0 flex-1">
+              <h3 className="text-[11px] font-black text-slate-800 leading-tight truncate">{collageCards[1].title}</h3>
+              <p className="text-[9px] font-bold text-slate-400 mt-0.5 truncate">{collageCards[1].venue}</p>
+              <p className="text-[8px] font-bold text-slate-355 mt-0.5">{collageCards[1].uploadedAt}</p>
             </div>
           </div>
-        </section>
-        
+        </div>
+
+        {/* Card 03: 이벤트 (우측 하단 배치) */}
+        <div 
+          onClick={handleEnterLive}
+          className="absolute right-4 top-[320px] w-[55%] rotate-[2deg] bg-white border border-slate-200/70 p-2.5 pb-4 rounded-xs shadow-[0_12px_32px_-8px_rgba(0,0,0,0.12)] cursor-pointer group active:scale-[0.98] transition-all z-20"
+        >
+          <div className="relative aspect-[1.12/1] w-full bg-slate-50 overflow-hidden border border-slate-100">
+            {collageCards[2].img.toLowerCase().includes('.mp4') || collageCards[2].img.toLowerCase().includes('.mov') ? (
+              <video src={getSafeStorageUrl(collageCards[2].img)} muted playsInline className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+            ) : (
+              <img src={getSafeStorageUrl(collageCards[2].img)} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" alt="" />
+            )}
+          </div>
+          <span className="absolute bottom-14 right-3 font-serif italic text-indigo-500/25 text-[20px] font-bold select-none pointer-events-none">
+            {collageCards[2].tagLabel}
+          </span>
+          <span className="absolute top-1 right-2.5 font-serif font-black text-slate-800 text-2xl select-none">
+            {collageCards[2].numberLabel}
+          </span>
+          <div className="flex items-center gap-2 mt-3.5">
+            <button className="w-7.5 h-7.5 rounded-full bg-[#1A2E5A] text-white flex items-center justify-center shrink-0 shadow-md group-hover:scale-105 active:scale-95 transition-all">
+              <span className="material-symbols-outlined text-[16px]" style={{ fontVariationSettings: "'FILL' 1" }}>play_arrow</span>
+            </button>
+            <div className="text-left min-w-0 flex-1">
+              <h3 className="text-[11px] font-black text-slate-800 leading-tight truncate">{collageCards[2].title}</h3>
+              <p className="text-[9px] font-bold text-slate-400 mt-0.5 truncate">{collageCards[2].venue}</p>
+              <p className="text-[8px] font-bold text-slate-355 mt-0.5">{collageCards[2].uploadedAt}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* 3) 영문 필기체 데코레이션 배지 (Dance, Connect, Inspire) */}
+        <div className="absolute left-6 top-[500px] z-10 flex flex-col font-serif italic text-slate-300 text-[20px] leading-tight select-none pointer-events-none text-left">
+          <span>Dance,</span>
+          <span>Connect,</span>
+          <span>Inspire</span>
+        </div>
+
       </div>
+
     </div>
   );
 }

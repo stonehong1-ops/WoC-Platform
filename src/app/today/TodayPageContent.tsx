@@ -290,7 +290,7 @@ export default function TodayPageContent() {
 
   // 오늘 일정 뷰 모드 상태 (list: 목록 방식, timeline: 시간대별 통합 방식)
   const [todayViewMode, setTodayViewMode] = useState<"list" | "timeline">("list");
-  const [todayTypeFilter, setTodayTypeFilter] = useState<"all" | "social" | "class" | "practice" | "event">("all");
+  const [todayTypeFilter, setTodayTypeFilter] = useState<"all" | "social" | "practice">("all");
   const [showColorPicker, setShowColorPicker] = useState(false);
 
   // 주간 일정 배경색 및 무늬 패턴 상태
@@ -1105,36 +1105,6 @@ export default function TodayPageContent() {
       });
     });
 
-    // 3. 클래스 추가
-    filteredClasses.forEach(({ cls, timeSlot }) => {
-      const startPart = timeSlot ? timeSlot.split("-")[0].trim() : (cls.startTime || "");
-      const endPart = timeSlot && timeSlot.includes("-") ? timeSlot.split("-")[1].trim() : undefined;
-      const hour = parseHour(startPart);
-      
-      const instructorName = cls.instructors && cls.instructors.length > 0
-        ? cls.instructors.map((ins: any) => language === "KR" ? (ins.instructorNativeName || ins.name) : ins.name).join(", ")
-        : (cls.instructorProfile || "");
-
-      // 그룹명 매핑하여 한글/영문 선택 노출
-      const grp = allGroups.find(g => g.id === cls.groupId);
-      const groupLabel = grp
-        ? (language === "KR" ? (grp.nativeName || grp.name) : grp.name)
-        : "";
-      const classTitleWithGroup = groupLabel ? `[${groupLabel}] ${cls.title}` : cls.title;
-
-      events.push({
-        id: cls.id || "",
-        type: "class",
-        title: classTitleWithGroup,
-        startTime: startPart,
-        endTime: endPart,
-        location: cls.location ? formatCommunityName(cls.location, language) : "",
-        djOrInstructor: instructorName,
-        isDay: hour < 18,
-        rawItem: cls
-      });
-    });
-
     // 시작 시간 기준 오름차순 정렬
     events.sort((a, b) => {
       if (!a.startTime) return 1;
@@ -1147,7 +1117,6 @@ export default function TodayPageContent() {
       if (todayTypeFilter === "all") return true;
       if (todayTypeFilter === "social") return ev.type === "milonga";
       if (todayTypeFilter === "practice") return ev.type === "practica";
-      if (todayTypeFilter === "class") return ev.type === "class";
       return true;
     });
   }, [milongas, practicas, filteredClasses, language, venuesMap, selectedDate, todayTypeFilter]);
@@ -1481,19 +1450,10 @@ export default function TodayPageContent() {
     return events;
   }, [djAndGroupMatchedSocials, selectedDjName, selectedGroupId, venuesMap, language, location]);
 
-  // 전체 일정 합산
+  // 전체 일정 합산 (소셜 및 쁘락띠가만 남기고 클래스/이벤트 원천 제거)
   const allCombinedEvents = useMemo(() => {
-    const mappedGroupEvents = selectedDjName === "All" ? groupEvents.map(e => ({
-      ...e,
-      itemId: e.id,
-      startDate: toJsDate(e.startDate).getTime(),
-      dateStr: parseDateToYmd(e.startDate),
-    })) : [];
-    
-    const mappedClassEvents = selectedDjName === "All" ? classEvents : [];
-
-    return [...mappedGroupEvents, ...mappedClassEvents, ...socialEvents];
-  }, [groupEvents, classEvents, socialEvents, selectedDjName]);
+    return socialEvents;
+  }, [socialEvents]);
 
   const groupTodayEvents = useMemo(() => {
     const filtered = allCombinedEvents.filter(ev => ev.dateStr === selectedDateYmd);
@@ -1590,11 +1550,10 @@ export default function TodayPageContent() {
 
     // 카테고리 타입 필터 적용
     const filteredEvents = weekData.events.filter(ev => {
+      if (ev.type === "class" || ev.type === "event") return false;
       if (todayTypeFilter === "all") return true;
-      if (todayTypeFilter === "class") return ev.type === "class";
       if (todayTypeFilter === "social") return ["social", "milonga"].includes(ev.type) && ev.subCategory !== "practica";
       if (todayTypeFilter === "practice") return ev.type === "practice" || ev.subCategory === "practica";
-      if (todayTypeFilter === "event") return ev.type === "event";
       return true;
     });
 
@@ -1637,9 +1596,7 @@ export default function TodayPageContent() {
   const filterLabel = useMemo(() => {
     if (todayTypeFilter === "all") return language === "KR" ? "모두" : "All";
     if (todayTypeFilter === "social") return language === "KR" ? "소셜" : "Social";
-    if (todayTypeFilter === "class") return language === "KR" ? "클래스" : "Class";
     if (todayTypeFilter === "practice") return language === "KR" ? "쁘락띠까" : "Practica";
-    if (todayTypeFilter === "event") return language === "KR" ? "이벤트" : "Event";
     return "";
   }, [todayTypeFilter, language]);
 
@@ -1745,13 +1702,11 @@ export default function TodayPageContent() {
               <>
                 <div className="fixed inset-0 z-40" onClick={() => setShowTypeDropdown(false)} />
                 <div className="absolute top-full left-0 z-50 mt-1.5 w-[120px] bg-white shadow-2xl border border-slate-100 rounded-2xl p-1.5 animate-in fade-in slide-in-from-top-2 duration-200">
-                  {(["all", "social", "practice", "class", "event"] as const).map((type) => {
+                  {(["all", "social", "practice"] as const).map((type) => {
                     const label = {
                       all: language === "KR" ? "모두" : "All",
                       social: language === "KR" ? "소셜" : "Social",
                       practice: language === "KR" ? "쁘락띠까" : "Practica",
-                      class: language === "KR" ? "클래스" : "Class",
-                      event: language === "KR" ? "이벤트" : "Event",
                     }[type];
                     const isSelected = todayTypeFilter === type;
                     return (
@@ -2008,20 +1963,7 @@ export default function TodayPageContent() {
 
       {/* ── Content ── */}
       <div className="px-4 pt-5 pb-6">
-
-        {todayTypeFilter === "event" ? (
-          /* 이벤트 단독 필터 뷰 (지역 필터와 무관하게 다가올 이벤트 전체 리스트 노출) */
-          <div className="animate-in fade-in duration-300">
-            <TodayHeroSection
-              loadingEvents={loadingEvents}
-              todayActiveEvents={heroEvents}
-              openEventModal={openEventModal}
-              getEventDateRange={getEventDateRange}
-              getEventDday={getEventDday}
-              currentFilter={todayTypeFilter}
-            />
-          </div>
-        ) : selectedGroupId === "All" && selectedDjName === "All" ? (
+        {selectedGroupId === "All" && selectedDjName === "All" ? (
           todayViewMode === "timeline" ? (
             /* 타임라인 방식 뷰 (이미지 배제한 텍스트 중심) */
             <div className="space-y-6 animate-in fade-in duration-300">
@@ -2117,30 +2059,6 @@ export default function TodayPageContent() {
                   openSocialModal={openSocialModal}
                   practicas={todayTypeFilter === "social" ? [] : practicas}
                   practicasSorted={practicasSorted}
-                  currentFilter={todayTypeFilter}
-                />
-              )}
-
-              {/* 클래스 목록 */}
-              {(todayTypeFilter === "all" || todayTypeFilter === "class") && (
-                <TodayClassSection
-                  loadingClasses={loadingClasses}
-                  filteredClasses={filteredClasses}
-                  openClassModal={openClassModal}
-                  classesSorted={classesSorted}
-                  currentFilter={todayTypeFilter}
-                  venuesMap={venuesMap}
-                />
-              )}
-
-              {/* 이벤트 배너 슬라이더 (오늘 진행 중인 이벤트 풀샷) */}
-              {todayTypeFilter === "all" && (
-                <TodayHeroSection
-                  loadingEvents={loadingEvents}
-                  todayActiveEvents={heroEvents}
-                  openEventModal={openEventModal}
-                  getEventDateRange={getEventDateRange}
-                  getEventDday={getEventDday}
                   currentFilter={todayTypeFilter}
                 />
               )}
