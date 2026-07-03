@@ -1,7 +1,9 @@
+// NOTE: 현재 App Shell v2 개편 및 Android 패키징 배포에 따라 이 PWAInstallPrompt 컴포넌트는 실제 메인 레이아웃 등에서 사용되지 않는 미사용(Deprecated) 컴포넌트입니다.
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { Capacitor } from '@capacitor/core';
 
 // --- Storage Keys ---
 const STORAGE_KEYS = {
@@ -45,6 +47,9 @@ export default function PWAInstallPrompt() {
 
   // Check conditions and decide whether to show
   useEffect(() => {
+    // Android/iOS 네이티브 앱으로 구동 중인 상태에서는 PWA 유도 팝업이 노출되지 않도록 강력한 사전 방어 처리
+    if (Capacitor.isNativePlatform()) return;
+
     // PT 및 PT1 경로는 PWA 설치 유도 대상에서 제외
     if (typeof window !== 'undefined') {
       const path = window.location.pathname;

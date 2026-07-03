@@ -616,8 +616,27 @@ export const en: Record<string, string> = {
     'social.timeline_day': 'Day',
     'social.timeline_night': 'Night',
 
+    // Deletion Module
+    'deletion.title': 'Account Deletion & Data Erasure',
+    'deletion.subtitle': 'Information on requesting deletion of your WOC account and data.',
+    'deletion.warning_title': 'Please read carefully before proceeding',
+    'deletion.warning_1': 'Upon deletion, your profile, activity records, points, and society group history will be permanently destroyed and cannot be recovered.',
+    'deletion.warning_2': 'Deletion requests are typically processed within 3 to 5 business days.',
+    'deletion.logged_in_title': 'Logged In Account Information',
+    'deletion.request_btn': 'Request Account Deletion',
+    'deletion.success_alert': 'Your deletion request has been submitted successfully. It may take up to 5 business days.',
+    'deletion.confirm_question': 'Are you sure you want to delete your account? This action is irreversible.',
+    'deletion.logged_out_title': 'Email Request Guide (For Non-Logged In Users)',
+    'deletion.logged_out_desc': 'If you cannot log in or wish to request deletion from outside the app, please email us with your registered info (phone number/email) and nickname.',
+    'deletion.send_email_btn': 'Send Deletion Request Email',
+
     // Auth Module
     'auth.title_signin': 'WoC : Tango Society login',
+    'auth.title_join': 'Join Us',
+    'auth.title_phone_verify': 'Phone Verification',
+    'auth.welcome_title': 'Welcome',
+    'auth.welcome_form': 'Register Profile',
+    'auth.welcome_phone': 'Verify Phone',
     'auth.title_register': 'WoC : Tango Society login',
     'auth.headline_more': 'Additional Information',
     'auth.headline_verify': 'Phone Verification',

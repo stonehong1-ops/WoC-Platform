@@ -6,6 +6,7 @@
 ## 📌 배포 대기 중인 작업 목록 (Pending Releases)
 <!-- 아래 양식에 맞춰 완료된 작업을 누적해서 한 줄씩 기록해 주십시오. -->
 <!-- 양식 - [ ] YYYY-MM-DD | 작업자명 | 작업 요약 (예 - MyPage UI 개선 및 다국어 병행 추가) -->
+- [ ] 2026-07-03 | 개발 에이전트 | Google Play 심사 대응을 위한 com.woc.today 패키지명 변경, SHA256 핑거프린트 업데이트(assetlinks.json), 네이티브 앱 환경 PWA/서비스 워커 이중 제어 방어 적용, Android 하드웨어 백버튼 제어 추가 및 계정/데이터 탈퇴 삭제 신청 페이지(account-deletion) 추가
 
 
 ## 📌 배포 완료 내역 (Release History)

@@ -1,7 +1,7 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'today.woc.tango',
+  appId: 'com.woc.today',
   appName: 'Tango World',
   webDir: 'public',
   server: {

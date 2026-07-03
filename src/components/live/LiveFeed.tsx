@@ -60,7 +60,7 @@ export default function LiveFeed({ entityType, entityId, userId, viewMode, class
   const containerRef = useRef<HTMLDivElement>(null);
   const [isImmersive, setIsImmersive] = useState(false);
 
-  const [showDashboardIntro, setShowDashboardIntro] = useState(!entityType && !entityId && !userId);
+  const [showDashboardIntro, setShowDashboardIntro] = useState(false);
   
   // entityType, entityId, userId가 존재하거나 비동기로 넘어오면 대시보드 인트로를 강제로 비활성화합니다.
   useEffect(() => {

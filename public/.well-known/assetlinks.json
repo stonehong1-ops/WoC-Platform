@@ -3,9 +3,9 @@
     "relation": ["delegate_permission/common.handle_all_urls"],
     "target": {
       "namespace": "android_app",
-      "package_name": "today.woc.tango",
+      "package_name": "com.woc.today",
       "sha256_cert_fingerprints": [
-        "00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00:00"
+        "38:75:AF:A8:65:10:4E:EE:45:33:74:CB:DA:DB:23:06:55:BF:13:93:30:4E:0B:32:40:FF:34:B8:A1:D3:B1:21"
       ]
     }
   }

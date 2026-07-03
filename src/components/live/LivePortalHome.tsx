@@ -140,11 +140,11 @@ export default function LivePortalHome() {
   const recentVideos = getRecentVideos();
 
   if (!mounted) {
-    return <div className="bg-slate-50 min-h-screen pb-24 font-manrope" />;
+    return <div className="bg-slate-50 min-h-screen pb-24 font-body" />;
   }
 
   return (
-    <div className="bg-slate-50 min-h-screen pb-24 font-manrope">
+    <div className="bg-slate-50 min-h-screen pb-24 font-body">
       {/* 1) 상단 타이틀 영역 */}
       <div className="px-5 pt-8 pb-4 text-left">
         <div className="flex items-center gap-1">
@@ -159,7 +159,7 @@ export default function LivePortalHome() {
       </div>
 
       {/* 메인 스크롤 콘텐츠 */}
-      <div className="px-page-margin space-y-6">
+      <div className="px-4 md:px-6 space-y-6">
         
         {/* 2) 내 주변 라이브 - 폰에서 흐릿하지 않도록 더 진하고 채도 높은 보라색 그라데이션 적용 */}
         <section className="bg-gradient-to-br from-[#4D24F3] to-[#805CFF] rounded-[24px] p-5 shadow-lg shadow-purple-200/50 relative overflow-hidden">
@@ -198,21 +198,34 @@ export default function LivePortalHome() {
 
             {/* 실제 사용 가능한 리스트 3개 프리뷰 */}
             <div className="bg-white rounded-2xl p-2 shadow-inner space-y-0.5">
-              {nearLives.map((item, idx) => (
-                <div key={item.id + idx} className="flex items-center justify-between p-3 border-b border-slate-100 last:border-0">
-                  <div className="flex items-center gap-3">
-                    <div className="relative w-11 h-11 rounded-full overflow-hidden flex-shrink-0 border border-slate-100">
-                      <img 
-                        src={getSafeStorageUrl(item.img)} 
-                        alt={item.title}
-                        className="w-full h-full object-cover"
-                      />
-                      <span className="absolute bottom-0 right-0 bg-red-500 text-white text-[8px] font-black px-1 rounded-sm tracking-tighter uppercase scale-90">
-                        LIVE
-                      </span>
-                    </div>
-                    <div className="text-left">
-                      <h4 className="text-slate-900 font-bold text-sm leading-tight mb-0.5 truncate max-w-[150px]">{item.title}</h4>
+              {nearLives.map((item, idx) => {
+                const isVideo = item.img.toLowerCase().includes('.mp4') || 
+                                item.img.toLowerCase().includes('.mov') || 
+                                item.img.toLowerCase().includes('video');
+                return (
+                  <div key={item.id + idx} className="flex items-center justify-between p-3 border-b border-slate-100 last:border-0">
+                    <div className="flex items-center gap-3">
+                      <div className="relative w-11 h-11 rounded-full overflow-hidden flex-shrink-0 border border-slate-100">
+                        {isVideo ? (
+                          <video 
+                            src={getSafeStorageUrl(item.img)} 
+                            muted 
+                            playsInline 
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <img 
+                            src={getSafeStorageUrl(item.img)} 
+                            alt={item.title}
+                            className="w-full h-full object-cover"
+                          />
+                        )}
+                        <span className="absolute bottom-0 right-0 bg-red-500 text-white text-[8px] font-black px-1 rounded-sm tracking-tighter uppercase scale-90">
+                          LIVE
+                        </span>
+                      </div>
+                      <div className="text-left">
+                        <h4 className="text-slate-900 font-bold text-sm leading-tight mb-0.5 truncate max-w-[150px]">{item.title}</h4>
                       <p className="text-slate-500 text-[11px] font-medium">{item.category} · {item.viewers}명 시청 중</p>
                     </div>
                   </div>
@@ -226,7 +239,7 @@ export default function LivePortalHome() {
                     </button>
                   </div>
                 </div>
-              ))}
+              )})}
             </div>
 
             {/* 카드 하단 중앙 버튼 */}
@@ -259,11 +272,20 @@ export default function LivePortalHome() {
               onClick={handleEnterLive}
               className="relative aspect-[2.1/1] rounded-2xl overflow-hidden group cursor-pointer shadow-sm border border-slate-100"
             >
-              <img 
-                src={getSafeStorageUrl(recommendLives.main.img)} 
-                alt={recommendLives.main.title} 
-                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-103"
-              />
+              {recommendLives.main.img.toLowerCase().includes('.mp4') || recommendLives.main.img.toLowerCase().includes('.mov') || recommendLives.main.img.toLowerCase().includes('video') ? (
+                <video 
+                  src={getSafeStorageUrl(recommendLives.main.img)} 
+                  muted 
+                  playsInline 
+                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-103"
+                />
+              ) : (
+                <img 
+                  src={getSafeStorageUrl(recommendLives.main.img)} 
+                  alt={recommendLives.main.title} 
+                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-103"
+                />
+              )}
               <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent"></div>
               
               {/* 좌측 상단 배지 */}
@@ -296,11 +318,20 @@ export default function LivePortalHome() {
                 onClick={handleEnterLive}
                 className="relative aspect-[1.3/1] rounded-2xl overflow-hidden group cursor-pointer shadow-sm border border-slate-100"
               >
-                <img 
-                  src={getSafeStorageUrl(recommendLives.sub1.img)} 
-                  alt={recommendLives.sub1.title} 
-                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-103"
-                />
+                {recommendLives.sub1.img.toLowerCase().includes('.mp4') || recommendLives.sub1.img.toLowerCase().includes('.mov') || recommendLives.sub1.img.toLowerCase().includes('video') ? (
+                  <video 
+                    src={getSafeStorageUrl(recommendLives.sub1.img)} 
+                    muted 
+                    playsInline 
+                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-103"
+                  />
+                ) : (
+                  <img 
+                    src={getSafeStorageUrl(recommendLives.sub1.img)} 
+                    alt={recommendLives.sub1.title} 
+                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-103"
+                  />
+                )}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent"></div>
                 
                 {/* 배지 */}
@@ -325,11 +356,20 @@ export default function LivePortalHome() {
                 onClick={handleEnterLive}
                 className="relative aspect-[1.3/1] rounded-2xl overflow-hidden group cursor-pointer shadow-sm border border-slate-100"
               >
-                <img 
-                  src={getSafeStorageUrl(recommendLives.sub2.img)} 
-                  alt={recommendLives.sub2.title} 
-                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-103"
-                />
+                {recommendLives.sub2.img.toLowerCase().includes('.mp4') || recommendLives.sub2.img.toLowerCase().includes('.mov') || recommendLives.sub2.img.toLowerCase().includes('video') ? (
+                  <video 
+                    src={getSafeStorageUrl(recommendLives.sub2.img)} 
+                    muted 
+                    playsInline 
+                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-103"
+                  />
+                ) : (
+                  <img 
+                    src={getSafeStorageUrl(recommendLives.sub2.img)} 
+                    alt={recommendLives.sub2.title} 
+                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-103"
+                  />
+                )}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent"></div>
                 
                 {/* 배지 */}
@@ -366,24 +406,43 @@ export default function LivePortalHome() {
           </div>
 
           {/* 가로 스크롤 리스트 */}
-          <div className="flex gap-3 overflow-x-auto no-scrollbar -mx-page-margin px-page-margin">
-            {recentVideos.map((video, idx) => (
-              <div 
-                key={video.id || idx}
-                onClick={handleEnterLive}
-                className="relative w-24 aspect-[0.7/1] rounded-xl overflow-hidden group cursor-pointer shadow-sm border border-slate-100 flex-shrink-0"
-              >
-                <img src={getSafeStorageUrl(video.img)} alt={`최근영상 ${idx}`} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
-                <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
-                  <div className="w-6 h-6 rounded-full bg-white/35 backdrop-blur-sm border border-white/20 flex items-center justify-center text-white group-hover:bg-white group-hover:text-primary transition-all">
-                    <span className="material-symbols-outlined text-[14px]" style={{ fontVariationSettings: "'FILL' 1" }}>play_arrow</span>
+          <div className="flex gap-3 overflow-x-auto no-scrollbar -mx-4 md:-mx-6 px-4 md:px-6">
+            {recentVideos.map((video, idx) => {
+              const isVideo = video.img.toLowerCase().includes('.mp4') || 
+                              video.img.toLowerCase().includes('.mov') || 
+                              video.img.toLowerCase().includes('video') || 
+                              video.img.startsWith('data:video');
+              return (
+                <div 
+                  key={video.id || idx}
+                  onClick={handleEnterLive}
+                  className="relative w-24 aspect-[0.7/1] rounded-xl overflow-hidden group cursor-pointer shadow-sm border border-slate-100 flex-shrink-0"
+                >
+                  {isVideo ? (
+                    <video 
+                      src={getSafeStorageUrl(video.img)} 
+                      muted 
+                      playsInline 
+                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    />
+                  ) : (
+                    <img 
+                      src={getSafeStorageUrl(video.img)} 
+                      alt={`최근영상 ${idx}`} 
+                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" 
+                    />
+                  )}
+                  <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
+                    <div className="w-6 h-6 rounded-full bg-white/35 backdrop-blur-sm border border-white/20 flex items-center justify-center text-white group-hover:bg-white group-hover:text-primary transition-all">
+                      <span className="material-symbols-outlined text-[14px]" style={{ fontVariationSettings: "'FILL' 1" }}>play_arrow</span>
+                    </div>
                   </div>
+                  <span className="absolute bottom-1.5 right-1.5 bg-black/60 text-white text-[8px] font-bold px-1 py-0.5 rounded">
+                    {video.time}
+                  </span>
                 </div>
-                <span className="absolute bottom-1.5 right-1.5 bg-black/60 text-white text-[8px] font-bold px-1 py-0.5 rounded">
-                  {video.time}
-                </span>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </section>
 

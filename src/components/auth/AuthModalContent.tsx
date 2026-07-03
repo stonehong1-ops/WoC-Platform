@@ -4,6 +4,7 @@ import React from 'react';
 import { COUNTRY_CODES } from '@/constants/countryCodes';
 import { useAuthFlow } from './hooks/useAuthFlow';
 import { getRegionName } from './helpers/authHelpers';
+import { Capacitor } from '@capacitor/core';
 
 export function AuthModalContent() {
   const {
@@ -48,51 +49,48 @@ export function AuthModalContent() {
       <header className="fixed top-0 w-full z-50 flex items-center px-4 h-16 bg-white border-b border-gray-100 transition-colors duration-200">
         <div className="flex items-center w-full max-w-2xl mx-auto justify-between">
           <div className="flex items-center gap-4">
-            <h1 className="font-manrope text-base font-semibold text-gray-900 font-headline">
-              {t('auth.title_signin')}
+            <h1 className="font-manrope text-base font-semibold text-gray-900 font-headline leading-none">
+              {step === 'SOCIAL' ? t('auth.title_join') 
+                : step === 'FORM' ? t('auth.title_register') 
+                : step === 'EMAIL_INPUT' ? (language === 'KR' ? '이메일 로그인' : 'Email Sign In')
+                : t('auth.title_phone_verify')}
             </h1>
           </div>
-          {/* Language Toggle */}
-          <div className="flex items-center bg-gray-50 rounded-full border border-gray-200 p-0.5">
-            <button 
-              type="button"
-              onClick={() => setLanguage('KR')}
-              className={`px-3 py-1 rounded-full text-[11px] font-bold transition-all ${language === 'KR' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
-            >
-              Ko
-            </button>
-            <button 
-              type="button"
-              onClick={() => setLanguage('EN')}
-              className={`px-3 py-1 rounded-full text-[11px] font-bold transition-all ${language === 'EN' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
-            >
-              En
-            </button>
-          </div>
+          
+          <button 
+            onClick={handleClose}
+            className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
+          >
+            <span className="material-symbols-outlined text-[20px] text-gray-500">close</span>
+          </button>
         </div>
       </header>
 
-      {/* Main Content Canvas */}
-      <main className="flex-grow pt-20 pb-24 px-6 max-w-2xl mx-auto w-full relative">
-        {/* Floating Wait Message */}
-        {isLoading && step === 'PHONE_INPUT' && (
-          <div className="absolute top-20 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-5 py-2.5 rounded-full text-xs font-bold shadow-xl z-50 animate-bounce whitespace-nowrap">
-            {t('auth.sending_code')}{countdown !== null ? ` ${countdown}` : ''}
-          </div>
-        )}
-
-        <div className="mt-4">
-          <h2 className="text-3xl font-extrabold tracking-tight text-on-surface mb-2 font-headline">
-            {step === 'FORM' ? t('auth.headline_more') : step === 'PHONE_INPUT' || step === 'PHONE_VERIFY' ? t('auth.headline_verify') : t('auth.headline_join')}
+      {/* Main Form Content */}
+      <main className="flex-1 max-w-2xl w-full mx-auto px-6 pt-24 pb-12 flex flex-col justify-center">
+        <div className="text-left mb-8">
+          <h2 className="text-2xl font-black text-gray-950 font-headline leading-tight tracking-tight uppercase mb-2">
+            {step === 'SOCIAL' ? t('auth.welcome_title') 
+              : step === 'FORM' ? t('auth.welcome_form') 
+              : step === 'EMAIL_INPUT' ? (language === 'KR' ? '반갑습니다' : 'Welcome back')
+              : t('auth.welcome_phone')}
           </h2>
-          <p className={`text-on-surface-variant text-sm font-body text-gray-500 ${step === 'PHONE_VERIFY' ? 'mb-4' : 'mb-8'}`}>
-            {step === 'FORM' 
+          <p className="text-[12.5px] text-gray-500 font-semibold leading-relaxed font-body">
+            {step === 'SOCIAL' 
               ? t('auth.desc_more') 
               : step === 'PHONE_INPUT' ? ''
               : step === 'PHONE_VERIFY' ? ''
               : t('auth.desc_join')}
           </p>
         </div>
+
+        {/* reCAPTCHA 위젯 상시 DOM 마운트용 placeholder 설정 */}
+        <div 
+          id="recaptcha-placeholder" 
+          className="flex justify-center w-0 h-0 overflow-hidden absolute pointer-events-none"
+          tabIndex={-1}
+          aria-hidden="true"
+        ></div>
 
         {step === 'SOCIAL' ? (
           /* Step 1: Select Auth Method */
@@ -102,20 +100,24 @@ export function AuthModalContent() {
               <button 
                 disabled={isLoading}
                 onClick={() => setStep('PHONE_INPUT')}
-                className="flex flex-col items-center justify-center gap-1.5 h-20 bg-blue-50 border border-blue-100 rounded-xl hover:bg-blue-100 transition-all disabled:opacity-50"
+                className={`flex flex-col items-center justify-center gap-1.5 h-20 bg-blue-50 border border-blue-100 rounded-xl hover:bg-blue-100 transition-all disabled:opacity-50 ${
+                  Capacitor.isNativePlatform() ? 'col-span-2' : ''
+                }`}
               >
                 <span className="material-symbols-outlined text-[20px] text-blue-600">phone_iphone</span>
                 <span className="text-[11px] font-bold text-blue-900 uppercase">{t('auth.continue_phone', 'Phone')}</span>
               </button>
               
-              <button 
-                disabled={isLoading}
-                onClick={handleGoogleLogin}
-                className="flex flex-col items-center justify-center gap-1.5 h-20 bg-gray-50 border border-gray-200 rounded-xl hover:bg-gray-100 transition-all disabled:opacity-50"
-              >
-                <img alt="Google" className="w-5 h-5" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCrULfO5Si59s3yrGL1htM77UognPjlHkqCzmmqrbzqnNtGF7WHN8-E46CnXyZo-7bHd1wL78yQ6vat7pfYchsCTUmOFLpR7ttH1sp-iSZcq6i-zaOW4aoPFNiRS7AnA9xcYBQG4FyplVXBuKqvIDCOv9Lty8noBe58-BBq95wecE5M7v07XJgmZQrlcz362rkU-rE04bG_vmQXErI9lSqoPnrclYJgdfnabauLle6HNzmsdCFQKlXsCPTWgBF01qCZCc94BYLbUGcU" />
-                <span className="text-[11px] font-bold text-gray-700 uppercase">Google</span>
-              </button>
+              {!Capacitor.isNativePlatform() && (
+                <button 
+                  disabled={isLoading}
+                  onClick={handleGoogleLogin}
+                  className="flex flex-col items-center justify-center gap-1.5 h-20 bg-gray-50 border border-gray-200 rounded-xl hover:bg-gray-100 transition-all disabled:opacity-50"
+                >
+                  <img alt="Google" className="w-5 h-5" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCrULfO5Si59s3yrGL1htM77UognPjlHkqCzmmqrbzqnNtGF7WHN8-E46CnXyZo-7bHd1wL78yQ6vat7pfYchsCTUmOFLpR7ttH1sp-iSZcq6i-zaOW4aoPFNiRS7AnA9xcYBQG4FyplVXBuKqvIDCOv9Lty8noBe58-BBq95wecE5M7v07XJgmZQrlcz362rkU-rE04bG_vmQXErI9lSqoPnrclYJgdfnabauLle6HNzmsdCFQKlXsCPTWgBF01qCZCc94BYLbUGcU" />
+                  <span className="text-[11px] font-bold text-gray-700 uppercase">Google</span>
+                </button>
+              )}
 
               <button 
                 disabled={isLoading}
@@ -253,18 +255,6 @@ export function AuthModalContent() {
                 />
               </div>
             </div>
-            
-            {/* reCAPTCHA Placeholder for visible fallback */}
-            <div 
-              id="recaptcha-placeholder" 
-              className={`flex justify-center transition-all ${
-                timeoutCount >= 2 
-                  ? 'w-full min-h-[78px] py-2' 
-                  : 'w-0 h-0 overflow-hidden absolute pointer-events-none'
-              }`}
-              tabIndex={-1}
-              aria-hidden="true"
-            ></div>
 
             <button 
               disabled={isLoading || cooldown}

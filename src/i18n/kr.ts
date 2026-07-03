@@ -879,8 +879,27 @@ export const kr: Record<string, string> = {
     'social.timeline_day': '낮 소셜',
     'social.timeline_night': '밤 소셜',
 
+    // Deletion Module
+    'deletion.title': '계정 삭제 및 데이터 파기 안내',
+    'deletion.subtitle': 'WOC 계정 탈퇴 신청 및 개인정보 파기 절차를 안내합니다.',
+    'deletion.warning_title': '탈퇴 전 반드시 확인해 주세요',
+    'deletion.warning_1': '계정 삭제 시 회원님의 프로필 정보, 활동 기록, 포인트 및 가입한 소사이어티 그룹 이력이 즉시 파기되며 복구가 불가능합니다.',
+    'deletion.warning_2': '탈퇴 요청은 영업일 기준 3~5일 이내에 처리 완료됩니다.',
+    'deletion.logged_in_title': '로그인된 계정 정보',
+    'deletion.request_btn': '계정 삭제 신청하기',
+    'deletion.success_alert': '계정 삭제 요청이 성공적으로 접수되었습니다. 처리 완료까지 최대 5영업일이 소요됩니다.',
+    'deletion.confirm_question': '정말로 탈퇴를 진행하시겠습니까? 삭제된 데이터는 복구할 수 없습니다.',
+    'deletion.logged_out_title': '이메일 또는 문의 접수 방법',
+    'deletion.logged_out_desc': '로그인을 할 수 없거나 외부에서 탈퇴를 요청하시는 경우, 아래 이메일로 가입하신 정보(휴대폰 번호 또는 이메일)와 닉네임을 적어 보내주시면 신속하게 삭제 처리를 도와드리겠습니다.',
+    'deletion.send_email_btn': '탈퇴 신청 이메일 보내기',
+
     // Auth Module
     'auth.title_signin': 'WoC : Tango Society login',
+    'auth.title_join': '가입하기',
+    'auth.title_phone_verify': '전화번호 인증',
+    'auth.welcome_title': '반갑습니다',
+    'auth.welcome_form': '프로필 등록',
+    'auth.welcome_phone': '휴대폰 인증',
     'auth.title_register': 'WoC : Tango Society login',
     'auth.headline_more': '추가 정보 입력',
     'auth.headline_verify': '전화번호 인증',
