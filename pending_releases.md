@@ -6,11 +6,11 @@
 ## 📌 배포 대기 중인 작업 목록 (Pending Releases)
 <!-- 아래 양식에 맞춰 완료된 작업을 누적해서 한 줄씩 기록해 주십시오. -->
 <!-- 양식 - [ ] YYYY-MM-DD | 작업자명 | 작업 요약 (예 - MyPage UI 개선 및 다국어 병행 추가) -->
-- [ ] 2026-07-04 | 개발 에이전트 | 공통 UI 컴포넌트(SectionHeader, HorizontalScroller, SearchHeader, CategoryGrid, EmptyState) 표준화 설계 및 전수 리팩토링, 이미지 CORS 방어(getSafeStorageUrl) 적용성 확대
 
 
 ## 📌 배포 완료 내역 (Release History)
 <!-- 배포 담당자가 배포를 마친 뒤 이 아래로 항목을 이동시키고 버전을 표기합니다. -->
+- [x] v2026-07-04-001 | 2026-07-04 | 개발 에이전트 | 공통 UI 컴포넌트(SectionHeader, HorizontalScroller, SearchHeader, CategoryGrid, EmptyState) 표준화 설계 및 전수 리팩토링, 이미지 CORS 방어(getSafeStorageUrl) 적용성 확대
 - [x] v2026-07-03-003 | 2026-07-03 | 개발 에이전트 | 인물(People), 클래스(Class), 그룹(Groups), 이벤트(Events) 핵심 메뉴 4종에 대한 종합 포털 대시보드 홈 메인 화면 전면 통합 개편 및 UI/UX 스페이싱 최적화
 - [x] v2026-07-03-002 | 2026-07-03 | 개발 에이전트 | 오늘 일정(Today) 피드에서 클래스/이벤트 세부 섹션 제거 및 소셜/쁘락띠까 전용 집중화, 라이브 포털 홈 화면 폴라로이드 콜라주 아날로그 레이아웃으로 전면 개편
 - [x] v2026-07-03-001 | 2026-07-03 | 개발 에이전트 | Google Play 심사 대응을 위한 com.woc.today 패키지명 변경, SHA256 핑거프린트 업데이트(assetlinks.json), 네이티브 앱 환경 PWA/서비스 워커 이중 제어 방어 적용, Android 하드웨어 백버튼 제어 추가 및 계정/데이터 탈퇴 삭제 신청 페이지(account-deletion) 추가
