@@ -24,6 +24,8 @@ interface ClassDisplay {
   imageUrl: string;
 }
 
+const GRAY_PLACEHOLDER = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100'><rect width='100' height='100' fill='%23E2E8F0'/></svg>";
+
 export default function ActivitySpotlight() {
   const { t } = useLanguage();
   const [socialData, setSocialData] = useState<SocialDisplay | null>(null);
@@ -53,7 +55,7 @@ export default function ActivitySpotlight() {
             dj: dj,
             dateTime: `${eventDateStr} · ${first.startTime || '19:30'} - ${first.endTime || '23:30'}`,
             location: first.venueName || '홍대 Tango Club',
-            imageUrl: first.imageUrl || '/camus.jpg'
+            imageUrl: first.imageUrl || GRAY_PLACEHOLDER
           });
         }
 
@@ -77,7 +79,7 @@ export default function ActivitySpotlight() {
             instructors: instNames,
             dateTime: sched,
             location: data.location || '라 벤타나',
-            imageUrl: data.imageUrl || '/beto.jpg'
+            imageUrl: data.imageUrl || GRAY_PLACEHOLDER
           });
         }
       } catch (err) {
@@ -97,7 +99,7 @@ export default function ActivitySpotlight() {
     dj: "DJ Lucy",
     dateTime: "6. 8(일) · 19:30 - 23:30",
     location: "홍대 Tango Club",
-    imageUrl: "/camus.jpg"
+    imageUrl: GRAY_PLACEHOLDER
   };
 
   const displayClass = classData || {
@@ -105,7 +107,7 @@ export default function ActivitySpotlight() {
     instructors: "Dahee & Miguel",
     dateTime: "매주 화 · 20:00 - 21:30",
     location: "라 벤타나",
-    imageUrl: "/beto.jpg"
+    imageUrl: GRAY_PLACEHOLDER
   };
 
   return (
@@ -137,6 +139,9 @@ export default function ActivitySpotlight() {
                   alt={displaySocial.title} 
                   className="w-full h-full object-cover" 
                   src={getSafeStorageUrl(displaySocial.imageUrl)}
+                  onError={(e) => {
+                    e.currentTarget.src = GRAY_PLACEHOLDER;
+                  }}
                 />
               </div>
               <div>
@@ -188,6 +193,9 @@ export default function ActivitySpotlight() {
                   alt={displayClass.title} 
                   className="w-full h-full object-cover" 
                   src={getSafeStorageUrl(displayClass.imageUrl)}
+                  onError={(e) => {
+                    e.currentTarget.src = GRAY_PLACEHOLDER;
+                  }}
                 />
               </div>
               <div>
