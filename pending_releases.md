@@ -6,6 +6,7 @@
 ## 📌 배포 대기 중인 작업 목록 (Pending Releases)
 <!-- 아래 양식에 맞춰 완료된 작업을 누적해서 한 줄씩 기록해 주십시오. -->
 <!-- 양식 - [ ] YYYY-MM-DD | 작업자명 | 작업 요약 (예 - MyPage UI 개선 및 다국어 병행 추가) -->
+- [ ] 2026-07-04 | 개발 에이전트 | 공통 UI 컴포넌트(SectionHeader, HorizontalScroller, SearchHeader, CategoryGrid, EmptyState) 표준화 설계 및 전수 리팩토링, 이미지 CORS 방어(getSafeStorageUrl) 적용성 확대
 
 
 ## 📌 배포 완료 내역 (Release History)

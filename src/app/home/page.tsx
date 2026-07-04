@@ -16,6 +16,12 @@ import { PlatformUser } from '@/types/user';
 import { useLanguage } from '@/contexts/LanguageContext';
 import societiesData from '../../../woc_societies_data.json';
 
+import { getSafeStorageUrl } from '@/lib/utils/storageUtils';
+
+// 공통 UI 컴포넌트 임포트
+import SectionHeader from '@/components/common/SectionHeader';
+import HorizontalScroller from '@/components/common/HorizontalScroller';
+
 export default function SocietyPage() {
   const { t, language, setLanguage } = useLanguage();
 
@@ -506,14 +512,12 @@ export default function SocietyPage() {
           <ActivitySpotlight />
 
           {/* Culture & Canvas */}
-          <section>
-            <div className="flex items-center justify-between mb-element_gap">
-              <h2 className="font-headline-md text-headline-md font-bold text-[#1E293B]">{t('home.culture_canvas')}</h2>
-              <a className="text-slate-500 font-label-md text-sm flex items-center gap-1 hover:text-primary transition-colors" href="/pics">
-                {t('home.view_all')}
-                <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
-              </a>
-            </div>
+          <section className="space-y-4">
+            <SectionHeader 
+              title={t('home.culture_canvas')}
+              actionLabel={t('home.view_all') || '전체 보기'}
+              href="/pics"
+            />
             
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {/* Large Spotlight Card: 기존 포커스 바인딩 */}
@@ -587,19 +591,14 @@ export default function SocietyPage() {
           </section>
 
           {/* People — Dynamic from Firestore */}
-          <section>
-            <div className="flex items-center justify-between mb-element_gap">
-              <h2 className="font-headline-md text-headline-md font-bold text-[#1E293B]">알아야 할 사람들</h2>
-              <a 
-                className="text-slate-500 font-label-md text-sm flex items-center gap-1 hover:text-primary transition-colors" 
-                href="/people"
-              >
-                {t('home.view_all')}
-                <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
-              </a>
-            </div>
+          <section className="space-y-4">
+            <SectionHeader 
+              title="알아야 할 사람들"
+              actionLabel={t('home.view_all') || '전체 보기'}
+              href="/people"
+            />
             
-            <div className="flex gap-8 overflow-x-auto hide-scrollbar -mx-page_margin px-page_margin md:mx-0 md:px-0 py-2">
+            <HorizontalScroller>
               {featuredUsers.length > 0 ? (
                 featuredUsers.map((user) => (
                   <div 
@@ -611,7 +610,10 @@ export default function SocietyPage() {
                       <img 
                         alt={user.nickname} 
                         className="w-full h-full object-cover rounded-full" 
-                        src={user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.nickname)}&background=6750a4&color=fff&size=128`}
+                        src={getSafeStorageUrl(user.photoURL) || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.nickname)}&background=6750a4&color=fff&size=128`}
+                        onError={(e) => {
+                          e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.nickname)}&background=6750a4&color=fff&size=128`;
+                        }}
                       />
                     </div>
                     <h4 className="font-bold text-slate-800 text-sm md:text-base mb-0.5">{user.nickname}</h4>
@@ -642,7 +644,10 @@ export default function SocietyPage() {
                       <img 
                         alt={user.nickname} 
                         className="w-full h-full object-cover rounded-full" 
-                        src={user.photoURL}
+                        src={getSafeStorageUrl(user.photoURL)}
+                        onError={(e) => {
+                          e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.nickname)}&background=6750a4&color=fff&size=128`;
+                        }}
                       />
                       {(user as any).flag && (
                         <span className="absolute bottom-1 left-1 text-base bg-white/80 rounded-full px-1 shadow-sm select-none">{(user as any).flag}</span>
@@ -653,18 +658,16 @@ export default function SocietyPage() {
                   </div>
                 ))
               )}
-            </div>
+            </HorizontalScroller>
           </section>
 
           {/* 순간을 느끼다 */}
-          <section>
-            <div className="flex items-center justify-between mb-element_gap">
-              <h2 className="font-headline-md text-headline-md font-bold text-[#1E293B]">순간을 느끼다</h2>
-              <a className="text-slate-500 font-label-md text-sm flex items-center gap-1 hover:text-primary transition-colors" href="/live">
-                {t('home.view_all')}
-                <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
-              </a>
-            </div>
+          <section className="space-y-4">
+            <SectionHeader 
+              title="순간을 느끼다"
+              actionLabel={t('home.view_all') || '전체 보기'}
+              href="/live"
+            />
             
             <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
               {/* Card 1: Holding hands */}

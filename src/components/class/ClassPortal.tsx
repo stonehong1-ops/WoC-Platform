@@ -23,6 +23,11 @@ import BottomSheet from '@/components/common/BottomSheet';
 import { bookingService } from '@/lib/firebase/bookingService';
 import { BaseBooking } from '@/types/booking';
 import { chatService } from '@/lib/firebase/chatService';
+
+// 공통 UI 컴포넌트 임포트
+import SearchHeader from '@/components/common/SearchHeader';
+import SectionHeader from '@/components/common/SectionHeader';
+import HorizontalScroller from '@/components/common/HorizontalScroller';
 import dynamic from 'next/dynamic';
 
 const ChatRoomComponent = dynamic(() => import('../chat/ChatRoom'));
@@ -495,25 +500,13 @@ export default function ClassPortal() {
   useEffect(() => {
     if (!viewParam) {
       const searchBar = (
-        <div className="w-full bg-white px-4 py-2.5 flex items-center gap-3 shadow-[0_2px_15px_rgba(0,0,0,0.05)] border-b border-slate-100/50 z-30">
-          <div className="flex-1 bg-slate-50 border border-slate-100 rounded-full px-4 py-2 flex items-center gap-2">
-            <span className="material-symbols-outlined text-slate-400 text-[18px]">search</span>
-            <input 
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="클래스, 강사, 스튜디오 검색"
-              className="bg-transparent text-[13px] text-slate-800 font-bold placeholder:text-slate-400 focus:outline-none w-full"
-            />
-            {searchTerm && (
-              <button onClick={() => setSearchTerm('')} className="text-slate-400 hover:text-slate-600 transition-colors">
-                <span className="material-symbols-outlined text-[16px]">cancel</span>
-              </button>
-            )}
-          </div>
-          <button className="w-9.5 h-9.5 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-100 hover:text-slate-700 active:scale-90 transition-all shrink-0">
-            <span className="material-symbols-outlined text-[20px]">tune</span>
-          </button>
+        <div className="w-full bg-white px-4 py-2.5 z-30 border-b border-slate-100/50">
+          <SearchHeader 
+            value={searchTerm}
+            onChange={setSearchTerm}
+            placeholder="클래스, 강사, 스튜디오 검색"
+            showFilter={true}
+          />
         </div>
       );
       setSubHeader(searchBar, 54);
@@ -1460,26 +1453,18 @@ export default function ClassPortal() {
           <div className="space-y-8 pb-10">
             {/* 오늘 참여 섹션 */}
             <section className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="material-symbols-outlined text-[20px] text-emerald-600 font-bold" style={{ fontVariationSettings: "'FILL' 1" }}>person</span>
-                  <h2 className="text-[16px] font-black text-slate-800 tracking-tight">오늘 참여</h2>
-                </div>
-                <button 
-                  onClick={() => router.push('/class?view=today')}
-                  className="text-[11px] font-black text-slate-400 hover:text-slate-600 transition-colors flex items-center gap-0.5"
-                >
-                  전체 보기
-                  <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-                </button>
-              </div>
+              <SectionHeader 
+                title="오늘 참여"
+                actionLabel="전체 보기"
+                href="/class?view=today"
+              />
 
               {todayClassesData.length === 0 ? (
                 <div className="py-8 text-center text-slate-400 bg-slate-50 rounded-2xl border border-slate-100/50">
                   <p className="text-xs font-bold">오늘 예정된 수업이 없습니다.</p>
                 </div>
               ) : (
-                <div className="flex gap-3.5 overflow-x-auto no-scrollbar -mx-5 px-5">
+                <HorizontalScroller>
                   {todayClassesData.map((cls) => {
                     const start = cls.startTime || (cls.scheduleEntry?.timeSlot?.split(/[-~]/)[0] || '00:00').trim();
                     const isDailyOpen = cls.isDailyBookingOpen;
@@ -1537,32 +1522,24 @@ export default function ClassPortal() {
                       </div>
                     );
                   })}
-                </div>
+                </HorizontalScroller>
               )}
             </section>
 
             {/* 특강 섹션 */}
             <section className="space-y-4 pt-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="material-symbols-outlined text-[20px] text-purple-600 font-bold">stars</span>
-                  <h2 className="text-[16px] font-black text-slate-800 tracking-tight">특강</h2>
-                </div>
-                <button 
-                  onClick={() => router.push('/class?view=special')}
-                  className="text-[11px] font-black text-slate-400 hover:text-slate-600 transition-colors flex items-center gap-0.5"
-                >
-                  전체 보기
-                  <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-                </button>
-              </div>
+              <SectionHeader 
+                title="특강"
+                actionLabel="전체 보기"
+                href="/class?view=special"
+              />
 
               {specialClassesData.length === 0 ? (
                 <div className="py-8 text-center text-slate-400 bg-slate-50 rounded-2xl border border-slate-100/50">
                   <p className="text-xs font-bold">예정된 특강이 없습니다.</p>
                 </div>
               ) : (
-                <div className="flex gap-4 overflow-x-auto no-scrollbar -mx-5 px-5">
+                <HorizontalScroller>
                   {specialClassesData.map((cls) => {
                     const price = cls.amount?.toLocaleString() || '30,000';
                     return (
@@ -1628,25 +1605,17 @@ export default function ClassPortal() {
                       </div>
                     );
                   })}
-                </div>
+                </HorizontalScroller>
               )}
             </section>
 
             {/* 정규 수업 섹션 */}
             <section className="space-y-4 pt-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="material-symbols-outlined text-[20px] text-blue-600 font-bold" style={{ fontVariationSettings: "'FILL' 1" }}>calendar_month</span>
-                  <h2 className="text-[16px] font-black text-slate-800 tracking-tight">정규 수업</h2>
-                </div>
-                <button 
-                  onClick={() => router.push('/class?view=monthly')}
-                  className="text-[11px] font-black text-slate-400 hover:text-slate-600 transition-colors flex items-center gap-0.5"
-                >
-                  전체 보기
-                  <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-                </button>
-              </div>
+              <SectionHeader 
+                title="정규 수업"
+                actionLabel="전체 보기"
+                href="/class?view=monthly"
+              />
 
               <div className="grid grid-cols-2 gap-3">
                 {monthlyStudiosData.map((item) => (

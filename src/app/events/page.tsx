@@ -14,6 +14,10 @@ import { useNavigation } from '@/components/providers/NavigationProvider';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useModalNavigation } from '@/hooks/useModalNavigation';
 
+// 공통 UI 컴포넌트 임포트
+import SectionHeader from '@/components/common/SectionHeader';
+import HorizontalScroller from '@/components/common/HorizontalScroller';
+
 // Helper to safely convert Firestore timestamp or other date formats and strip time
 const getNormalizedDate = (val: any): Date => {
   if (!val) return startOfDay(new Date());
@@ -500,95 +504,103 @@ export default function EventsPage() {
     return (
       <div className="space-y-7 pb-10">
         {/* 1. 다가오는 대표 이벤트 Hero */}
-        {featuredEvent ? (
-          <div 
-            onClick={() => setSelectedEvent(featuredEvent)}
-            className="relative w-full h-56 rounded-3xl overflow-hidden shadow-md group cursor-pointer"
-          >
-            <img 
-              src={featuredEvent.imageUrl || 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=600'} 
-              className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-103"
-              alt=""
-            />
-            <div 
-              className="absolute inset-0 flex flex-col justify-end p-5"
-              style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.3) 60%, transparent 100%)' }}
-            >
-              <span className="w-fit bg-blue-600 text-white text-[9.5px] font-black px-2 py-0.5 rounded-md mb-2 shadow-sm uppercase tracking-wide">
-                다가오는 대표 이벤트
-              </span>
-              <h3 className="text-white text-[16px] font-black leading-snug tracking-tight text-left">
-                {language === 'KR' && featuredEvent.titleNative ? featuredEvent.titleNative : featuredEvent.title}
-              </h3>
-              
-              <div className="flex flex-col gap-0.5 mt-2 text-[11px] font-bold text-white/80 text-left">
-                <p className="flex items-center gap-1.5">
-                  <span className="material-symbols-outlined text-[13px] text-white/60">calendar_today</span>
-                  {language === 'KR'
-                    ? `${getNormalizedDate(featuredEvent.startDate).getFullYear()}. ${getNormalizedDate(featuredEvent.startDate).getMonth() + 1}. ${getNormalizedDate(featuredEvent.startDate).getDate()} (${['일','월','화','수','목','금','토'][getNormalizedDate(featuredEvent.startDate).getDay()]})`
-                    : format(getNormalizedDate(featuredEvent.startDate), 'yyyy. M. d (EEE)')}
-                </p>
-                <p className="flex items-center gap-1.5">
-                  <span className="material-symbols-outlined text-[13px] text-white/60">location_on</span>
-                  {featuredEvent.location}
-                </p>
-              </div>
+        <div className="space-y-4 text-left">
+          <SectionHeader title="대표 이벤트" />
+          {featuredEvent ? (
+            <HorizontalScroller>
+              <div 
+                onClick={() => setSelectedEvent(featuredEvent)}
+                className="relative w-[310px] h-56 rounded-3xl overflow-hidden shadow-md group cursor-pointer flex-shrink-0"
+              >
+                <img 
+                  src={featuredEvent.imageUrl || 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=600'} 
+                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-103"
+                  alt=""
+                />
+                <div 
+                  className="absolute inset-0 flex flex-col justify-end p-5"
+                  style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.3) 60%, transparent 100%)' }}
+                >
+                  <span className="w-fit bg-blue-600 text-white text-[9.5px] font-black px-2 py-0.5 rounded-md mb-2 shadow-sm uppercase tracking-wide">
+                    다가오는 대표 이벤트
+                  </span>
+                  <h3 className="text-white text-[16px] font-black leading-snug tracking-tight text-left">
+                    {language === 'KR' && featuredEvent.titleNative ? featuredEvent.titleNative : featuredEvent.title}
+                  </h3>
+                  
+                  <div className="flex flex-col gap-0.5 mt-2 text-[11px] font-bold text-white/80 text-left">
+                    <p className="flex items-center gap-1.5">
+                      <span className="material-symbols-outlined text-[13px] text-white/60">calendar_today</span>
+                      {language === 'KR'
+                        ? `${getNormalizedDate(featuredEvent.startDate).getFullYear()}. ${getNormalizedDate(featuredEvent.startDate).getMonth() + 1}. ${getNormalizedDate(featuredEvent.startDate).getDate()} (${['일','월','화','수','목','금','토'][getNormalizedDate(featuredEvent.startDate).getDay()]})`
+                        : format(getNormalizedDate(featuredEvent.startDate), 'yyyy. M. d (EEE)')}
+                    </p>
+                    <p className="flex items-center gap-1.5">
+                      <span className="material-symbols-outlined text-[13px] text-white/60">location_on</span>
+                      {featuredEvent.location}
+                    </p>
+                  </div>
 
-              <div className="flex justify-between items-center mt-4">
-                <span className="bg-white hover:bg-slate-50 text-blue-900 text-[10.5px] font-black px-4.5 py-1.5 rounded-xl shadow-sm transition-all active:scale-95">
-                  상세 보기
-                </span>
-                
-                {/* 슬라이드 인디케이터 도트 */}
-                <div className="flex gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-white"></span>
-                  <span className="w-1.5 h-1.5 rounded-full bg-white/40"></span>
-                  <span className="w-1.5 h-1.5 rounded-full bg-white/40"></span>
-                  <span className="w-1.5 h-1.5 rounded-full bg-white/40"></span>
-                  <span className="w-1.5 h-1.5 rounded-full bg-white/40"></span>
+                  <div className="flex justify-between items-center mt-4">
+                    <span className="bg-white hover:bg-slate-50 text-blue-900 text-[10.5px] font-black px-4.5 py-1.5 rounded-xl shadow-sm transition-all active:scale-95">
+                      상세 보기
+                    </span>
+                    
+                    {/* 슬라이드 인디케이터 도트 */}
+                    <div className="flex gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-white"></span>
+                      <span className="w-1.5 h-1.5 rounded-full bg-white/40"></span>
+                      <span className="w-1.5 h-1.5 rounded-full bg-white/40"></span>
+                      <span className="w-1.5 h-1.5 rounded-full bg-white/40"></span>
+                      <span className="w-1.5 h-1.5 rounded-full bg-white/40"></span>
+                    </div>
+                  </div>
                 </div>
               </div>
+            </HorizontalScroller>
+          ) : (
+            <div className="py-12 text-center text-slate-400 bg-slate-50 rounded-3xl border border-slate-100/50">
+              <p className="text-xs font-bold">진행 예정인 대표 이벤트가 없습니다.</p>
             </div>
-          </div>
-        ) : (
-          <div className="py-12 text-center text-slate-400 bg-slate-50 rounded-3xl border border-slate-100/50">
-            <p className="text-xs font-bold">진행 예정인 대표 이벤트가 없습니다.</p>
-          </div>
-        )}
+          )}
+        </div>
 
         {/* 2. 캘린더 보기 미니 카드 */}
-        <div 
-          onClick={() => router.push('/events?view=calendar')}
-          className="flex items-center justify-between p-4 bg-white border border-slate-100 rounded-3xl shadow-sm shadow-slate-100/50 cursor-pointer hover:shadow-md active:scale-[0.99] transition-all"
-        >
-          <div className="flex items-center gap-3.5 text-left">
-            <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center flex-shrink-0">
-              <span className="material-symbols-outlined text-blue-600 text-xl font-bold">calendar_month</span>
+        <div className="space-y-4 text-left">
+          <SectionHeader title="캘린더 보기" />
+          <div 
+            onClick={() => router.push('/events?view=calendar')}
+            className="flex items-center justify-between p-4 bg-white border border-slate-100 rounded-3xl shadow-sm shadow-slate-100/50 cursor-pointer hover:shadow-md active:scale-[0.99] transition-all"
+          >
+            <div className="flex items-center gap-3.5 text-left flex-shrink-0">
+              <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center flex-shrink-0">
+                <span className="material-symbols-outlined text-blue-600 text-xl font-bold">calendar_month</span>
+              </div>
+              <div>
+                <h4 className="text-[13px] font-black text-slate-800">캘린더 보기</h4>
+                <p className="text-[10px] font-bold text-slate-400 mt-0.5">전체 일정을 한눈에 확인하세요</p>
+              </div>
             </div>
-            <div>
-              <h4 className="text-[13px] font-black text-slate-800">캘린더 보기</h4>
-              <p className="text-[10px] font-bold text-slate-400 mt-0.5">전체 일정을 한눈에 확인하세요</p>
-            </div>
-          </div>
 
-          <div className="flex items-center gap-2">
-            {/* 요일 미니 스트립 */}
-            <div className="flex gap-1.5 overflow-hidden">
-              {miniCalendarStrip.map((day, idx) => (
-                <div 
-                  key={idx} 
-                  className={`flex flex-col items-center justify-center rounded-xl w-8.5 h-10 border transition-all ${
-                    day.isToday 
-                      ? 'bg-blue-50 text-blue-600 border-blue-200 shadow-sm shadow-blue-50/50' 
-                      : 'bg-slate-50/50 text-slate-700 border-slate-100/60'
-                  }`}
-                >
-                  <span className="text-[8.5px] font-black leading-none opacity-80">{day.label}</span>
-                  <span className="text-[11.5px] font-black leading-none mt-1">{day.dateNum}</span>
-                </div>
-              ))}
+            <div className="flex items-center gap-2">
+              {/* 요일 미니 스트립 */}
+              <div className="flex gap-1.5 overflow-hidden">
+                {miniCalendarStrip.map((day, idx) => (
+                  <div 
+                    key={idx} 
+                    className={`flex flex-col items-center justify-center rounded-xl w-8.5 h-10 border transition-all ${
+                      day.isToday 
+                        ? 'bg-blue-50 text-blue-600 border-blue-200 shadow-sm shadow-blue-50/50' 
+                        : 'bg-slate-50/50 text-slate-700 border-slate-100/60'
+                    }`}
+                  >
+                    <span className="text-[8.5px] font-black leading-none opacity-80">{day.label}</span>
+                    <span className="text-[11.5px] font-black leading-none mt-1">{day.dateNum}</span>
+                  </div>
+                ))}
+              </div>
+              <span className="material-symbols-outlined text-slate-350 text-[18px] ml-1">chevron_right</span>
             </div>
-            <span className="material-symbols-outlined text-slate-350 text-[18px] ml-1">chevron_right</span>
           </div>
         </div>
 
@@ -607,21 +619,11 @@ export default function EventsPage() {
 
               return (
                 <div key={monthGroup.monthKey} className="space-y-4 text-left">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-1 h-3 bg-blue-500 rounded-full" />
-                      <h3 className="text-[15px] font-black text-slate-800 tracking-tight">
-                        {monthGroup.title}
-                      </h3>
-                    </div>
-                    <button 
-                      onClick={() => router.push(`/events?view=list&month=${monthGroup.monthKey}`)}
-                      className="text-[11px] font-black text-slate-400 hover:text-slate-600 flex items-center gap-0.5 transition-colors"
-                    >
-                      전체 보기
-                      <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-                    </button>
-                  </div>
+                  <SectionHeader 
+                    title={monthGroup.title}
+                    actionLabel="전체 보기"
+                    href={`/events?view=list&month=${monthGroup.monthKey}`}
+                  />
 
                   <div className="flex flex-col gap-3">
                     {displayEvents.map((event) => {
@@ -645,7 +647,7 @@ export default function EventsPage() {
                               <img src={event.imageUrl} className="w-full h-full object-cover group-hover:scale-104 transition-transform duration-500" alt="" />
                             ) : (
                               <div className="w-full h-full flex items-center justify-center">
-                                <span className="material-symbols-outlined text-slate-300 text-xl">event</span>
+                                <span className="material-symbols-outlined text-slate-350 text-xl">event</span>
                               </div>
                             )}
                           </div>

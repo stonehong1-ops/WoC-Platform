@@ -6,6 +6,7 @@ import { socialService } from '@/lib/firebase/socialService';
 import { db } from '@/lib/firebase/clientApp';
 import { collectionGroup, getDocs, limit, query } from 'firebase/firestore';
 import { getSafeStorageUrl } from '@/lib/utils/storageUtils';
+import SectionHeader from '@/components/common/SectionHeader';
 
 interface SocialDisplay {
   title: string;
@@ -110,18 +111,11 @@ export default function ActivitySpotlight() {
   return (
     <section className="space-y-4">
       {/* Section Header */}
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold text-[#1E293B] font-headline">
-          오늘의 하이라이트
-        </h2>
-        <a 
-          href="/social" 
-          className="text-slate-500 font-label-md text-sm flex items-center gap-1 hover:text-primary transition-colors"
-        >
-          {t('home.view_all')}
-          <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
-        </a>
-      </div>
+      <SectionHeader 
+        title="오늘의 하이라이트"
+        actionLabel={t('home.view_all') || '전체 보기'}
+        href="/social"
+      />
 
       {/* 2-Column Bento Grid (Mobile: 1-Column stack for legibility) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

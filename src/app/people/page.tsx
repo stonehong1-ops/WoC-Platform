@@ -8,6 +8,12 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { peopleService, SAMPLE_PEOPLE } from '@/lib/firebase/peopleService';
 import { Person, PersonRole } from '@/types/people';
 
+// 공통 UI 컴포넌트 임포트
+import SearchHeader from '@/components/common/SearchHeader';
+import SectionHeader from '@/components/common/SectionHeader';
+import HorizontalScroller from '@/components/common/HorizontalScroller';
+import CategoryGrid from '@/components/common/CategoryGrid';
+
 export default function PeoplePage() {
   const { setSubHeader } = useNavigation();
   const { t } = useLanguage();
@@ -88,7 +94,7 @@ export default function PeoplePage() {
   // 2. 역할별 탐색 8구 (4x2)
   const rolesGrid = useMemo(() => {
     return [
-      { label: '강사', count: '128명', icon: 'coaching', bg: 'bg-violet-50 text-violet-650' },
+      { label: '강사', count: '128명', icon: 'school', bg: 'bg-violet-50 text-violet-650' },
       { label: '댄서', count: '342명', icon: 'directions_run', bg: 'bg-blue-50 text-blue-600' },
       { label: 'DJ', count: '86명', icon: 'headphones', bg: 'bg-purple-50 text-purple-600' },
       { label: '오거나이저', count: '64명', icon: 'groups', bg: 'bg-orange-50 text-orange-600' },
@@ -98,6 +104,18 @@ export default function PeoplePage() {
       { label: '기획자', count: '28명', icon: 'edit_note', bg: 'bg-slate-50 text-slate-500' }
     ];
   }, []);
+
+  // 역할 그리드용 공통 어댑터 매핑
+  const portalRoles = useMemo(() => {
+    return rolesGrid.map((role) => ({
+      id: role.label,
+      label: role.label,
+      count: role.count,
+      icon: role.icon,
+      bg: role.bg,
+      onClick: () => router.push(`/people?role=${role.label}`)
+    }));
+  }, [rolesGrid, router]);
 
   // 3. 최근 업데이트 소식
   const recentUpdates = useMemo(() => {
@@ -152,22 +170,12 @@ export default function PeoplePage() {
 
       <div className="px-5 py-6 pb-32 flex flex-col gap-7 text-left">
         
-        {/* 1. 검색바 */}
-        <div className="relative w-full flex items-center gap-3">
-          <div className="flex-1 bg-slate-50 border border-slate-100 rounded-2xl flex items-center px-4 py-3 gap-2">
-            <span className="material-symbols-outlined text-slate-400 text-[20px]">search</span>
-            <input 
-              type="text" 
-              placeholder="이름, 역할, 도시 검색" 
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="bg-transparent border-none text-slate-800 text-[13.5px] font-bold outline-none flex-1 placeholder:text-slate-350"
-            />
-          </div>
-          <button className="w-11 h-11 bg-slate-50 border border-slate-100 rounded-2xl flex items-center justify-center text-slate-650 hover:bg-slate-100 active:scale-95 transition-all">
-            <span className="material-symbols-outlined text-[20px]">tune</span>
-          </button>
-        </div>
+        {/* 1. 공통 SearchHeader 적용 */}
+        <SearchHeader 
+          value={searchQuery}
+          onChange={setSearchQuery}
+          placeholder="이름, 역할, 도시 검색"
+        />
 
         {/* 2. Local / Global 토글 */}
         <div className="flex bg-slate-100/70 p-1 rounded-2xl w-fit">
@@ -193,16 +201,15 @@ export default function PeoplePage() {
           </button>
         </div>
 
-        {/* 3. 추천 프로필 */}
+        {/* 3. 추천 프로필 (SectionHeader & HorizontalScroller 적용) */}
         <section className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-[16px] font-black text-slate-850 tracking-tight">추천 프로필</h2>
-            <Link href="/people?section=recommended" className="text-violet-600 font-bold text-[12px] flex items-center gap-0.5">
-              전체 보기 <span className="material-symbols-outlined text-base">chevron_right</span>
-            </Link>
-          </div>
+          <SectionHeader 
+            title="추천 프로필"
+            actionLabel="전체 보기"
+            href="/people?section=recommended"
+          />
 
-          <div className="flex overflow-x-auto gap-4 no-scrollbar pb-2 -mx-5 px-5">
+          <HorizontalScroller>
             {recommendedProfiles.map((artist) => (
               <div
                 key={artist.id}
@@ -229,37 +236,22 @@ export default function PeoplePage() {
                 </span>
               </div>
             ))}
-          </div>
+          </HorizontalScroller>
         </section>
 
-        {/* 4. 역할별 탐색 */}
+        {/* 4. 역할별 탐색 (SectionHeader & CategoryGrid 적용) */}
         <section className="space-y-4">
-          <h2 className="text-[16px] font-black text-slate-850 tracking-tight">역할별 탐색</h2>
-          <div className="grid grid-cols-4 gap-3">
-            {rolesGrid.map((role, idx) => (
-              <div
-                key={idx}
-                onClick={() => router.push(`/people?role=${role.label}`)}
-                className="bg-white border border-slate-100 rounded-3xl p-3 flex flex-col items-center justify-center cursor-pointer hover:shadow-sm active:scale-[0.97] transition-all min-h-[105px]"
-              >
-                <div className={`w-10 h-10 rounded-full ${role.bg.split(' ')[0]} flex items-center justify-center mb-2`}>
-                  <span className={`material-symbols-outlined ${role.bg.split(' ')[1]} text-xl`}>{role.icon}</span>
-                </div>
-                <span className="text-[11px] font-black text-slate-800 leading-tight">{role.label}</span>
-                <span className="text-[10.5px] font-black text-slate-450 mt-1">{role.count}</span>
-              </div>
-            ))}
-          </div>
+          <SectionHeader title="역할별 탐색" />
+          <CategoryGrid items={portalRoles} />
         </section>
 
-        {/* 5. 최근 업데이트 */}
+        {/* 5. 최근 업데이트 (SectionHeader 적용) */}
         <section className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-[16px] font-black text-slate-850 tracking-tight">최근 업데이트</h2>
-            <Link href="/people?section=updates" className="text-violet-600 font-bold text-[12px] flex items-center gap-0.5">
-              전체 보기 <span className="material-symbols-outlined text-base">chevron_right</span>
-            </Link>
-          </div>
+          <SectionHeader 
+            title="최근 업데이트"
+            actionLabel="전체 보기"
+            href="/people?section=updates"
+          />
 
           <div className="bg-white border border-slate-100 rounded-3xl divide-y divide-slate-100 overflow-hidden shadow-sm">
             {recentUpdates.map((update) => (
@@ -279,16 +271,15 @@ export default function PeoplePage() {
           </div>
         </section>
 
-        {/* 6. 서울에서 만날 수 있는 사람 */}
+        {/* 6. 서울에서 만날 수 있는 사람 (SectionHeader & HorizontalScroller 적용) */}
         <section className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-[16px] font-black text-slate-850 tracking-tight">서울에서 만날 수 있는 사람</h2>
-            <Link href="/people?section=local" className="text-violet-600 font-bold text-[12px] flex items-center gap-0.5">
-              전체 보기 <span className="material-symbols-outlined text-base">chevron_right</span>
-            </Link>
-          </div>
+          <SectionHeader 
+            title="서울에서 만날 수 있는 사람"
+            actionLabel="전체 보기"
+            href="/people?section=local"
+          />
 
-          <div className="flex overflow-x-auto gap-4 no-scrollbar pb-2 -mx-5 px-5">
+          <HorizontalScroller>
             {seoulMeetups.map((meetup) => (
               <div
                 key={meetup.id}
@@ -322,19 +313,18 @@ export default function PeoplePage() {
                 </div>
               </div>
             ))}
-          </div>
+          </HorizontalScroller>
         </section>
 
-        {/* 7. 투어 중인 아티스트 */}
+        {/* 7. 투어 중인 아티스트 (SectionHeader & HorizontalScroller 적용) */}
         <section className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-[16px] font-black text-slate-850 tracking-tight">투어 중인 아티스트</h2>
-            <Link href="/people?section=touring" className="text-violet-600 font-bold text-[12px] flex items-center gap-0.5">
-              전체 보기 <span className="material-symbols-outlined text-base">chevron_right</span>
-            </Link>
-          </div>
+          <SectionHeader 
+            title="투어 중인 아티스트"
+            actionLabel="전체 보기"
+            href="/people?section=touring"
+          />
 
-          <div className="flex overflow-x-auto gap-4 no-scrollbar pb-2 -mx-5 px-5">
+          <HorizontalScroller>
             {touringArtists.map((artist, idx) => (
               <div
                 key={idx}
@@ -372,7 +362,7 @@ export default function PeoplePage() {
                 </div>
               </div>
             ))}
-          </div>
+          </HorizontalScroller>
         </section>
 
       </div>

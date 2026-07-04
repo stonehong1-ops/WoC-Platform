@@ -347,8 +347,28 @@ export default function TodayPageContent() {
   // 실시간 URL 싱크 데이터 바인딩 (소셜 & 이벤트)
   const selectedSocial = useMemo(() => {
     if (!viewSocialId) return null;
-    return allSocials.find(s => s.id === viewSocialId) || null;
-  }, [viewSocialId, allSocials]);
+    return allSocials.find(s => s.id === viewSocialId) || socials.find(s => s.id === viewSocialId) || null;
+  }, [viewSocialId, allSocials, socials]);
+
+  // viewSocialId가 존재하지만 목록에 없을 경우 단일 조회하여 보완
+  useEffect(() => {
+    if (!viewSocialId) return;
+    const exists = allSocials.some(s => s.id === viewSocialId) || socials.some(s => s.id === viewSocialId);
+    if (!exists) {
+      import("firebase/firestore").then(({ doc, getDoc }) => {
+        const docRef = doc(db, "socials", viewSocialId);
+        getDoc(docRef).then(snap => {
+          if (snap.exists()) {
+            const fetched = { id: snap.id, ...snap.data() } as Social;
+            setAllSocials(prev => {
+              if (prev.some(s => s.id === viewSocialId)) return prev;
+              return [...prev, fetched];
+            });
+          }
+        }).catch(console.error);
+      });
+    }
+  }, [viewSocialId, allSocials, socials]);
 
   // 통합 이벤트 클릭 처리 핸들러 (소셜/클래스 상세 페이지 연동)
   const handleEventClick = (ev: any) => {

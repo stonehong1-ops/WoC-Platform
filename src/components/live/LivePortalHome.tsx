@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { galleryService, GalleryPost } from '@/lib/firebase/galleryService';
 import { getSafeStorageUrl } from '@/lib/utils/storageUtils';
+import SectionHeader from '@/components/common/SectionHeader';
 
 export default function LivePortalHome() {
   const { t } = useLanguage();
@@ -152,6 +153,15 @@ export default function LivePortalHome() {
         </div>
       </div>
 
+      {/* Tango Moments 섹션 헤더 공통 컴포넌트 이식 */}
+      <div className="px-6 mt-2 relative z-10">
+        <SectionHeader 
+          title="Tango Moments"
+          actionLabel="전체 보기"
+          href="/live?view=feed"
+        />
+      </div>
+
       {/* 2) 메인 콜라주 포토카드 영역 */}
       <div className="relative w-full h-[620px] z-10 px-4 mt-2">
         
@@ -162,9 +172,28 @@ export default function LivePortalHome() {
         >
           <div className="relative aspect-[1.12/1] w-full bg-slate-50 overflow-hidden border border-slate-100">
             {collageCards[0].img.toLowerCase().includes('.mp4') || collageCards[0].img.toLowerCase().includes('.mov') ? (
-              <video src={getSafeStorageUrl(collageCards[0].img)} muted playsInline className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+              <video 
+                src={getSafeStorageUrl(collageCards[0].img)} 
+                muted 
+                playsInline 
+                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" 
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none';
+                  const img = document.createElement('img');
+                  img.src = "https://images.unsplash.com/photo-1504609773096-104ff2c73ba4?q=80&w=400";
+                  img.className = "w-full h-full object-cover";
+                  e.currentTarget.parentElement?.appendChild(img);
+                }}
+              />
             ) : (
-              <img src={getSafeStorageUrl(collageCards[0].img)} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" alt="" />
+              <img 
+                src={getSafeStorageUrl(collageCards[0].img)} 
+                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" 
+                alt="" 
+                onError={(e) => {
+                  e.currentTarget.src = "https://images.unsplash.com/photo-1504609773096-104ff2c73ba4?q=80&w=400";
+                }}
+              />
             )}
           </div>
           <span className="absolute bottom-14 right-3 font-serif italic text-rose-500/25 text-[20px] font-bold select-none pointer-events-none">
@@ -180,7 +209,7 @@ export default function LivePortalHome() {
             <div className="text-left min-w-0 flex-1">
               <h3 className="text-[11px] font-black text-slate-800 leading-tight truncate">{collageCards[0].title}</h3>
               <p className="text-[9px] font-bold text-slate-400 mt-0.5 truncate">{collageCards[0].venue}</p>
-              <p className="text-[8px] font-bold text-slate-350 mt-0.5">{collageCards[0].uploadedAt}</p>
+              <p className="text-[8px] font-bold text-slate-355 mt-0.5">{collageCards[0].uploadedAt}</p>
             </div>
           </div>
         </div>
@@ -192,9 +221,28 @@ export default function LivePortalHome() {
         >
           <div className="relative aspect-[1.12/1] w-full bg-slate-50 overflow-hidden border border-slate-100">
             {collageCards[1].img.toLowerCase().includes('.mp4') || collageCards[1].img.toLowerCase().includes('.mov') ? (
-              <video src={getSafeStorageUrl(collageCards[1].img)} muted playsInline className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+              <video 
+                src={getSafeStorageUrl(collageCards[1].img)} 
+                muted 
+                playsInline 
+                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" 
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none';
+                  const img = document.createElement('img');
+                  img.src = "https://images.unsplash.com/photo-1545128485-c400e7702796?q=80&w=400";
+                  img.className = "w-full h-full object-cover";
+                  e.currentTarget.parentElement?.appendChild(img);
+                }}
+              />
             ) : (
-              <img src={getSafeStorageUrl(collageCards[1].img)} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" alt="" />
+              <img 
+                src={getSafeStorageUrl(collageCards[1].img)} 
+                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" 
+                alt="" 
+                onError={(e) => {
+                  e.currentTarget.src = "https://images.unsplash.com/photo-1545128485-c400e7702796?q=80&w=400";
+                }}
+              />
             )}
           </div>
           <span className="absolute bottom-14 right-3 font-serif italic text-blue-500/25 text-[20px] font-bold select-none pointer-events-none">
@@ -222,9 +270,28 @@ export default function LivePortalHome() {
         >
           <div className="relative aspect-[1.12/1] w-full bg-slate-50 overflow-hidden border border-slate-100">
             {collageCards[2].img.toLowerCase().includes('.mp4') || collageCards[2].img.toLowerCase().includes('.mov') ? (
-              <video src={getSafeStorageUrl(collageCards[2].img)} muted playsInline className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+              <video 
+                src={getSafeStorageUrl(collageCards[2].img)} 
+                muted 
+                playsInline 
+                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" 
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none';
+                  const img = document.createElement('img');
+                  img.src = "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?q=80&w=400";
+                  img.className = "w-full h-full object-cover";
+                  e.currentTarget.parentElement?.appendChild(img);
+                }}
+              />
             ) : (
-              <img src={getSafeStorageUrl(collageCards[2].img)} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" alt="" />
+              <img 
+                src={getSafeStorageUrl(collageCards[2].img)} 
+                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" 
+                alt="" 
+                onError={(e) => {
+                  e.currentTarget.src = "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?q=80&w=400";
+                }}
+              />
             )}
           </div>
           <span className="absolute bottom-14 right-3 font-serif italic text-indigo-500/25 text-[20px] font-bold select-none pointer-events-none">
