@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { db } from '@/lib/firebase/clientApp';
-import { collection, getDocs, query, where, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
+import { collection, getDocs, query, where, addDoc, updateDoc, deleteDoc, doc, writeBatch } from 'firebase/firestore';
 import { getSafeStorageUrl } from '@/lib/utils/storageUtils';
 import { storageService } from '@/lib/firebase/storageService';
 
@@ -626,6 +626,37 @@ Keep a safe distance from the couple in front of you and keep the counter-clockw
     }
   };
 
+  // 맨앞/맨뒤 일괄 이동 (스왑)
+  const handleMoveToLimit = async (index: number, limit: 'top' | 'bottom') => {
+    try {
+      const targetCollection = activeTab === 'tangotoon' ? 'cartoons' : 'culture_contents';
+      const orderField = activeTab === 'tangotoon' ? 'episodeNumber' : 'order';
+      
+      let newContents = [...contents];
+      const targetItem = newContents[index];
+      
+      newContents.splice(index, 1);
+      
+      if (limit === 'top') {
+        newContents.unshift(targetItem);
+      } else {
+        newContents.push(targetItem);
+      }
+      
+      const batch = writeBatch(db);
+      newContents.forEach((item, idx) => {
+        const docRef = doc(db, targetCollection, item.id);
+        batch.update(docRef, { [orderField]: idx + 1 });
+      });
+      
+      await batch.commit();
+      fetchContents();
+    } catch (err) {
+      console.error('Error reordering to limit:', err);
+      alert('순서 조정 중 오류가 발생했습니다.');
+    }
+  };
+
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
@@ -749,8 +780,17 @@ Keep a safe distance from the couple in front of you and keep the counter-clockw
 
                     <div className="flex items-center gap-2 flex-shrink-0">
                       <button 
+                        onClick={() => handleMoveToLimit(idx, 'top')}
+                        disabled={idx === 0}
+                        title="맨 앞으로 이동"
+                        className="p-1.5 bg-slate-50 hover:bg-slate-100 disabled:opacity-20 rounded-lg text-slate-600 border border-slate-200 cursor-pointer text-xs flex items-center justify-center"
+                      >
+                        <span className="material-symbols-outlined text-[15px]">keyboard_double_arrow_up</span>
+                      </button>
+                      <button 
                         onClick={() => handleMoveOrder(idx, 'up')}
                         disabled={idx === 0}
+                        title="위로 이동"
                         className="p-2 bg-slate-50 hover:bg-slate-100 disabled:opacity-20 rounded-lg text-slate-600 border border-slate-200 cursor-pointer text-xs"
                       >
                         ▲
@@ -758,9 +798,18 @@ Keep a safe distance from the couple in front of you and keep the counter-clockw
                       <button 
                         onClick={() => handleMoveOrder(idx, 'down')}
                         disabled={idx === contents.length - 1}
+                        title="아래로 이동"
                         className="p-2 bg-slate-50 hover:bg-slate-100 disabled:opacity-20 rounded-lg text-slate-600 border border-slate-200 cursor-pointer text-xs"
                       >
                         ▼
+                      </button>
+                      <button 
+                        onClick={() => handleMoveToLimit(idx, 'bottom')}
+                        disabled={idx === contents.length - 1}
+                        title="맨 뒤로 이동"
+                        className="p-1.5 bg-slate-50 hover:bg-slate-100 disabled:opacity-20 rounded-lg text-slate-600 border border-slate-200 cursor-pointer text-xs flex items-center justify-center"
+                      >
+                        <span className="material-symbols-outlined text-[15px]">keyboard_double_arrow_down</span>
                       </button>
                       <button 
                         onClick={() => startEdit(item)}
