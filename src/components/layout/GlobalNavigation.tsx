@@ -21,7 +21,7 @@ const FOOTER_MENU = [
     section: 'nav.section_society',
     items: [
       { name: 'nav.today', icon: 'today', path: '/home' },
-      { name: 'nav.social', icon: 'diversity_3', path: '/today' },
+      { name: 'nav.social', icon: 'diversity_3', path: '/social' },
       { name: 'nav.live', icon: 'cell_tower', path: '/live' },
       { name: 'nav.plaza', icon: 'account_balance', path: '/plaza' },
     ],
