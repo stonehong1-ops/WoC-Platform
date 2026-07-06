@@ -19,6 +19,7 @@ export default function CultureCMSPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [password, setPassword] = useState('');
   const [activeTab, setActiveTab] = useState('focus');
+  const [subCategory, setSubCategory] = useState('imagination');
   const [contents, setContents] = useState<any[]>([]);
 
   // 콘텐츠 작성/수정 Form 상태 변수들
@@ -55,10 +56,18 @@ export default function CultureCMSPage() {
   // 활성 탭 데이터 패치
   const fetchContents = async () => {
     try {
-      const q = query(
-        collection(db, 'culture_contents'),
-        where('category', '==', activeTab)
-      );
+      let q;
+      if (activeTab === 'tangotoon') {
+        q = query(
+          collection(db, 'cartoons'),
+          where('category', '==', subCategory)
+        );
+      } else {
+        q = query(
+          collection(db, 'culture_contents'),
+          where('category', '==', activeTab)
+        );
+      }
       const snap = await getDocs(q);
       let list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
       let seeded = false;
@@ -423,14 +432,22 @@ Keep a safe distance from the couple in front of you and keep the counter-clockw
         }
       }
 
-      list.sort((a: any, b: any) => {
-        const orderA = a.order !== undefined ? a.order : 9999;
-        const orderB = b.order !== undefined ? b.order : 9999;
-        if (orderA !== orderB) return orderA - orderB;
-        const timeA = a.createdAt?.seconds || 0;
-        const timeB = b.createdAt?.seconds || 0;
-        return timeB - timeA;
-      });
+      if (activeTab === 'tangotoon') {
+        list.sort((a: any, b: any) => {
+          const epA = a.episodeNumber !== undefined ? a.episodeNumber : 0;
+          const epB = b.episodeNumber !== undefined ? b.episodeNumber : 0;
+          return epA - epB;
+        });
+      } else {
+        list.sort((a: any, b: any) => {
+          const orderA = a.order !== undefined ? a.order : 9999;
+          const orderB = b.order !== undefined ? b.order : 9999;
+          if (orderA !== orderB) return orderA - orderB;
+          const timeA = a.createdAt?.seconds || 0;
+          const timeB = b.createdAt?.seconds || 0;
+          return timeB - timeA;
+        });
+      }
       setContents(list);
     } catch (err) {
       console.error('Error fetching contents:', err);
@@ -441,7 +458,7 @@ Keep a safe distance from the couple in front of you and keep the counter-clockw
     if (isAuthenticated) {
       fetchContents();
     }
-  }, [isAuthenticated, activeTab]);
+  }, [isAuthenticated, activeTab, subCategory]);
 
   // 파일 다중 선택 및 업로드 핸들러
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -504,11 +521,14 @@ Keep a safe distance from the couple in front of you and keep the counter-clockw
     }
 
     try {
-      const docData = {
-        category: activeTab,
+      const isToon = activeTab === 'tangotoon';
+      const targetCollection = isToon ? 'cartoons' : 'culture_contents';
+
+      const docData: any = {
+        category: isToon ? subCategory : activeTab,
         title,
         titleNative: titleNative || null,
-        keyword: activeTab.toUpperCase(),
+        keyword: isToon ? subCategory.toUpperCase() : activeTab.toUpperCase(),
         keywordNative: null,
         description: desc,
         descriptionNative: descNative || null,
@@ -520,13 +540,20 @@ Keep a safe distance from the couple in front of you and keep the counter-clockw
       };
 
       if (editingId) {
-        await updateDoc(doc(db, 'culture_contents', editingId), docData);
+        await updateDoc(doc(db, targetCollection, editingId), docData);
         alert('성공적으로 수정되었습니다.');
       } else {
-        const nextOrder = contents.length > 0 ? Math.max(...contents.map(x => x.order || 0)) + 1 : 1;
-        await addDoc(collection(db, 'culture_contents'), {
+        if (isToon) {
+          const maxEpisode = contents.length > 0 ? Math.max(...contents.map(x => x.episodeNumber || 0)) : 0;
+          docData.episodeNumber = maxEpisode + 1;
+          docData.likeCount = 0;
+        } else {
+          const nextOrder = contents.length > 0 ? Math.max(...contents.map(x => x.order || 0)) + 1 : 1;
+          docData.order = nextOrder;
+        }
+
+        await addDoc(collection(db, targetCollection), {
           ...docData,
-          order: nextOrder,
           createdAt: new Date()
         });
         alert('성공적으로 등록되었습니다.');
@@ -551,13 +578,17 @@ Keep a safe distance from the couple in front of you and keep the counter-clockw
     setContentBody(item.content || '');
     setContentBodyNative(item.contentNative || '');
     setImageUrls(item.imageUrls || (item.imageUrl ? [item.imageUrl] : []));
+    if (activeTab === 'tangotoon' && item.category) {
+      setSubCategory(item.category);
+    }
   };
 
   // 삭제
   const handleDelete = async (id: string) => {
     if (!confirm('정말로 삭제하시겠습니까?')) return;
     try {
-      await deleteDoc(doc(db, 'culture_contents', id));
+      const targetCollection = activeTab === 'tangotoon' ? 'cartoons' : 'culture_contents';
+      await deleteDoc(doc(db, targetCollection, id));
       alert('삭제되었습니다.');
       fetchContents();
     } catch (err) {
@@ -571,14 +602,23 @@ Keep a safe distance from the couple in front of you and keep the counter-clockw
     if (targetIndex < 0 || targetIndex >= contents.length) return;
 
     try {
+      const targetCollection = activeTab === 'tangotoon' ? 'cartoons' : 'culture_contents';
       const item1 = contents[index];
       const item2 = contents[targetIndex];
 
-      const tempOrder = item1.order !== undefined ? item1.order : index;
-      const targetOrder = item2.order !== undefined ? item2.order : targetIndex;
+      if (activeTab === 'tangotoon') {
+        const tempEp = item1.episodeNumber !== undefined ? item1.episodeNumber : index;
+        const targetEp = item2.episodeNumber !== undefined ? item2.episodeNumber : targetIndex;
 
-      await updateDoc(doc(db, 'culture_contents', item1.id), { order: targetOrder });
-      await updateDoc(doc(db, 'culture_contents', item2.id), { order: tempOrder });
+        await updateDoc(doc(db, 'cartoons', item1.id), { episodeNumber: targetEp });
+        await updateDoc(doc(db, 'cartoons', item2.id), { episodeNumber: tempEp });
+      } else {
+        const tempOrder = item1.order !== undefined ? item1.order : index;
+        const targetOrder = item2.order !== undefined ? item2.order : targetIndex;
+
+        await updateDoc(doc(db, 'culture_contents', item1.id), { order: targetOrder });
+        await updateDoc(doc(db, 'culture_contents', item2.id), { order: tempOrder });
+      }
 
       fetchContents();
     } catch (err) {
@@ -651,6 +691,27 @@ Keep a safe distance from the couple in front of you and keep the counter-clockw
               </button>
             ))}
           </div>
+
+          {activeTab === 'tangotoon' && (
+            <div className="flex gap-2 p-1.5 bg-slate-200/40 rounded-2xl border border-slate-200/30">
+              {[
+                { id: 'imagination', name: '상상 그이상' },
+                { id: 'wheres_gavi', name: '가비씨 어디가?' },
+                { id: 'fur_mood', name: '에세이 톡' }
+              ].map(sub => (
+                <button
+                  key={sub.id}
+                  onClick={() => {
+                    setSubCategory(sub.id);
+                    resetForm();
+                  }}
+                  className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all border-none cursor-pointer ${subCategory === sub.id ? 'bg-white text-slate-800 shadow-sm font-black' : 'text-slate-500 hover:text-slate-800 bg-transparent'}`}
+                >
+                  {sub.name}
+                </button>
+              ))}
+            </div>
+          )}
 
           {/* List Card */}
           <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6 text-left space-y-4">
