@@ -2519,6 +2519,11 @@ export const en: Record<string, string> = {
     'live-dashboard.subtitle': 'Countless moments of education have been recorded.',
 
     // Home/Society Module
+    'home.today_scene_title': "Today's {city} Tango Scene",
+    'home.today_scene.social': 'Social (Milonga)',
+    'home.today_scene.practice': 'Practica',
+    'home.today_scene.class': 'Class',
+    'home.today_scene.event': 'Event',
     'home.social_today': 'Social today',
     'home.in_city': 'in {city}',
     'home.and_others': 'and {count} other{s}',
@@ -3691,6 +3696,8 @@ export const en: Record<string, string> = {
     'history.chat_item': 'Item',
     'history.chat_status': 'Status',
     'common.coming_soon': 'Chat feature coming soon!',
+    'common.coming_soon_default': 'Coming Soon!',
+    'home.coming_soon_best_live': 'Will be provided as Best Live (On-site Photos & Videos) in the future!',
     'common.new': 'New',
     'common.focus': 'Focus',
     'common.important': 'Important',

@@ -316,15 +316,7 @@ export default function GaviCartoonPopup({ onClose }: GaviCartoonPopupProps) {
 
       {/* Header (Top Right Overlay) */}
       <div className="absolute top-0 right-0 p-4 sm:p-6 flex items-center gap-3 z-30">
-        {!isAdmin && !showAdminLogin && (
-          <button 
-            onClick={() => setShowAdminLogin(true)}
-            className="w-10 h-10 flex items-center justify-center rounded-full bg-black/10 text-black/50 backdrop-blur-md hover:bg-black/20 hover:text-black/80 transition-colors shadow-sm"
-            title="Admin Login"
-          >
-            <span className="material-symbols-outlined text-xl">settings</span>
-          </button>
-        )}
+
         <button 
           onClick={handleHubClose}
           className="w-10 h-10 flex items-center justify-center rounded-full bg-black/10 text-black/50 backdrop-blur-md hover:bg-black/20 hover:text-black/80 transition-colors shadow-sm"

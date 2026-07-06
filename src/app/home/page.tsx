@@ -79,7 +79,7 @@ export default function SocietyPage() {
   const [featuredUsers, setFeaturedUsers] = useState<PlatformUser[]>([]);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [isSafeFloorOpen, setIsSafeFloorOpen] = useState(false);
-  const [comingSoonCard, setComingSoonCard] = useState<{title: string; icon: string; desc: string} | null>(null);
+  const [comingSoonCard, setComingSoonCard] = useState<{title: string; icon: string; desc: string; badge?: string} | null>(null);
   
   // Focus & Etiquette States
   const [focusContents, setFocusContents] = useState<any[]>([]);
@@ -90,6 +90,18 @@ export default function SocietyPage() {
   const [etiquetteContents, setEtiquetteContents] = useState<any[]>([]);
   const [isEtiquetteOpen, setIsEtiquetteOpen] = useState(false);
   const [currentEtiquetteIndex, setCurrentEtiquetteIndex] = useState(0);
+
+  const [music365Contents, setMusic365Contents] = useState<any[]>([]);
+  const [isMusic365Open, setIsMusic365Open] = useState(false);
+  const [currentMusic365Index, setCurrentMusic365Index] = useState(0);
+
+  const [historyContents, setHistoryContents] = useState<any[]>([]);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [currentHistoryIndex, setCurrentHistoryIndex] = useState(0);
+
+  const [travelContents, setTravelContents] = useState<any[]>([]);
+  const [isTravelOpen, setIsTravelOpen] = useState(false);
+  const [currentTravelIndex, setCurrentTravelIndex] = useState(0);
 
   const [isAboutOpen, setIsAboutOpen] = useState(false);
   const [isTermsOpen, setIsTermsOpen] = useState(false);
@@ -114,34 +126,41 @@ export default function SocietyPage() {
 
   const societyInfo = societiesData.find((s: any) => s.id === societyId) || societiesData[0];
 
-  // Fetch up to 5 events for Hero Slider (society-aware)
+  // Fetch hero event from banners setting
   useEffect(() => {
-    const fetchEvents = async () => {
+    const fetchHeroEvent = async () => {
       try {
-        const q = query(
-          collection(db, 'events'),
-          orderBy('startDate', 'desc'),
-          limit(30)
-        );
-        const snap = await getDocs(q);
-        const allEvents = snap.docs.map(doc => {
-          const data = doc.data();
-          return { id: doc.id, ...data } as unknown as EventType;
-        });
-        const filtered = allEvents.filter(e => {
-          if (societyId === 'tango') return !e.societyId || e.societyId === 'tango';
-          return e.societyId === societyId;
-        });
-        const slice = filtered.slice(0, 5);
-        setHeroEvents(slice);
-        if (slice.length > 0) {
-          setHeroEvent(slice[0]);
+        const bannerDocRef = doc(db, 'settings', 'banners');
+        const bannerSnap = await getDoc(bannerDocRef);
+        
+        let targetEventId = '';
+        if (bannerSnap.exists()) {
+          const data = bannerSnap.data();
+          const ids: Record<string, string> = data.heroEventIds || {};
+          targetEventId = ids[societyId] || data.heroEventId || '';
+        }
+
+        if (!targetEventId) {
+          setHeroEvents([]);
+          return;
+        }
+
+        const eventDocRef = doc(db, 'events', targetEventId);
+        const eventSnap = await getDoc(eventDocRef);
+        
+        if (eventSnap.exists()) {
+          const evt = { id: eventSnap.id, ...eventSnap.data() } as unknown as EventType;
+          setHeroEvents([evt]);
+          setHeroEvent(evt);
+        } else {
+          setHeroEvents([]);
         }
       } catch (err) {
-        console.error('Error fetching hero events:', err);
+        console.error('Error fetching banner hero event:', err);
+        setHeroEvents([]);
       }
     };
-    fetchEvents();
+    fetchHeroEvent();
   }, [societyId]);
 
   // Slider dot track
@@ -561,6 +580,165 @@ Keep a safe distance from the couple in front of you and keep the counter-clockw
     fetchEtiquetteContents();
   }, [isEtiquetteOpen]);
 
+  // Fetch Music365 Contents
+  useEffect(() => {
+    const fetchMusic365Contents = async () => {
+      try {
+        const q = query(
+          collection(db, 'culture_contents'),
+          where('category', '==', 'music365')
+        );
+        const snap = await getDocs(q);
+        let list = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+        list.sort((a: any, b: any) => {
+          const idxA = a.index !== undefined ? a.index : 9999;
+          const idxB = b.index !== undefined ? b.index : 9999;
+          return idxA - idxB;
+        });
+
+        setMusic365Contents(list);
+      } catch (err) {
+        console.error('Error fetching music365 contents:', err);
+      }
+    };
+    if (isMusic365Open) {
+      fetchMusic365Contents();
+    }
+  }, [isMusic365Open]);
+
+  // Fetch History Contents
+  useEffect(() => {
+    const fetchHistoryContents = async () => {
+      try {
+        const q = query(
+          collection(db, 'culture_contents'),
+          where('category', '==', 'history')
+        );
+        const snap = await getDocs(q);
+        let list = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+        if (list.length === 0) {
+          const seedData = {
+            category: 'history',
+            order: 1,
+            title: '1. Tango History Prologue',
+            titleNative: '1. 땅고의 역사 프롤로그',
+            keyword: 'HISTORY',
+            keywordNative: '역사',
+            description: '¡Tango! - The Dance, the Song, the Story Book Review and Translation Prologue.',
+            descriptionNative: '런던 출판사 Thames and Hudson의 명저 <¡Tango! - The Dance, the Song, the Story> 요약 번역 연재를 개시합니다.',
+            imageUrl: 'https://tangoclass.co.kr/wp-content/uploads/2026/06/2026-05-Cabeceo-Title-KO.jpg',
+            imageUrls: [
+              'https://tangoclass.co.kr/wp-content/uploads/2026/06/2026-05-Cabeceo-Title-KO.jpg'
+            ],
+            content: `¡Tango! - The Dance, the Song, the Story Book Review
+
+We review Simon Collier, Artemis Cooper, María Susana Azzi, and Richard Martin's historical record on Argentine Tango.`,
+            contentNative: `작년 말쯤, 런던의 출판사 Thames and Hudson에서 1995년에 나온 책, <¡Tango! - The Dance, the Song, the Story>를 한예종 도서관에서 빌렸습니다.
+
+코로나로 집콕이 일상이 된 김에 이번엔 꼭 완독하리라 마음 먹고 열심히 읽었습니다.
+땅고를 즐기고, 땅고에 종사하는(?) 사람으로서, 땅고의 역사에 대해 좀 권위있는 자료를 가지고 제대로 공부를 좀 해야겠다는 생각을 항상 가졌었기에, 약간은 숙제를 하는 기분이 있긴 했습니다.
+그래서 처음엔 페이지가 좀 안 넘어갔는데, 읽다 보니 이게 또 예사롭지 않게 재미있더군요.
+
+끝까지 다 읽고 나니, 이렇게 한 번 읽고 잊어버리면 아까울 것 같은 생각이 들어 다시 한 번 읽으며 찬찬히 내용을 정리해봐야겠다 싶었습니다.
+그렇게 다시 읽노라니 이걸 혼자 읽기가 아깝다는 생각이 또 들었습니다.
+그래서 번역을 시작했습니다. word by word로 완역을 한다는 느낌은 아니고, 최대한 촘촘하게 요약 정리한다는 느낌으로.
+일단 번역이 대충 끝나서 연재를 시작하려 합니다. 조금씩 쪼개서 하루 이틀 간격으로 야금야금 올리려고 해요.
+
+본격적인 포스팅에 앞서 미리 밝혀두고자 하는 점이 몇 가지 있습니다.
+- 이제부터 <땅고의 역사>라는 제목으로 올리는 연재의 내용은 위에서 밝힌 바와 같이, Thames and Hudson 출판사에서 1995년에 발간한 <¡Tango! - The Dance, the Song, the Story>라는 책의 내용을 한글로 요약, 정리, 가공한 것입니다.
+- 아래 목차를 보면 나오듯 이 책은 Simon Collier, Artemis Cooper, María Susana Azzi, Richard Martin 이렇게 4명의 공저자가 한 챕터씩을 맡아 썼습니다. 각 챕터의 주제는 순서대로 보면 땅고의 탄생 - 유럽에서의 땅고 유행 - 땅고의 황금기 - 문화로서의 땅고 이렇게 되는데, 안타깝지만 네 번째 챕터는 개인적으로 영 마음에 들지 않아서 번역/정리에서 제외했습니다.
+- 일반적으로 쓰이는 '탱고'가 아닌 '땅고'로 표기하는 것을 선택한 이유는, 원래 이름이 '땅고'이기 때문이지, 다른 이유가 아닙니다. 외국어 표기는 각 언어의 원어 발음을 최대한 존중하려고 노력했습니다.
+- 노래나 영화 등의 작품 제목, 중요한 인물 이름 등은 한글을 병기하고 원어에는 볼드와 이탤릭을 먹여 눈에 띄게 표시했습니다.
+- 글의 맥락에 따라 이해를 돕기 위해서나 감칠맛을 더하기 위해 책에 실리지 않은 이미지나 동영상 같은 것이 추가될 수도 있겠습니다.
+
+자 그럼 ¡Vamos!`,
+            createdAt: new Date()
+          };
+          await addDoc(collection(db, 'culture_contents'), seedData);
+          const reSnap = await getDocs(q);
+          list = reSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        }
+
+        list.sort((a: any, b: any) => {
+          const orderA = a.order !== undefined ? a.order : 9999;
+          const orderB = b.order !== undefined ? b.order : 9999;
+          if (orderA !== orderB) return orderA - orderB;
+          const timeA = a.createdAt?.seconds || 0;
+          const timeB = b.createdAt?.seconds || 0;
+          return timeB - timeA;
+        });
+
+        setHistoryContents(list);
+      } catch (err) {
+        console.error('Error fetching history contents:', err);
+      }
+    };
+    fetchHistoryContents();
+  }, [isHistoryOpen]);
+
+  // Fetch Travel Contents
+  useEffect(() => {
+    const fetchTravelContents = async () => {
+      try {
+        const q = query(
+          collection(db, 'culture_contents'),
+          where('category', '==', 'travel')
+        );
+        const snap = await getDocs(q);
+        let list = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+        if (list.length === 0) {
+          const seedData = {
+            category: 'travel',
+            order: 1,
+            title: '1. 2026 Beijing Select Tango Weekend',
+            titleNative: '1. 2026 북경 셀렉트 땅고 위켄드',
+            keyword: 'TRAVEL',
+            keywordNative: '여행',
+            description: "Beto Kim's travel diary and settlement on 2026 Beijing Select Tango Weekend.",
+            descriptionNative: '2026 북경 셀렉트 땅고 위켄드(6.19.~6.22.) 여행 후기 및 가계부 정산 스크린샷 이미지와 함께 수기를 공유합니다.',
+            imageUrl: '/travel_beijing1.png',
+            imageUrls: ['/travel_beijing1.png'],
+            content: `2026 Beijing Select Tango Weekend (June 19 - June 22) Travel Diary and Bill Settlement.`,
+            contentNative: `2026 북경 셀렉트 땅고 위겐드 (6.19. ~ 6.22.)
+
+1. 두번째 참여하는 행사 처음보다 훨씬 분위기가 좋아졌음
+2. 개별 밀롱가 판매해서 였는지는 모르지만 저녁밀에는 북경 친구들이 많이 옴
+3. 금요일 로컬 갔는데 라가 없음(행사장으로 돌아오니 다들 행사장에 있음 ㅋㅋㅋ)
+4. 토요일 바넷사&파쿤도 공연이 다른 곳에 있어서 감(북경 첫 방문, 밀롱가비 겁나 비쌈)
+5. 공연 보러 간거 나는 좋았는데 같이 가신분한테는 엄청 미안하게 됨(까칠한 친구들~~)
+6. 토요일 행사장 돌아와서 뒷풀이 감(아침 6시까지 ~~~~남자들의 수다란)
+7. 일요일 별도의 공간으로 버스를 한시간 타고 이동해서 저녁먹고 밀롱가를 함(한국인이 80%)
+8. 양 한마리, 새끼돼지 통구이가 제공됨 정말 정말 맛있는데 많이 먹지 못함(사람이 많아)
+그래도 양꼬치가 무한 제공 되고 음식도 많았음
+9. 6월 주말 마다 행사가 있었는데 중국친구중에 난징, 청두, 북경 3곳을 다간 친구도 있고 청두 갔다가 북경 온 친구들이 꽤 있었음
+10. 몇몇 새로운 라들을 만나서 춤추었고 중국 친구가 데려간 처음가본 식당과 마오타이주가 아주 좋았음`,
+            createdAt: new Date()
+          };
+          await addDoc(collection(db, 'culture_contents'), seedData);
+          const reSnap = await getDocs(q);
+          list = reSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        }
+
+        list.sort((a: any, b: any) => {
+          const orderA = a.order !== undefined ? a.order : 9999;
+          const orderB = b.order !== undefined ? b.order : 9999;
+          if (orderA !== orderB) return orderA - orderB;
+          const timeA = a.createdAt?.seconds || 0;
+          const timeB = b.createdAt?.seconds || 0;
+          return timeB - timeA;
+        });
+
+        setTravelContents(list);
+      } catch (err) {
+        console.error('Error fetching travel contents:', err);
+      }
+    };
+    fetchTravelContents();
+  }, [isTravelOpen]);
+
   // Fetch featured users (instructors)
   useEffect(() => {
     userService.getInstructors().then((users) => {
@@ -808,118 +986,48 @@ Keep a safe distance from the couple in front of you and keep the counter-clockw
           </div>
         )}
 
-        {/* Hero (Global) — Event Slider */}
-        <section className="relative w-full aspect-[2.35/1] min-h-[300px] md:max-h-[500px] overflow-hidden">
-          <div 
-            id="hero-slider"
-            className="w-full h-full flex overflow-x-auto snap-x snap-mandatory scroll-smooth hide-scrollbar"
-          >
-            {heroEvents.length > 0 ? (
-              heroEvents.map((evt, idx) => (
-                <div key={evt.id} className="w-full h-full flex-shrink-0 snap-start relative flex items-end">
-                  <div className="absolute inset-0 z-0">
-                    <img 
-                      alt={evt.title} 
-                      className="w-full h-full object-cover" 
-                      src={evt.imageUrl || "/slide4_bg_cinematic.jpg"}
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent"></div>
-                  </div>
-                  <div className="relative z-10 max-w-7xl mx-auto px-page_margin pb-8 md:pb-10 w-full">
-                    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 text-left text-white drop-shadow-[0_2px_6px_rgba(0,0,0,0.85)]">
-                      <span className="bg-[#6750A4] text-white text-[10px] font-black tracking-widest px-2.5 py-0.5 rounded-full mb-3 inline-block uppercase drop-shadow-none">
-                        EVENT
-                      </span>
-                      <h1 className="text-white font-headline text-xl md:text-3xl font-black tracking-tight mb-2.5 uppercase leading-tight line-clamp-1">
-                        {language === 'KR' && evt.titleNative ? evt.titleNative : evt.title}
-                      </h1>
-                      
-                      {/* Event Meta rows */}
-                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs md:text-sm text-white/95 mb-4">
-                        <div className="flex items-center gap-1.5">
-                          <span className="material-symbols-outlined text-[16px] text-white/70">calendar_today</span>
-                          <span>{getEventDateString(evt)}</span>
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          <span className="material-symbols-outlined text-[16px] text-white/70">location_on</span>
-                          <span>{evt.venueName || evt.location || "서울"}</span>
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          <span className="material-symbols-outlined text-[16px] text-white/70">person</span>
-                          <span>{language === 'KR' && evt.hostNameNative ? evt.hostNameNative : evt.hostName}</span>
-                        </div>
-                      </div>
-
-                      <button
-                        className="bg-[#6750A4] text-white font-bold py-2 px-5 rounded-full shadow-lg hover:bg-[#5a4393] transition-colors text-xs active:scale-95 drop-shadow-none"
-                        onClick={() => {
-                          setSelectedEvent(evt);
-                          setIsEventDetailOpen(true);
-                        }}
-                      >
-                        참여하기
-                      </button>
+        {/* Thin Event Banner (Upcoming Hero) */}
+        {heroEvents.length > 0 && (() => {
+          const evt = heroEvents[0];
+          return (
+            <div className="max-w-7xl mx-auto px-page_margin pt-6">
+              <div 
+                onClick={() => {
+                  setSelectedEvent(evt);
+                  setIsEventDetailOpen(true);
+                }}
+                className="relative w-full h-36 md:h-44 rounded-2xl overflow-hidden shadow-sm group block cursor-pointer"
+              >
+                <img 
+                  alt={evt.title} 
+                  className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105" 
+                  src={evt.imageUrl || "/slide4_bg_cinematic.jpg"}
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/35 to-transparent flex flex-col justify-end p-5 text-left">
+                  <h1 className="text-white font-headline text-lg md:text-2xl font-black tracking-tight mb-2 uppercase leading-tight line-clamp-1">
+                    {language === 'KR' && evt.titleNative ? evt.titleNative : evt.title}
+                  </h1>
+                  
+                  {/* Event Meta info */}
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-white/90">
+                    <div className="flex items-center gap-1.5">
+                      <span className="material-symbols-outlined text-[14px] text-white/70">calendar_today</span>
+                      <span>{getEventDateString(evt)}</span>
                     </div>
-                  </div>
-                </div>
-              ))
-            ) : (
-              // Default Fallback Slide
-              <div className="w-full h-full flex-shrink-0 snap-start relative flex items-end">
-                <div className="absolute inset-0 z-0">
-                  <img 
-                    alt="Seoul Tango Festival 2025" 
-                    className="w-full h-full object-cover" 
-                    src="/slide4_bg_cinematic.jpg"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent"></div>
-                </div>
-                <div className="relative z-10 max-w-7xl mx-auto px-page_margin pb-8 md:pb-10 w-full">
-                  <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 text-left text-white drop-shadow-[0_2px_6px_rgba(0,0,0,0.85)]">
-                    <span className="bg-[#6750A4] text-white text-[10px] font-black tracking-widest px-2.5 py-0.5 rounded-full mb-3 inline-block uppercase drop-shadow-none">
-                      EVENT
-                    </span>
-                    <h1 className="text-white font-headline text-xl md:text-3xl font-black tracking-tight mb-2.5 uppercase leading-tight">
-                      SEOUL TANGO FESTIVAL 2025
-                    </h1>
-                    
-                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs md:text-sm text-white/95 mb-4">
-                      <div className="flex items-center gap-1.5">
-                        <span className="material-symbols-outlined text-[16px] text-white/70">calendar_today</span>
-                        <span>2025. 8. 29(금) ~ 9. 1(월)</span>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <span className="material-symbols-outlined text-[16px] text-white/70">location_on</span>
-                        <span>서울</span>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <span className="material-symbols-outlined text-[16px] text-white/70">person</span>
-                        <span>Seoul Tango Committee</span>
-                      </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="material-symbols-outlined text-[14px] text-white/70">location_on</span>
+                      <span>{evt.venueName || evt.location || "서울"}</span>
                     </div>
-
-                    <button
-                      className="bg-[#6750A4] text-white font-bold py-2 px-5 rounded-full shadow-lg hover:bg-[#5a4393] transition-colors text-xs active:scale-95 drop-shadow-none"
-                      onClick={() => setComingSoonCard({ title: 'Seoul Tango Festival 2025', icon: 'celebration', desc: '서울 탱고 페스티벌 2025 세부 정보가 곧 공개됩니다.' })}
-                    >
-                      참여하기
-                    </button>
+                    <div className="flex items-center gap-1.5">
+                      <span className="material-symbols-outlined text-[14px] text-white/70">person</span>
+                      <span>{language === 'KR' && evt.hostNameNative ? evt.hostNameNative : evt.hostName}</span>
+                    </div>
                   </div>
                 </div>
               </div>
-            )}
-          </div>
-
-          {/* Slider Indicator Dots */}
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 z-10">
-            {Array.from({ length: Math.max(heroEvents.length, 1) }).map((_, i) => (
-              <span 
-                key={i} 
-                className={`w-2 h-2 rounded-full transition-all duration-300 ${activeDotIndex === i ? 'bg-white w-2.5 h-2.5' : 'bg-white/40'}`}
-              ></span>
-            ))}
-          </div>
-        </section>
+            </div>
+          );
+        })()}
 
         <main className="max-w-7xl mx-auto px-page_margin py-section_gap space-y-section_gap">
           {/* 오늘의 하이라이트 */}
@@ -929,8 +1037,6 @@ Keep a safe distance from the couple in front of you and keep the counter-clockw
           <section className="space-y-4">
             <SectionHeader 
               title={t('home.culture_canvas')}
-              actionLabel={t('home.view_all') || '전체 보기'}
-              href="/pics"
             />
             
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -1010,6 +1116,7 @@ Keep a safe distance from the couple in front of you and keep the counter-clockw
                 className="relative h-[172px] md:h-[232px] rounded-2xl overflow-hidden group cursor-pointer border border-outline/5 shadow-sm"
                 onClick={() => setIsCartoonsOpen(true)}
               >
+                <span className="absolute top-4 left-4 z-10 bg-indigo-500/90 text-white text-[9px] font-black px-2 py-0.5 rounded uppercase tracking-wider shadow-sm">새 글</span>
                 <img alt="가비의 탱고툰" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" src="/gavi.jpg"/>
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-4 text-left">
                   <h4 className="text-white font-bold text-base">가비의 탱고툰</h4>
@@ -1024,6 +1131,7 @@ Keep a safe distance from the couple in front of you and keep the counter-clockw
                   setIsEtiquetteOpen(true);
                 }}
               >
+                <span className="absolute top-4 left-4 z-10 bg-slate-900/90 text-white text-[9px] font-black px-2 py-0.5 rounded uppercase tracking-wider shadow-sm">6월호</span>
                 <img 
                   alt="밀롱가 에티켓" 
                   className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" 
@@ -1037,8 +1145,12 @@ Keep a safe distance from the couple in front of you and keep the counter-clockw
               {/* Card 2: 탱고뮤직 365 */}
               <div 
                 className="relative h-[172px] md:h-[232px] rounded-2xl overflow-hidden group cursor-pointer border border-outline/5 shadow-sm"
-                onClick={() => setComingSoonCard({ title: '탱고뮤직 365', icon: 'music_note', desc: '탱고뮤직 365 세부 정보가 곧 공개됩니다.' })}
+                onClick={() => {
+                  setCurrentMusic365Index(0);
+                  setIsMusic365Open(true);
+                }}
               >
+                <span className="absolute top-4 left-4 z-10 bg-emerald-600/90 text-white text-[9px] font-black px-2 py-0.5 rounded uppercase tracking-wider shadow-sm">TODAY</span>
                 <img alt="탱고뮤직 365" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" src="/camus.jpg"/>
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-4 text-left">
                   <h4 className="text-white font-bold text-base">탱고뮤직 365</h4>
@@ -1048,8 +1160,12 @@ Keep a safe distance from the couple in front of you and keep the counter-clockw
               {/* Card 3: 베토의 탱고여행 */}
               <div 
                 className="relative h-[172px] md:h-[232px] rounded-2xl overflow-hidden group cursor-pointer border border-outline/5 shadow-sm"
-                onClick={() => setComingSoonCard({ title: '베토의 탱고여행', icon: 'explore', desc: '베토의 탱고여행 세부 정보가 곧 공개됩니다.' })}
+                onClick={() => {
+                  setCurrentTravelIndex(0);
+                  setIsTravelOpen(true);
+                }}
               >
+                <span className="absolute top-4 left-4 z-10 bg-amber-600/90 text-white text-[9px] font-black px-2 py-0.5 rounded uppercase tracking-wider shadow-sm">업데이트됨</span>
                 <img alt="베토의 탱고여행" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" src="/beto.jpg"/>
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-4 text-left">
                   <h4 className="text-white font-bold text-base">베토의 탱고여행</h4>
@@ -1059,8 +1175,12 @@ Keep a safe distance from the couple in front of you and keep the counter-clockw
               {/* Card 4: 탱고의 역사 리뷰 */}
               <div 
                 className="col-span-2 md:col-span-4 relative h-[120px] md:h-[160px] rounded-2xl overflow-hidden group cursor-pointer border border-outline/5 shadow-sm"
-                onClick={() => setComingSoonCard({ title: '탱고의 역사 리뷰', icon: 'history_edu', desc: '탱고의 역사 리뷰 세부 정보가 곧 공개됩니다.' })}
+                onClick={() => {
+                  setCurrentHistoryIndex(0);
+                  setIsHistoryOpen(true);
+                }}
               >
+                <span className="absolute top-4 left-4 z-10 bg-rose-600/95 text-white text-[9px] font-black px-2 py-0.5 rounded uppercase tracking-wider shadow-sm">이번 주</span>
                 <img alt="탱고의 역사 리뷰" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" src="/ddakji.jpg"/>
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-6 text-left">
                   <h4 className="text-white font-bold text-lg md:text-2xl">탱고의 역사 리뷰</h4>
@@ -1112,9 +1232,9 @@ Keep a safe distance from the couple in front of you and keep the counter-clockw
                     key={user.id} 
                     onClick={() => {
                       if (user.id === 'beto') {
-                        setComingSoonCard({ title: 'Beto', icon: 'person', desc: 'Beto 칼럼니스트의 상세 정보가 곧 제공됩니다.' });
+                        setComingSoonCard({ title: 'Beto', icon: 'person', desc: 'Beto 칼럼니스트의 상세 정보가 곧 제공됩니다.', badge: t('common.coming_soon_default') });
                       } else {
-                        setComingSoonCard({ title: user.nickname, icon: 'person', desc: `${user.nickname} 강사의 상세 정보가 곧 제공됩니다.` });
+                        setComingSoonCard({ title: user.nickname, icon: 'person', desc: `${user.nickname} 강사의 상세 정보가 곧 제공됩니다.`, badge: t('common.coming_soon_default') });
                       }
                     }} 
                     className="flex-shrink-0 text-center w-28 md:w-32 group cursor-pointer"
@@ -1151,7 +1271,7 @@ Keep a safe distance from the couple in front of you and keep the counter-clockw
             <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
               {/* Card 1: Holding hands */}
               <div 
-                onClick={() => setComingSoonCard({ title: '순간을 느끼다', icon: 'photo_camera', desc: '사진/영상 상세 보기가 준비 중입니다.' })}
+                onClick={() => setComingSoonCard({ title: '순간을 느끼다', icon: 'photo_camera', desc: '사진/영상 상세 보기가 준비 중입니다.', badge: t('home.coming_soon_best_live') })}
                 className="aspect-square bg-slate-100 rounded-xl overflow-hidden group relative cursor-pointer"
               >
                 <img alt="Visual Grid" className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-500" src="https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?q=80&w=400"/>
@@ -1162,7 +1282,7 @@ Keep a safe distance from the couple in front of you and keep the counter-clockw
 
               {/* Card 2: Arch silhouette */}
               <div 
-                onClick={() => setComingSoonCard({ title: '순간을 느끼다', icon: 'photo_camera', desc: '사진/영상 상세 보기가 준비 중입니다.' })}
+                onClick={() => setComingSoonCard({ title: '순간을 느끼다', icon: 'photo_camera', desc: '사진/영상 상세 보기가 준비 중입니다.', badge: t('home.coming_soon_best_live') })}
                 className="aspect-square bg-slate-100 rounded-xl overflow-hidden group relative cursor-pointer"
               >
                 <img alt="Visual Grid" className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-500" src="https://images.unsplash.com/photo-1464746133101-a2c3f88e0dd9?q=80&w=400"/>
@@ -1173,7 +1293,7 @@ Keep a safe distance from the couple in front of you and keep the counter-clockw
 
               {/* Card 3: Shoes */}
               <div 
-                onClick={() => setComingSoonCard({ title: '순간을 느끼다', icon: 'photo_camera', desc: '사진/영상 상세 보기가 준비 중입니다.' })}
+                onClick={() => setComingSoonCard({ title: '순간을 느끼다', icon: 'photo_camera', desc: '사진/영상 상세 보기가 준비 중입니다.', badge: t('home.coming_soon_best_live') })}
                 className="aspect-square bg-slate-100 rounded-xl overflow-hidden group relative cursor-pointer"
               >
                 <img alt="Visual Grid" className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-500" src="https://images.unsplash.com/photo-1549298916-b41d501d3772?q=80&w=400"/>
@@ -1181,7 +1301,7 @@ Keep a safe distance from the couple in front of you and keep the counter-clockw
 
               {/* Card 4: Theater Couple */}
               <div 
-                onClick={() => setComingSoonCard({ title: '순간을 느끼다', icon: 'photo_camera', desc: '사진/영상 상세 보기가 준비 중입니다.' })}
+                onClick={() => setComingSoonCard({ title: '순간을 느끼다', icon: 'photo_camera', desc: '사진/영상 상세 보기가 준비 중입니다.', badge: t('home.coming_soon_best_live') })}
                 className="aspect-square bg-slate-100 rounded-xl overflow-hidden group relative cursor-pointer"
               >
                 <img alt="Visual Grid" className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-500" src="https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?q=80&w=400"/>
@@ -1744,6 +1864,590 @@ Keep a safe distance from the couple in front of you and keep the counter-clockw
         );
       })()}
 
+      {/* Tango Music 365 Full-Screen Popup */}
+      {isMusic365Open && (() => {
+        const defaultMusic = {
+          id: 'default_music',
+          category: 'music365',
+          title: 'Tango Music 365',
+          titleNative: '탱고뮤직 365',
+          videoId: 'VyHhP28YJgA',
+          img: 'https://i.ytimg.com/vi/VyHhP28YJgA/hqdefault.jpg',
+          desc: 'Tango Music 365 - 1 Uno',
+          descNative: '탱고뮤직365 - 1 Uno',
+          createdAt: { seconds: Date.now() / 1000 }
+        };
+
+        const listToRender = music365Contents.length > 0 ? music365Contents : [defaultMusic];
+        const safeIndex = currentMusic365Index < listToRender.length ? currentMusic365Index : 0;
+        const activeMusic = listToRender[safeIndex] || defaultMusic;
+
+        const resolvedTitle = language === 'KR' && activeMusic.titleNative ? activeMusic.titleNative : activeMusic.title;
+        const resolvedDesc = language === 'KR' && activeMusic.descNative ? activeMusic.descNative : activeMusic.desc;
+
+        const goPrev = () => {
+          if (safeIndex > 0) {
+            setCurrentMusic365Index(safeIndex - 1);
+          }
+        };
+        const goNext = () => {
+          if (safeIndex < listToRender.length - 1) {
+            setCurrentMusic365Index(safeIndex + 1);
+          }
+        };
+
+        return (
+          <div className="fixed inset-0 z-[10000] bg-white flex flex-col animate-in fade-in duration-500 overflow-y-auto">
+            {/* YouTube Embed Container */}
+            <div className="relative w-full h-[55vh] flex-shrink-0 bg-slate-950">
+              <iframe
+                src={`https://www.youtube.com/embed/${activeMusic.videoId}?autoplay=1&rel=0&modestbranding=1`}
+                title={resolvedTitle}
+                className="w-full h-full border-none"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowFullScreen
+              />
+              {/* Close Button overlay */}
+              <div className="absolute top-4 right-4 z-20">
+                <button 
+                  onClick={() => setIsMusic365Open(false)}
+                  className="w-12 h-12 flex items-center justify-center rounded-full bg-black/45 backdrop-blur-md text-white hover:bg-black/60 transition-all shadow-lg border-none cursor-pointer"
+                >
+                  <span className="material-symbols-outlined text-[28px]">close</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Content Details & Selector */}
+            <div className="flex-1 bg-white pb-24">
+              <div className="max-w-4xl mx-auto px-8 md:px-16 py-10 space-y-8">
+                <div className="text-left">
+                  <span className="px-3 py-1 bg-blue-600 text-white text-[11px] font-extrabold uppercase tracking-widest rounded-md mb-4 inline-block shadow-md">Tango Music 365</span>
+                  <h2 className="text-2xl md:text-4xl font-extrabold text-slate-900 font-headline leading-tight mb-2">
+                    {resolvedTitle}
+                  </h2>
+                  <p className="text-slate-500 text-sm font-semibold mb-6">
+                    {resolvedDesc}
+                  </p>
+                </div>
+
+                {/* Navigator Accordion Toolbar */}
+                <div className="bg-slate-50 border border-slate-200 rounded-2xl p-2.5 flex items-center justify-between gap-2 shadow-sm relative min-w-0">
+                  <button
+                    onClick={goPrev}
+                    disabled={safeIndex === 0}
+                    className={`w-10 h-10 flex items-center justify-center rounded-xl bg-white text-slate-700 border border-slate-200 transition-all flex-shrink-0 ${safeIndex === 0 ? 'opacity-30 cursor-not-allowed' : 'hover:bg-slate-100 active:scale-95 cursor-pointer'}`}
+                  >
+                    <span className="material-symbols-outlined text-[20px]">chevron_left</span>
+                  </button>
+
+                  {/* Accordion Dropdown */}
+                  <div className="relative flex-1 min-w-0">
+                    <button
+                      onClick={() => setIsAccordionOpen(!isAccordionOpen)}
+                      className="w-full flex items-center justify-between gap-2 px-3.5 py-2 rounded-xl bg-white text-slate-800 font-bold border border-slate-200 text-sm hover:bg-slate-100 cursor-pointer text-left shadow-sm min-w-0"
+                    >
+                      <span className="truncate max-w-[140px] sm:max-w-[280px] block">{safeIndex + 1}화. {resolvedTitle}</span>
+                      <span className={`material-symbols-outlined transition-transform duration-200 flex-shrink-0 ${isAccordionOpen ? 'rotate-180' : ''}`}>keyboard_arrow_down</span>
+                    </button>
+
+                    {isAccordionOpen && (
+                      <div className="absolute left-0 right-0 mt-2 z-50 bg-white border border-slate-200 rounded-2xl shadow-xl max-h-60 overflow-y-auto p-2 space-y-1">
+                        {listToRender.map((item, idx) => {
+                          const itTitle = language === 'KR' && item.titleNative ? item.titleNative : item.title;
+                          return (
+                            <div
+                              key={item.id}
+                              onClick={() => {
+                                setCurrentMusic365Index(idx);
+                                setIsAccordionOpen(false);
+                              }}
+                              className={`px-4 py-2.5 rounded-xl text-sm font-semibold cursor-pointer transition-all ${safeIndex === idx ? 'bg-slate-900 text-white' : 'text-slate-700 hover:bg-slate-50'}`}
+                            >
+                              {idx + 1}화. {itTitle}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+
+                  <button
+                    onClick={goNext}
+                    disabled={safeIndex === listToRender.length - 1}
+                    className={`w-10 h-10 flex items-center justify-center rounded-xl bg-white text-slate-700 border border-slate-200 transition-all flex-shrink-0 ${safeIndex === listToRender.length - 1 ? 'opacity-30 cursor-not-allowed' : 'hover:bg-slate-100 active:scale-95 cursor-pointer'}`}
+                  >
+                    <span className="material-symbols-outlined text-[20px]">chevron_right</span>
+                  </button>
+                </div>
+                
+                {/* Author Info */}
+                <div className="flex items-center gap-3.5 bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
+                  <div className="w-11 h-11 rounded-full overflow-hidden flex-shrink-0 bg-slate-100 ring-2 ring-slate-100 shadow-sm">
+                    <img 
+                      src={getSafeStorageUrl('https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=800')} 
+                      alt="MapoFM" 
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <div className="flex flex-col text-left">
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-1">Broadcaster</span>
+                    <span className="text-base font-black text-slate-800 leading-none">마포FM 불멸의 탱고음악</span>
+                  </div>
+                </div>
+
+                <div className="mt-12 text-center">
+                  <button 
+                    onClick={() => setIsMusic365Open(false)}
+                    className="px-12 py-4 bg-slate-900 text-white text-base font-bold rounded-2xl hover:bg-slate-800 hover:scale-105 active:scale-95 transition-all shadow-lg border-none cursor-pointer"
+                  >
+                    창 닫기
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* Tango History Review Full-Screen Popup */}
+      {isHistoryOpen && (() => {
+        const defaultHistory = {
+          id: 'default_hist',
+          category: 'history',
+          title: 'Tango History',
+          titleNative: '땅고의 역사',
+          keyword: 'HISTORY',
+          keywordNative: '역사',
+          description: '¡Tango! - The Dance, the Song, the Story Book Review and Translation Prologue.',
+          descriptionNative: '런던 출판사 Thames and Hudson의 명저 <¡Tango! - The Dance, the Song, the Story> 요약 번역 연재를 개시합니다.',
+          imageUrls: ['https://tangoclass.co.kr/wp-content/uploads/2026/06/2026-05-Cabeceo-Title-KO.jpg'],
+          content: 'Tango history matters.',
+          contentNative: '땅고의 역사를 깊이 알아봅니다.',
+          createdAt: { seconds: Date.now() / 1000 }
+        };
+
+        const listToRender = historyContents.length > 0 ? historyContents : [defaultHistory];
+        const safeIndex = currentHistoryIndex < listToRender.length ? currentHistoryIndex : 0;
+        const activeHist = listToRender[safeIndex] || defaultHistory;
+
+        const resolvedKeyword = language === 'KR' && activeHist.keywordNative ? activeHist.keywordNative : activeHist.keyword;
+        const resolvedTitle = language === 'KR' && activeHist.titleNative ? activeHist.titleNative : activeHist.title;
+        const resolvedDesc = language === 'KR' && activeHist.descriptionNative ? activeHist.descriptionNative : activeHist.description;
+        const resolvedContent = language === 'KR' && activeHist.contentNative ? activeHist.contentNative : activeHist.content;
+
+        const goPrev = () => {
+          if (safeIndex > 0) {
+            setCurrentHistoryIndex(safeIndex - 1);
+            setActiveImageIndex(0);
+          }
+        };
+        const goNext = () => {
+          if (safeIndex < listToRender.length - 1) {
+            setCurrentHistoryIndex(safeIndex + 1);
+            setActiveImageIndex(0);
+          }
+        };
+
+        // 다중 이미지 슬라이더 연동
+        const imagesToSlide = activeHist.imageUrls && activeHist.imageUrls.length > 0
+          ? activeHist.imageUrls
+          : [activeHist.imageUrl || 'https://tangoclass.co.kr/wp-content/uploads/2026/06/2026-05-Cabeceo-Title-KO.jpg'];
+
+        const prevImg = (e: React.MouseEvent) => {
+          e.stopPropagation();
+          if (activeImageIndex > 0) {
+            setActiveImageIndex(activeImageIndex - 1);
+          } else {
+            setActiveImageIndex(imagesToSlide.length - 1);
+          }
+        };
+        const nextImg = (e: React.MouseEvent) => {
+          e.stopPropagation();
+          if (activeImageIndex < imagesToSlide.length - 1) {
+            setActiveImageIndex(activeImageIndex + 1);
+          } else {
+            setActiveImageIndex(0);
+          }
+        };
+
+        return (
+          <div className="fixed inset-0 z-[10000] bg-white flex flex-col animate-in fade-in duration-500 overflow-y-auto">
+            {/* Image Slider Container */}
+            <div className="relative w-full h-[55vh] flex-shrink-0 bg-slate-950 group">
+              <img 
+                src={getSafeStorageUrl(imagesToSlide[activeImageIndex] || 'https://tangoclass.co.kr/wp-content/uploads/2026/06/2026-05-Cabeceo-Title-KO.jpg')} 
+                alt={resolvedTitle} 
+                className="w-full h-full object-contain transition-all duration-500"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-black/20"></div>
+              
+              {/* Top Navigation Row */}
+              <div className="absolute top-0 left-0 w-full p-6 flex justify-end items-center z-20">
+                <button 
+                  onClick={() => setIsHistoryOpen(false)}
+                  className="w-12 h-12 flex items-center justify-center rounded-full bg-black/20 backdrop-blur-md text-white hover:bg-black/40 transition-all shadow-lg border-none cursor-pointer"
+                >
+                  <span className="material-symbols-outlined text-[28px]">close</span>
+                </button>
+              </div>
+
+              {/* Slider Left/Right Arrows */}
+              {imagesToSlide.length > 1 && (
+                <div className="absolute inset-x-4 top-1/2 -translate-y-1/2 flex justify-between items-center z-20">
+                  <button 
+                    onClick={prevImg}
+                    className="w-10 h-10 rounded-full flex items-center justify-center bg-black/30 hover:bg-black/50 text-white border-none cursor-pointer shadow-md transition-all"
+                  >
+                    <span className="material-symbols-outlined">chevron_left</span>
+                  </button>
+                  <button 
+                    onClick={nextImg}
+                    className="w-10 h-10 rounded-full flex items-center justify-center bg-black/30 hover:bg-black/50 text-white border-none cursor-pointer shadow-md transition-all"
+                  >
+                    <span className="material-symbols-outlined">chevron_right</span>
+                  </button>
+                </div>
+              )}
+
+              {/* Slider Dots Indicator */}
+              {imagesToSlide.length > 1 && (
+                <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-1.5 z-20 bg-black/25 px-3 py-1.5 rounded-full backdrop-blur-sm">
+                  {imagesToSlide.map((_: any, i: number) => (
+                    <span 
+                      key={i} 
+                      onClick={() => setActiveImageIndex(i)}
+                      className={`w-2 h-2 rounded-full cursor-pointer transition-all duration-300 ${activeImageIndex === i ? 'bg-white w-4' : 'bg-white/40 hover:bg-white/70'}`}
+                    ></span>
+                  ))}
+                </div>
+              )}
+
+              <div className="absolute bottom-0 left-0 w-full p-8">
+                <div className="max-w-4xl mx-auto w-full">
+                  <span className="px-3 py-1 bg-amber-500 text-white text-[11px] font-extrabold uppercase tracking-widest rounded-md mb-4 inline-block shadow-md">{resolvedKeyword}</span>
+                  <h2 className="text-3xl md:text-5xl font-extrabold text-slate-900 font-headline leading-tight">
+                    {resolvedTitle}
+                  </h2>
+                </div>
+              </div>
+            </div>
+
+            {/* Content Body */}
+            <div className="flex-1 bg-white pb-24">
+              <div className="max-w-4xl mx-auto px-8 md:px-16 py-10 space-y-10">
+                <div className="prose prose-slate prose-xl max-w-none">
+                  
+                  {/* Navigator: 아코디언 툴바 */}
+                  <div className="bg-slate-50 border border-slate-200 rounded-2xl p-2.5 flex items-center justify-between gap-2 mb-8 shadow-sm relative min-w-0">
+                    <button
+                      onClick={goPrev}
+                      disabled={safeIndex === 0}
+                      className={`w-10 h-10 flex items-center justify-center rounded-xl bg-white text-slate-700 border border-slate-200 transition-all flex-shrink-0 ${safeIndex === 0 ? 'opacity-30 cursor-not-allowed' : 'hover:bg-slate-100 active:scale-95 cursor-pointer'}`}
+                    >
+                      <span className="material-symbols-outlined text-[20px]">chevron_left</span>
+                    </button>
+
+                    {/* 목록 아코디온 Dropdown */}
+                    <div className="relative flex-1 min-w-0">
+                      <button
+                        onClick={() => setIsAccordionOpen(!isAccordionOpen)}
+                        className="w-full flex items-center justify-between gap-2 px-3.5 py-2 rounded-xl bg-white text-slate-800 font-bold border border-slate-200 text-sm hover:bg-slate-100 cursor-pointer text-left shadow-sm min-w-0"
+                      >
+                        <span className="truncate max-w-[140px] sm:max-w-[280px] block">{safeIndex + 1}화. {resolvedTitle}</span>
+                        <span className={`material-symbols-outlined transition-transform duration-200 flex-shrink-0 ${isAccordionOpen ? 'rotate-180' : ''}`}>keyboard_arrow_down</span>
+                      </button>
+
+                      {isAccordionOpen && (
+                        <div className="absolute left-0 right-0 mt-2 z-50 bg-white border border-slate-200 rounded-2xl shadow-xl max-h-60 overflow-y-auto p-2 space-y-1">
+                          {listToRender.map((item, idx) => {
+                            const itTitle = language === 'KR' && item.titleNative ? item.titleNative : item.title;
+                            return (
+                              <div
+                                key={item.id}
+                                onClick={() => {
+                                  setCurrentHistoryIndex(idx);
+                                  setActiveImageIndex(0);
+                                  setIsAccordionOpen(false);
+                                }}
+                                className={`px-4 py-2.5 rounded-xl text-sm font-semibold cursor-pointer transition-all ${safeIndex === idx ? 'bg-slate-900 text-white' : 'text-slate-700 hover:bg-slate-50'}`}
+                              >
+                                {idx + 1}화. {itTitle}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+
+                    <button
+                      onClick={goNext}
+                      disabled={safeIndex === listToRender.length - 1}
+                      className={`w-10 h-10 flex items-center justify-center rounded-xl bg-white text-slate-700 border border-slate-200 transition-all flex-shrink-0 ${safeIndex === listToRender.length - 1 ? 'opacity-30 cursor-not-allowed' : 'hover:bg-slate-100 active:scale-95 cursor-pointer'}`}
+                    >
+                      <span className="material-symbols-outlined text-[20px]">chevron_right</span>
+                    </button>
+                  </div>
+                  
+                  {/* 저자 공간: Ddakji Dongtak Yang (고정 사진 + 이름) */}
+                  <div className="flex items-center gap-3.5 mb-8 bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
+                    <div className="w-11 h-11 rounded-full overflow-hidden flex-shrink-0 bg-slate-100 ring-2 ring-slate-100 shadow-sm">
+                      <img 
+                        src={getSafeStorageUrl('https://images.unsplash.com/photo-1542332213-31f87348057f?q=80&w=800')} 
+                        alt="Ddakji Dongtak Yang" 
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <div className="flex flex-col text-left">
+                      <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-1">Author / Translator</span>
+                      <span className="text-base font-black text-slate-800 leading-none">Ddakji Dongtak Yang</span>
+                    </div>
+                  </div>
+                  
+                  {/* Summary Block */}
+                  <p className="text-xl md:text-2xl font-medium text-slate-800 leading-relaxed font-headline italic border-l-8 border-amber-500 pl-8 py-4 bg-slate-50 rounded-r-3xl">
+                    {resolvedDesc}
+                  </p>
+
+                  {/* Main Content Info */}
+                  <div className="mt-10 text-left whitespace-pre-wrap leading-relaxed text-lg text-slate-700 font-sans border-t border-slate-100 pt-8">
+                    {resolvedContent}
+                  </div>
+
+                  <div className="mt-12 text-center">
+                    <button 
+                      onClick={() => setIsHistoryOpen(false)}
+                      className="px-12 py-4 bg-slate-900 text-white text-base font-bold rounded-2xl hover:bg-slate-800 hover:scale-105 active:scale-95 transition-all shadow-lg border-none cursor-pointer"
+                    >
+                      창 닫기
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* Beto Travel Full-Screen Popup */}
+      {isTravelOpen && (() => {
+        const defaultTravel = {
+          id: 'default_travel',
+          category: 'travel',
+          title: 'Beijing Select Tango Weekend',
+          titleNative: '북경 셀렉트 땅고 위켄드',
+          keyword: 'TRAVEL',
+          keywordNative: '여행',
+          description: "Beto Kim's travel diary and settlement on 2026 Beijing Select Tango Weekend.",
+          descriptionNative: '2026 북경 셀렉트 땅고 위켄드(6.19.~6.22.) 여행 후기 및 가계부 정산 스크린샷 이미지와 함께 수기를 공유합니다.',
+          imageUrls: ['/travel_beijing1.png'],
+          content: 'Tango travel log.',
+          contentNative: '탱고 여행기를 감상합니다.',
+          createdAt: { seconds: Date.now() / 1000 }
+        };
+
+        const listToRender = travelContents.length > 0 ? travelContents : [defaultTravel];
+        const safeIndex = currentTravelIndex < listToRender.length ? currentTravelIndex : 0;
+        const activeTravel = listToRender[safeIndex] || defaultTravel;
+
+        const resolvedKeyword = language === 'KR' && activeTravel.keywordNative ? activeTravel.keywordNative : activeTravel.keyword;
+        const resolvedTitle = language === 'KR' && activeTravel.titleNative ? activeTravel.titleNative : activeTravel.title;
+        const resolvedDesc = language === 'KR' && activeTravel.descriptionNative ? activeTravel.descriptionNative : activeTravel.description;
+        const resolvedContent = language === 'KR' && activeTravel.contentNative ? activeTravel.contentNative : activeTravel.content;
+
+        const goPrev = () => {
+          if (safeIndex > 0) {
+            setCurrentTravelIndex(safeIndex - 1);
+            setActiveImageIndex(0);
+          }
+        };
+        const goNext = () => {
+          if (safeIndex < listToRender.length - 1) {
+            setCurrentTravelIndex(safeIndex + 1);
+            setActiveImageIndex(0);
+          }
+        };
+
+        // 다중 이미지 슬라이더 연동
+        const imagesToSlide = activeTravel.imageUrls && activeTravel.imageUrls.length > 0
+          ? activeTravel.imageUrls
+          : [activeTravel.imageUrl || '/travel_beijing1.png'];
+
+        const prevImg = (e: React.MouseEvent) => {
+          e.stopPropagation();
+          if (activeImageIndex > 0) {
+            setActiveImageIndex(activeImageIndex - 1);
+          } else {
+            setActiveImageIndex(imagesToSlide.length - 1);
+          }
+        };
+        const nextImg = (e: React.MouseEvent) => {
+          e.stopPropagation();
+          if (activeImageIndex < imagesToSlide.length - 1) {
+            setActiveImageIndex(activeImageIndex + 1);
+          } else {
+            setActiveImageIndex(0);
+          }
+        };
+
+        return (
+          <div className="fixed inset-0 z-[10000] bg-white flex flex-col animate-in fade-in duration-500 overflow-y-auto">
+            {/* Image Slider Container */}
+            <div className="relative w-full h-[55vh] flex-shrink-0 bg-slate-950 group">
+              <img 
+                src={getSafeStorageUrl(imagesToSlide[activeImageIndex] || '/travel_beijing1.png')} 
+                alt={resolvedTitle} 
+                className="w-full h-full object-contain transition-all duration-500"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-black/20"></div>
+              
+              {/* Top Navigation Row */}
+              <div className="absolute top-0 left-0 w-full p-6 flex justify-end items-center z-20">
+                <button 
+                  onClick={() => setIsTravelOpen(false)}
+                  className="w-12 h-12 flex items-center justify-center rounded-full bg-black/20 backdrop-blur-md text-white hover:bg-black/40 transition-all shadow-lg border-none cursor-pointer"
+                >
+                  <span className="material-symbols-outlined text-[28px]">close</span>
+                </button>
+              </div>
+
+              {/* Slider Left/Right Arrows */}
+              {imagesToSlide.length > 1 && (
+                <div className="absolute inset-x-4 top-1/2 -translate-y-1/2 flex justify-between items-center z-20">
+                  <button 
+                    onClick={prevImg}
+                    className="w-10 h-10 rounded-full flex items-center justify-center bg-black/30 hover:bg-black/50 text-white border-none cursor-pointer shadow-md transition-all"
+                  >
+                    <span className="material-symbols-outlined">chevron_left</span>
+                  </button>
+                  <button 
+                    onClick={nextImg}
+                    className="w-10 h-10 rounded-full flex items-center justify-center bg-black/30 hover:bg-black/50 text-white border-none cursor-pointer shadow-md transition-all"
+                  >
+                    <span className="material-symbols-outlined">chevron_right</span>
+                  </button>
+                </div>
+              )}
+
+              {/* Slider Dots Indicator */}
+              {imagesToSlide.length > 1 && (
+                <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-1.5 z-20 bg-black/25 px-3 py-1.5 rounded-full backdrop-blur-sm">
+                  {imagesToSlide.map((_: any, i: number) => (
+                    <span 
+                      key={i} 
+                      onClick={() => setActiveImageIndex(i)}
+                      className={`w-2 h-2 rounded-full cursor-pointer transition-all duration-300 ${activeImageIndex === i ? 'bg-white w-4' : 'bg-white/40 hover:bg-white/70'}`}
+                    ></span>
+                  ))}
+                </div>
+              )}
+
+              <div className="absolute bottom-0 left-0 w-full p-8">
+                <div className="max-w-4xl mx-auto w-full">
+                  <span className="px-3 py-1 bg-amber-500 text-white text-[11px] font-extrabold uppercase tracking-widest rounded-md mb-4 inline-block shadow-md">{resolvedKeyword}</span>
+                  <h2 className="text-3xl md:text-5xl font-extrabold text-slate-900 font-headline leading-tight">
+                    {resolvedTitle}
+                  </h2>
+                </div>
+              </div>
+            </div>
+
+            {/* Content Body */}
+            <div className="flex-1 bg-white pb-24">
+              <div className="max-w-4xl mx-auto px-8 md:px-16 py-10 space-y-10">
+                <div className="prose prose-slate prose-xl max-w-none">
+                  
+                  {/* Navigator: 아코디언 툴바 */}
+                  <div className="bg-slate-50 border border-slate-200 rounded-2xl p-2.5 flex items-center justify-between gap-2 mb-8 shadow-sm relative min-w-0">
+                    <button
+                      onClick={goPrev}
+                      disabled={safeIndex === 0}
+                      className={`w-10 h-10 flex items-center justify-center rounded-xl bg-white text-slate-700 border border-slate-200 transition-all flex-shrink-0 ${safeIndex === 0 ? 'opacity-30 cursor-not-allowed' : 'hover:bg-slate-100 active:scale-95 cursor-pointer'}`}
+                    >
+                      <span className="material-symbols-outlined text-[20px]">chevron_left</span>
+                    </button>
+
+                    {/* 목록 아코디온 Dropdown */}
+                    <div className="relative flex-1 min-w-0">
+                      <button
+                        onClick={() => setIsAccordionOpen(!isAccordionOpen)}
+                        className="w-full flex items-center justify-between gap-2 px-3.5 py-2 rounded-xl bg-white text-slate-800 font-bold border border-slate-200 text-sm hover:bg-slate-100 cursor-pointer text-left shadow-sm min-w-0"
+                      >
+                        <span className="truncate max-w-[140px] sm:max-w-[280px] block">{safeIndex + 1}화. {resolvedTitle}</span>
+                        <span className={`material-symbols-outlined transition-transform duration-200 flex-shrink-0 ${isAccordionOpen ? 'rotate-185' : ''}`}>keyboard_arrow_down</span>
+                      </button>
+
+                      {isAccordionOpen && (
+                        <div className="absolute left-0 right-0 mt-2 z-50 bg-white border border-slate-200 rounded-2xl shadow-xl max-h-60 overflow-y-auto p-2 space-y-1">
+                          {listToRender.map((item, idx) => {
+                            const itTitle = language === 'KR' && item.titleNative ? item.titleNative : item.title;
+                            return (
+                              <div
+                                key={item.id}
+                                onClick={() => {
+                                  setCurrentTravelIndex(idx);
+                                  setActiveImageIndex(0);
+                                  setIsAccordionOpen(false);
+                                }}
+                                className={`px-4 py-2.5 rounded-xl text-sm font-semibold cursor-pointer transition-all ${safeIndex === idx ? 'bg-slate-900 text-white' : 'text-slate-700 hover:bg-slate-50'}`}
+                              >
+                                {idx + 1}화. {itTitle}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+
+                    <button
+                      onClick={goNext}
+                      disabled={safeIndex === listToRender.length - 1}
+                      className={`w-10 h-10 flex items-center justify-center rounded-xl bg-white text-slate-700 border border-slate-200 transition-all flex-shrink-0 ${safeIndex === listToRender.length - 1 ? 'opacity-30 cursor-not-allowed' : 'hover:bg-slate-100 active:scale-95 cursor-pointer'}`}
+                    >
+                      <span className="material-symbols-outlined text-[20px]">chevron_right</span>
+                    </button>
+                  </div>
+                  
+                  {/* 저자 공간: Beto Kim (고정 사진 + 이름) */}
+                  <div className="flex items-center gap-3.5 mb-8 bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
+                    <div className="w-11 h-11 rounded-full overflow-hidden flex-shrink-0 bg-slate-100 ring-2 ring-slate-100 shadow-sm">
+                      <img 
+                        src={getSafeStorageUrl('/beto.jpg')} 
+                        alt="Beto Kim" 
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <div className="flex flex-col text-left">
+                      <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-1">Author / Traveler</span>
+                      <span className="text-base font-black text-slate-800 leading-none">Beto Kim</span>
+                    </div>
+                  </div>
+                  
+                  {/* Summary Block */}
+                  <p className="text-xl md:text-2xl font-medium text-slate-800 leading-relaxed font-headline italic border-l-8 border-amber-500 pl-8 py-4 bg-slate-50 rounded-r-3xl">
+                    {resolvedDesc}
+                  </p>
+
+                  {/* Main Content Info */}
+                  <div className="mt-10 text-left whitespace-pre-wrap leading-relaxed text-lg text-slate-700 font-sans border-t border-slate-100 pt-8">
+                    {resolvedContent}
+                  </div>
+
+                  <div className="mt-12 text-center">
+                    <button 
+                      onClick={() => setIsTravelOpen(false)}
+                      className="px-12 py-4 bg-slate-900 text-white text-base font-bold rounded-2xl hover:bg-slate-800 hover:scale-105 active:scale-95 transition-all shadow-lg border-none cursor-pointer"
+                    >
+                      창 닫기
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
       {/* Coming Soon Fullscreen */}
       {comingSoonCard && (
         <div className="fixed inset-0 z-[100] bg-black/95 flex flex-col items-center justify-center animate-in fade-in duration-300">
@@ -1763,7 +2467,7 @@ Keep a safe distance from the couple in front of you and keep the counter-clockw
             
             <div className="flex items-center gap-3 mb-12">
               <div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></div>
-              <span className="text-amber-400 text-sm font-bold uppercase tracking-[0.2em]">{t('common.coming_soon')}</span>
+              <span className="text-amber-400 text-sm font-bold uppercase tracking-[0.1em]">{comingSoonCard.badge || t('common.coming_soon_default')}</span>
             </div>
 
             <p className="text-white/40 text-sm leading-relaxed max-w-xs">

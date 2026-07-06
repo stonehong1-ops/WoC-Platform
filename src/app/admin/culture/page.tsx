@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { db } from '@/lib/firebase/clientApp';
 import { collection, getDocs, query, where, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
 import { getSafeStorageUrl } from '@/lib/utils/storageUtils';
+import { storageService } from '@/lib/firebase/storageService';
 
 const CATEGORIES = [
   { id: 'focus', name: 'FOCUS (포커스)' },
@@ -34,6 +35,12 @@ export default function CultureCMSPage() {
   // 다중 이미지 등록 상태 변수들
   const [imageUrlInput, setImageUrlInput] = useState('');
   const [imageUrls, setImageUrls] = useState<string[]>([]);
+
+  // 파일 업로드 및 이미지 상세 프리뷰 모달 상태 변수들
+  const [isUploading, setIsUploading] = useState(false);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [previewImages, setPreviewImages] = useState<string[]>([]);
+  const [previewIndex, setPreviewIndex] = useState(0);
 
   // 로그인 인증 처리
   const handleLogin = (e: React.FormEvent) => {
@@ -436,17 +443,41 @@ Keep a safe distance from the couple in front of you and keep the counter-clockw
     }
   }, [isAuthenticated, activeTab]);
 
-  // 다중 이미지 추가
-  const addImage = () => {
-    if (imageUrlInput.trim()) {
-      setImageUrls([...imageUrls, imageUrlInput.trim()]);
-      setImageUrlInput('');
+  // 파일 다중 선택 및 업로드 핸들러
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    setIsUploading(true);
+    try {
+      const uploadPromises = Array.from(files).map(async (file) => {
+        const path = `culture/${Date.now()}_${file.name}`;
+        return await storageService.uploadFile(file, path);
+      });
+      const newUrls = await Promise.all(uploadPromises);
+      setImageUrls((prev) => [...prev, ...newUrls]);
+    } catch (err) {
+      console.error("Error uploading images:", err);
+      alert("이미지 업로드 중 오류가 발생했습니다.");
+    } finally {
+      setIsUploading(false);
+      e.target.value = '';
     }
   };
 
   // 다중 이미지 제거
   const removeImage = (idx: number) => {
     setImageUrls(imageUrls.filter((_, i) => i !== idx));
+  };
+
+  // 이미지 상세 모달 오픈
+  const openPreview = (item: any) => {
+    const imgs = item.imageUrls && item.imageUrls.length > 0 
+      ? item.imageUrls 
+      : (item.imageUrl ? [item.imageUrl] : ['/life_on_bg.jpg']);
+    setPreviewImages(imgs);
+    setPreviewIndex(0);
+    setIsPreviewOpen(true);
   };
 
   // 폼 리셋
@@ -477,8 +508,8 @@ Keep a safe distance from the couple in front of you and keep the counter-clockw
         category: activeTab,
         title,
         titleNative: titleNative || null,
-        keyword: keyword || 'CULTURE',
-        keywordNative: keywordNative || null,
+        keyword: activeTab.toUpperCase(),
+        keywordNative: null,
         description: desc,
         descriptionNative: descNative || null,
         content: contentBody,
@@ -637,7 +668,11 @@ Keep a safe distance from the couple in front of you and keep the counter-clockw
                 {contents.map((item, idx) => (
                   <div key={item.id} className="flex justify-between items-center py-4 gap-4">
                     <div className="flex items-center gap-4 min-w-0">
-                      <div className="w-16 h-16 rounded-xl overflow-hidden bg-slate-100 flex-shrink-0">
+                      <div 
+                        onClick={() => openPreview(item)}
+                        className="w-16 h-16 rounded-xl overflow-hidden bg-slate-100 flex-shrink-0 cursor-pointer hover:opacity-85 active:scale-95 transition-all border border-slate-200/60 shadow-sm"
+                        title="크게 보기"
+                      >
                         <img 
                           src={getSafeStorageUrl(item.imageUrl || (item.imageUrls && item.imageUrls[0]) || '/life_on_bg.jpg')} 
                           className="w-full h-full object-cover"
@@ -728,70 +763,53 @@ Keep a safe distance from the couple in front of you and keep the counter-clockw
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-black text-slate-500 mb-1">태그키워드 (EN)</label>
-                  <input 
-                    type="text" 
-                    value={keyword} 
-                    onChange={e => setKeyword(e.target.value)} 
-                    className="w-full p-2.5 border border-slate-200 rounded-xl text-sm" 
-                    placeholder="e.g. FOCUS"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-black text-slate-500 mb-1">태그키워드 (KR)</label>
-                  <input 
-                    type="text" 
-                    value={keywordNative} 
-                    onChange={e => setKeywordNative(e.target.value)} 
-                    className="w-full p-2.5 border border-slate-200 rounded-xl text-sm" 
-                    placeholder="예: 포커스"
-                  />
-                </div>
-              </div>
-
               <div>
                 <label className="block text-xs font-black text-slate-500 mb-1">요약 설명 (English)</label>
-                <input 
-                  type="text" 
+                <textarea 
                   value={desc} 
                   onChange={e => setDesc(e.target.value)} 
-                  className="w-full p-2.5 border border-slate-200 rounded-xl text-sm" 
+                  className="w-full p-2.5 border border-slate-200 rounded-xl text-sm h-16 md:h-20" 
                   placeholder="Zero tolerance policy description..."
+                  rows={2}
                 />
               </div>
 
               <div>
                 <label className="block text-xs font-black text-slate-500 mb-1">요약 설명 (한글)</label>
-                <input 
-                  type="text" 
+                <textarea 
                   value={descNative} 
                   onChange={e => setDescNative(e.target.value)} 
-                  className="w-full p-2.5 border border-slate-200 rounded-xl text-sm" 
+                  className="w-full p-2.5 border border-slate-200 rounded-xl text-sm h-16 md:h-20" 
                   placeholder="한글 설명 요약..."
+                  rows={2}
                 />
               </div>
 
               {/* Multiple Images Array Editor */}
-              <div className="border border-slate-100 rounded-2xl p-4 bg-slate-50 space-y-3">
+              <div className="border border-slate-100 rounded-2xl p-4 bg-slate-50 space-y-3 text-left">
                 <label className="block text-xs font-black text-slate-500">다중 이미지 컬렉션 ({imageUrls.length}장)</label>
-                
-                <div className="flex gap-2">
+                <div className="flex items-center gap-3">
                   <input 
-                    type="text" 
-                    value={imageUrlInput} 
-                    onChange={e => setImageUrlInput(e.target.value)}
-                    placeholder="이미지 주소 (https://...)" 
-                    className="flex-1 p-2 border border-slate-200 rounded-lg text-xs"
+                    type="file" 
+                    id="image-collection-upload" 
+                    multiple 
+                    accept="image/*"
+                    onChange={handleFileChange}
+                    className="hidden"
                   />
-                  <button 
-                    type="button" 
-                    onClick={addImage}
-                    className="px-3 bg-slate-800 text-white font-bold rounded-lg text-xs border-none cursor-pointer"
+                  <label 
+                    htmlFor="image-collection-upload"
+                    className="flex items-center justify-center gap-1.5 px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl text-xs cursor-pointer active:scale-95 transition-all shadow-sm"
                   >
-                    추가
-                  </button>
+                    <span className="material-symbols-outlined text-[16px]">upload_file</span>
+                    이미지 다중 선택 업로드
+                  </label>
+                  {isUploading && (
+                    <span className="text-xs text-slate-400 font-medium flex items-center gap-1 animate-pulse">
+                      <span className="w-2.5 h-2.5 rounded-full border-2 border-slate-400 border-t-transparent animate-spin"></span>
+                      업로드 중...
+                    </span>
+                  )}
                 </div>
 
                 {imageUrls.length > 0 && (
@@ -843,6 +861,57 @@ Keep a safe distance from the couple in front of you and keep the counter-clockw
         </div>
 
       </main>
+
+      {/* 이미지 상세 슬라이더 프리뷰 모달 */}
+      {isPreviewOpen && previewImages.length > 0 && (
+        <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 animate-in fade-in duration-200">
+          <div className="absolute inset-0 z-0" onClick={() => setIsPreviewOpen(false)} />
+
+          <div className="relative z-10 max-w-4xl w-full px-4 flex flex-col items-center gap-4">
+            <div className="relative aspect-video max-h-[75vh] w-full flex items-center justify-center">
+              <img
+                src={getSafeStorageUrl(previewImages[previewIndex])}
+                alt={`Preview ${previewIndex + 1}`}
+                className="max-w-full max-h-[75vh] object-contain rounded-2xl shadow-2xl border border-white/5"
+              />
+
+              {previewImages.length > 1 && (
+                <button
+                  onClick={() => setPreviewIndex(prev => (prev - 1 + previewImages.length) % previewImages.length)}
+                  className="absolute left-4 w-12 h-12 rounded-full bg-black/40 text-white hover:bg-black/60 active:scale-90 transition-all flex items-center justify-center border-none cursor-pointer"
+                >
+                  <span className="material-symbols-outlined text-2xl">chevron_left</span>
+                </button>
+              )}
+
+              {previewImages.length > 1 && (
+                <button
+                  onClick={() => setPreviewIndex(prev => (prev + 1) % previewImages.length)}
+                  className="absolute right-4 w-12 h-12 rounded-full bg-black/40 text-white hover:bg-black/60 active:scale-90 transition-all flex items-center justify-center border-none cursor-pointer"
+                >
+                  <span className="material-symbols-outlined text-2xl">chevron_right</span>
+                </button>
+              )}
+            </div>
+
+            <div className="text-white text-center space-y-1">
+              <p className="text-sm font-black tracking-widest uppercase opacity-80">
+                {previewIndex + 1} / {previewImages.length}
+              </p>
+              {previewImages.length > 1 && (
+                <p className="text-[11px] text-white/50 font-bold">화살표 키나 좌우 버튼으로 넘겨볼 수 있습니다.</p>
+              )}
+            </div>
+          </div>
+
+          <button
+            onClick={() => setIsPreviewOpen(false)}
+            className="absolute top-6 right-6 w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 active:scale-90 text-white flex items-center justify-center border-none cursor-pointer backdrop-blur-md transition-all z-20"
+          >
+            <span className="material-symbols-outlined text-2xl">close</span>
+          </button>
+        </div>
+      )}
     </div>
   );
 }

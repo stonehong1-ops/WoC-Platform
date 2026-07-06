@@ -10,7 +10,7 @@ import { socialService } from "@/lib/firebase/socialService";
 import { eventService } from "@/lib/firebase/eventService";
 import { groupService } from "@/lib/firebase/groupService";
 import { db } from "@/lib/firebase/clientApp";
-import { collection, getDocs, query, limit } from "firebase/firestore";
+import { collection, getDocs, query, limit, doc, getDoc } from "firebase/firestore";
 import { Social } from "@/types/social";
 import { Event } from "@/types/event";
 import { GroupClass, Group } from "@/types/group";
@@ -376,7 +376,7 @@ export default function TodayPageContent() {
     if (ev.type === "class") {
       openClassModal(ev.itemId);
     } else if (["social", "milonga", "practice"].includes(ev.type)) {
-      openSocialModal(ev.itemId, ev.dateStr ? { date: ev.dateStr } : undefined);
+      router.push(`/social?viewSocial=${ev.itemId}${ev.dateStr ? `&viewDate=${ev.dateStr}` : ""}`);
     }
   };
 
@@ -699,36 +699,24 @@ export default function TodayPageContent() {
     return `D-${diff}`;
   };
 
-  // Hero Events (최근 5개 탱고 이벤트 로드)
+  // URL에 viewEvent 파라미터가 들어올 때만 실시간으로 단건 조회하도록 변경 (불필요한 대량 로드 방지)
   useEffect(() => {
-    setLoadingEvents(true);
-    const now = new Date();
-    const q = query(collection(db, "events"), limit(50));
-    getDocs(q).then(snap => {
-      const allEv = snap.docs.map(d => ({ id: d.id, ...d.data() }) as Event);
-      const matchesSociety = (e: Event) => !e.societyId || e.societyId === 'tango';
-      const isActive = (e: Event) => {
-        const start = toJsDate(e.startDate).getTime();
-        const end = toJsDate(e.endDate || e.startDate).getTime();
-        const t = now.getTime();
-        return end >= t || start >= t;
-      };
-
-      const filtered = allEv.filter(e => matchesSociety(e) && isActive(e));
-      filtered.sort((a, b) => toJsDate(a.startDate).getTime() - toJsDate(b.startDate).getTime());
-      
-      const top5 = filtered.slice(0, 5);
-      setHeroEvents(top5);
-      if (top5.length > 0) {
-        setHeroEvent(top5[0]);
-      } else {
-        setHeroEvent(null);
-      }
-      setLoadingEvents(false);
-    }).catch(() => {
-      setLoadingEvents(false);
-    });
-  }, []);
+    if (viewEventId) {
+      setLoadingEvents(true);
+      const eventDocRef = doc(db, "events", viewEventId);
+      getDoc(eventDocRef).then((snap) => {
+        if (snap.exists()) {
+          setHeroEvent({ id: snap.id, ...snap.data() } as Event);
+        }
+        setLoadingEvents(false);
+      }).catch((err: any) => {
+        console.error("Failed to load clicked event:", err);
+        setLoadingEvents(false);
+      });
+    } else {
+      setHeroEvent(null);
+    }
+  }, [viewEventId]);
 
   // Classes
   useEffect(() => {
@@ -2012,8 +2000,12 @@ export default function TodayPageContent() {
                         key={ev.id} 
                         ev={ev} 
                         onClick={() => {
-                          if (ev.type === "class") openClassModal(ev.id);
-                          else openSocialModal(ev.id);
+                          if (ev.type === "class") {
+                            openClassModal(ev.id);
+                          } else {
+                            const dateStr = parseDateToYmd(selectedDate);
+                            router.push(`/social?viewSocial=${ev.id}&viewDate=${dateStr}`);
+                          }
                         }} 
                         language={language}
                       />
@@ -2051,8 +2043,12 @@ export default function TodayPageContent() {
                         key={ev.id} 
                         ev={ev} 
                         onClick={() => {
-                          if (ev.type === "class") openClassModal(ev.id);
-                          else openSocialModal(ev.id);
+                          if (ev.type === "class") {
+                            openClassModal(ev.id);
+                          } else {
+                            const dateStr = parseDateToYmd(selectedDate);
+                            router.push(`/social?viewSocial=${ev.id}&viewDate=${dateStr}`);
+                          }
                         }} 
                         language={language}
                       />

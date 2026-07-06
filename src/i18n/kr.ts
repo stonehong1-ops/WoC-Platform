@@ -2635,6 +2635,11 @@ export const kr: Record<string, string> = {
     'live-dashboard.subtitle': '수많은 배움의 순간들이 기록되었습니다.',
 
     // Home/Society Module
+    'home.today_scene_title': '오늘의 {city} 탱고 씬',
+    'home.today_scene.social': '소셜',
+    'home.today_scene.practice': '쁘락띠까',
+    'home.today_scene.class': '클래스',
+    'home.today_scene.event': '이벤트',
     'home.social_today': '오늘의 소셜',
     'home.in_city': '{city} 지역',
     'home.and_others': '외 {count}개',
@@ -3788,6 +3793,8 @@ export const kr: Record<string, string> = {
     'history.chat_item': '상품',
     'history.chat_status': '상태',
     'common.coming_soon': '채팅 기능이 곧 출시됩니다!',
+    'common.coming_soon_default': '준비 중입니다!',
+    'home.coming_soon_best_live': '추후 베스트 라이브(현장사진 및 동영상)로 제공됩니다!',
     'common.new': '새로운',
     'common.focus': '포커스',
     'common.important': '중요',
