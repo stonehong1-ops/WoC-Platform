@@ -304,5 +304,9 @@ service cloud.firestore {
     match /fysRegistrations/{regId} {
       allow read, write: if true;
     }
+
+    match /culture_contents/{docId} {
+      allow read, write: if true;
+    }
   }
 }

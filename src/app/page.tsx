@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 
 export default function LandingPage() {
   useEffect(() => {
-    window.location.replace('/today');
+    window.location.replace('/home');
   }, []);
 
   return null;

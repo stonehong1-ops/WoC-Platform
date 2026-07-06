@@ -11,6 +11,7 @@ export default function PageWrapper({ children }: { children: React.ReactNode })
   const router = useRouter();
   const { user, profile, loading, setShowLogin } = useAuth();
   
+  const isHome = pathname.startsWith('/home');
   const isLive = pathname.startsWith('/live');
   const isVenues = pathname.startsWith('/venues');
   const isEvents = pathname.startsWith('/events');
@@ -23,7 +24,7 @@ export default function PageWrapper({ children }: { children: React.ReactNode })
   const isExplore = pathname.startsWith('/explore');
   const isNation = pathname.startsWith('/class') || pathname.startsWith('/shop') || pathname.startsWith('/resale') || pathname.startsWith('/stay') || pathname.startsWith('/lost') || pathname.startsWith('/hub');
   
-  const isPublic = isLanding || isLogin || isApp || isLive || isVenues || isEvents || isSocial || isPlaza || isExplore || isNation || pathname.startsWith('/yedamche') || pathname.startsWith('/pt') || pathname.startsWith('/fys');
+  const isPublic = isLanding || isLogin || isApp || isLive || isVenues || isEvents || isSocial || isPlaza || isExplore || isNation || isHome || pathname.startsWith('/yedamche') || pathname.startsWith('/pt') || pathname.startsWith('/fys');
 
   // Android 네이티브 하드웨어 백버튼 제어
   useEffect(() => {
@@ -35,6 +36,9 @@ export default function PageWrapper({ children }: { children: React.ReactNode })
         'button[aria-label="close"], button[class*="close"], button.close-btn, .modal-close-btn'
       );
       if (closeButtons.length > 0) {
+        // 비회원이 비공개 페이지(/live 등)에 들어왔으나 로그인 팝업을 닫았거나 취소한 경우 
+        // 엉뚱한 /social이 아닌 로그인 첫페이지인 /home으로 리디렉션하여 정렬
+        router.replace('/home');
         // 최상위에 배치된 닫기 버튼을 가상 클릭하여 닫음
         const lastBtn = closeButtons[closeButtons.length - 1];
         lastBtn.click();

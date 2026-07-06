@@ -109,6 +109,8 @@ export const kr: Record<string, string> = {
     'days.SAT': '토요일',
     'days.SUN': '일요일',
 
+    'home.spotlight.social_summary': 'SOCIAL · {socialCount}개의 소셜과 {practicaCount}개의 쁘락띠가 in {city}',
+    'home.spotlight.class_summary': 'CLASS · {count}개의 클래스가 in {city}',
 
     'nav.home': '소사이어티',
     'nav.society': 'SOCIETY',

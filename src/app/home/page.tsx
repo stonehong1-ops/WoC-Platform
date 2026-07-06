@@ -10,7 +10,7 @@ import { eventService } from '@/lib/firebase/eventService';
 import { userService } from '@/lib/firebase/userService';
 import { venueService } from '@/lib/firebase/venueService';
 import { db } from '@/lib/firebase/clientApp';
-import { doc, getDoc, collection, getDocs, query, orderBy, limit } from 'firebase/firestore';
+import { doc, getDoc, collection, getDocs, query, orderBy, limit, where, addDoc } from 'firebase/firestore';
 import { Event as EventType } from '@/types/event';
 import { PlatformUser } from '@/types/user';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -80,6 +80,17 @@ export default function SocietyPage() {
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [isSafeFloorOpen, setIsSafeFloorOpen] = useState(false);
   const [comingSoonCard, setComingSoonCard] = useState<{title: string; icon: string; desc: string} | null>(null);
+  
+  // Focus & Etiquette States
+  const [focusContents, setFocusContents] = useState<any[]>([]);
+  const [currentFocusIndex, setCurrentFocusIndex] = useState(0);
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [isAccordionOpen, setIsAccordionOpen] = useState(false);
+  
+  const [etiquetteContents, setEtiquetteContents] = useState<any[]>([]);
+  const [isEtiquetteOpen, setIsEtiquetteOpen] = useState(false);
+  const [currentEtiquetteIndex, setCurrentEtiquetteIndex] = useState(0);
+
   const [isAboutOpen, setIsAboutOpen] = useState(false);
   const [isTermsOpen, setIsTermsOpen] = useState(false);
   const [isPrivacyOpen, setIsPrivacyOpen] = useState(false);
@@ -146,6 +157,409 @@ export default function SocietyPage() {
     slider.addEventListener('scroll', handleScroll, { passive: true });
     return () => slider.removeEventListener('scroll', handleScroll);
   }, [heroEvents]);
+
+  // Fetch Focus Contents
+  useEffect(() => {
+    const fetchFocusContents = async () => {
+      try {
+        const q = query(
+          collection(db, 'culture_contents'),
+          where('category', '==', 'focus')
+        );
+        const snap = await getDocs(q);
+        let list = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+        // focus 카테고리 시드 개별 무결성 동기화 (자가 치유 시딩)
+        const hasSafeFloor = list.some((item: any) => item.title?.includes('Safe Floor'));
+        const hasCabeceo = list.some((item: any) => item.title?.includes('Cabeceo'));
+        const hasRonda = list.some((item: any) => item.title?.includes('Ronda'));
+
+        let seeded = false;
+
+        if (!hasSafeFloor) {
+          const seedData = {
+            category: 'focus',
+            title: 'Safe Floor: Zero Tolerance Policy',
+            titleNative: 'Safe Floor: 상호 존중 및 성희롱 제로 톨러런스 정책',
+            keyword: 'ZERO TOLERANCE',
+            keywordNative: '상호존중정책',
+            description: 'We believe that every embrace should be built on mutual respect and absolute safety. Our community has no room for harassment of any kind.',
+            descriptionNative: '탱고의 본질은 서로에 대한 깊은 존중과 신뢰 위에 세워진 포옹에 있습니다. 우리 커뮤니티는 어떠한 형태의 괴롭힘이나 위해도 용납하지 않습니다.',
+            imageUrl: '/life_on_bg.jpg',
+            imageUrls: ['/life_on_bg.jpg', 'https://images.unsplash.com/photo-1542332213-31f87348057f?q=80&w=800'],
+            content: `Safe Floor: Zero Tolerance Policy
+
+1. Respect the Embrace
+Tango is a dance of intimacy and connection. This proximity requires an even higher level of respect and boundaries. Every dancer has the right to feel safe, respected, and in control of their own space.
+
+2. Our Commitment
+- Immediate Action: We take all reports seriously and act immediately to protect our members.
+- Safe Environment: We foster a culture where everyone feels empowered to speak up.
+- Zero Exceptions: Rules apply to everyone, regardless of status or skill level.
+
+3. Let's Keep the Floor Safe Together
+By participating in our events, you agree to uphold these standards of conduct.`,
+            contentNative: `존중이 없는 곳에, 탱고는 존재할 수 없습니다.
+
+1. 안전한 환경
+최근 탱고 씬 내에서 발생하는 성 비위 및 괴롭힘 사건들은 우리가 소중히 여기는 이 춤의 근간을 흔들고 있습니다. 누군가의 고통 위에 피어나는 예술은 없습니다.
+
+2. 안전한 포옹을 위한 우리의 약속
+- 무관용 원칙: 성폭력, 성희롱 또는 원치 않는 물리적/언어적 괴롭힘이 확인될 경우, 지위나 직책에 관계없이 커뮤니티에서 즉각적이고 영구적인 제명 조치를 취할 것입니다.
+- 피해자 연대 및 보호: 우리는 피해자의 목소리에 귀를 기울이고 2차 가해를 엄격히 금지합니다. 용기 있게 목소리를 낸 분들이 고립되지 않도록 끝까지 연대하겠습니다.
+- 명확한 경계 존중: 누군가 거부 의사를 표현할 때, 그것은 즉시 받아들여져야 합니다. 탱고는 합의 하에 이루어지는 교감입니다.
+
+3. 우리는 플로어를 다시 가장 안전한 곳으로 만들어야 합니다.
+모두가 두려움 없이 눈을 맞추고 다시 완전한 신뢰 속에서 서로를 안을 수 있는 날을 위해 행동해 주십시오.`,
+            order: 1,
+            createdAt: new Date()
+          };
+          await addDoc(collection(db, 'culture_contents'), seedData);
+          seeded = true;
+        }
+
+        if (!hasCabeceo) {
+          const seedData = {
+            category: 'focus',
+            title: 'How to Cabeceo: The Etiquette of Glance & Connection',
+            titleNative: '카베세오 하는 법: 눈빛과 교감의 에티켓',
+            keyword: 'CABECEO',
+            keywordNative: '카베세오',
+            description: 'Tango begins not with a step, but with a gaze. Master the traditional Cabeceo etiquette.',
+            descriptionNative: '탱고는 첫 걸음이 아니라, 서로 마주하는 첫 눈빛에서 시작됩니다. 전통적인 카베세오 에티켓을 마스터해 보세요.',
+            imageUrl: 'https://images.unsplash.com/photo-1542332213-31f87348057f?q=80&w=800',
+            imageUrls: ['https://images.unsplash.com/photo-1542332213-31f87348057f?q=80&w=800', '/life_on_bg.jpg'],
+            content: `How to Cabeceo: The Etiquette of Glance & Connection
+
+1. Glance Exchange (Mirada)
+It starts by making eye contact with the partner you want to dance with.
+
+2. Nod (Cabeceo)
+Once eye contact is established, nod slightly or send a gaze to confirm the other person's consent.
+
+3. Consent
+If the partner responds with a smile or a nod, they agree to dance.`,
+            contentNative: `탱고에서 까베세오(Cabeceo)는 말없이 눈빛과 고갯짓만으로 춤을 청하고 받아들이는 전통적인 에티켓이자 소통 방식입니다.
+
+1. 까베세오의 기본 원리
+- 시선 교환(미라다, Mirada): 춤을 추고 싶은 상대와 눈을 맞추는 것으로 시작합니다.
+- 고갯짓(까베세오): 눈이 마주친 후, 살짝 고개를 끄덕이거나 눈빛을 보내 상대의 승낙을 확인합니다.
+- 승낙: 상대방도 미소나 고갯짓으로 화답하면 춤을 추기로 한 것입니다.
+
+2. 밀롱가에서의 실전 팁
+- 거절 대신 못 본 척: 춤을 추고 싶지 않거나 상황이 여의치 않을 때는 자연스럽게 다른 곳을 바라보며 시선을 피하면 됩니다. 직접적인 거절의 민망함을 피할 수 있는 것이 까베세오의 큰 장점입니다.
+- 상대 확인: 눈빛이 교환되었다고 확신하기 전까지는 함부로 자리에서 일어나지 않는 것이 좋습니다. 남자가 여자 앞으로 다가와 직접적으로 춤을 청할 때까지 기다리는 것이 정중합니다.`,
+            order: 2,
+            createdAt: new Date()
+          };
+          await addDoc(collection(db, 'culture_contents'), seedData);
+          seeded = true;
+        }
+
+        if (!hasRonda) {
+          const seedData = {
+            category: 'focus',
+            title: 'Milonga Ronda & Floor Manners Guidelines',
+            titleNative: '밀롱가 론다와 플로어 매너 가이드라인',
+            keyword: 'RONDA MANNER',
+            keywordNative: '론다매너',
+            description: 'Keep the flow of Ronda and respect the shared space for a safe tango experience.',
+            descriptionNative: '밀롱가 플로어의 론다 흐름을 지키고, 안전한 탱고 감상을 위해 공유된 공간을 상호 존중하십시오.',
+            imageUrl: 'https://images.unsplash.com/photo-1508807526345-15e9b5f4eaff?q=80&w=1200',
+            imageUrls: ['https://images.unsplash.com/photo-1508807526345-15e9b5f4eaff?q=80&w=1200'],
+            content: `Milonga Ronda & Floor Manners Guidelines
+
+1. Respect the Ronda Flow
+Keep a safe distance from the couple in front of you and keep the counter-clockwise flow steady. Avoid walking backwards or blocking the flow with excessive moves.
+
+2. Floor Manners
+- Observe the flow even while waiting on the side.
+- Avoid teaching or giving feedback while on the dance floor.`,
+            contentNative: `서로의 즐겁고 안전한 춤을 위해 밀롱가 플로어에서 반드시 지켜야 할 론다와 매너 수칙입니다.
+
+1. 론다(Ronda) 질서 지키기
+- 시선을 마주하며 앞선 커플과의 안전 거리를 확보하고 시계 반대 방향의 흐름을 일정하게 유지합니다.
+- 임의로 뒤로 걷거나 흐름을 가로막는 무리한 동작은 지양합니다.
+
+2. 플로어 매너
+- 춤을 추지 않는 대기 상태에서도 플로어의 전반적인 흐름을 바라보며 파악합니다.
+- 플로어 위에서는 서로 동작을 가르치거나 피드백을 주는 행위를 삼가합니다.`,
+            order: 3,
+            createdAt: new Date()
+          };
+          await addDoc(collection(db, 'culture_contents'), seedData);
+          seeded = true;
+        }
+
+        if (seeded) {
+          const reSnap = await getDocs(q);
+          list = reSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+        }
+
+        list.sort((a: any, b: any) => {
+          const orderA = a.order !== undefined ? a.order : 9999;
+          const orderB = b.order !== undefined ? b.order : 9999;
+          if (orderA !== orderB) return orderA - orderB;
+          const timeA = a.createdAt?.seconds || 0;
+          const timeB = b.createdAt?.seconds || 0;
+          return timeB - timeA;
+        });
+        setFocusContents(list);
+      } catch (err) {
+        console.error('Error fetching focus contents:', err);
+      }
+    };
+    fetchFocusContents();
+  }, [isSafeFloorOpen]);
+
+  // Fetch Etiquette Contents
+  useEffect(() => {
+    const fetchEtiquetteContents = async () => {
+      try {
+        const q = query(
+          collection(db, 'culture_contents'),
+          where('category', '==', 'etiquette')
+        );
+        const snap = await getDocs(q);
+        let list = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+        if (list.length === 0) {
+          const etiquetteItems = [
+            {
+              order: 1,
+              title: '1. How to Cabeceo',
+              titleNative: '1. 까베세오 하는 법',
+              keyword: 'ETIQUETTE',
+              keywordNative: '에티켓',
+              description: 'The starting point of tango connection: Gaze and nod.',
+              descriptionNative: '탱고 커넥션의 출발점: 시선 맞추기와 가벼운 고갯짓.',
+              imageUrls: [
+                'https://tangoclass.co.kr/wp-content/uploads/2026/06/Cabeceo1.jpg',
+                'https://tangoclass.co.kr/wp-content/uploads/2026/06/Cabeceo2.jpg',
+                'https://tangoclass.co.kr/wp-content/uploads/2026/06/Cabeceo3.jpg',
+                'https://tangoclass.co.kr/wp-content/uploads/2026/06/Cabeceo4.jpg'
+              ],
+              content: 'Learn the basics of traditional invitation.',
+              contentNative: '눈빛으로 춤을 청하고 답하는 전통적인 커뮤니케이션입니다.'
+            },
+            {
+              order: 2,
+              title: '2. Decline with Ignorance',
+              titleNative: '2. 거절 대신 못본척',
+              keyword: 'ETIQUETTE',
+              keywordNative: '에티켓',
+              description: 'Politely decline without direct embarrassment.',
+              descriptionNative: '직접적인 민망함 없이 시선을 돌려 자연스럽게 청함을 사양해 보세요.',
+              imageUrls: [
+                'https://tangoclass.co.kr/wp-content/uploads/2026/06/Rejection1.jpg',
+                'https://tangoclass.co.kr/wp-content/uploads/2026/06/Rejection2.jpg',
+                'https://tangoclass.co.kr/wp-content/uploads/2026/06/Rejection3.jpg',
+                'https://tangoclass.co.kr/wp-content/uploads/2026/06/Rejection4.jpg'
+              ],
+              content: 'A natural way to skip a tanda.',
+              contentNative: '눈을 마주치지 않고 딴 곳을 봄으로써 정중하고 깔끔하게 춤 신청을 패스할 수 있습니다.'
+            },
+            {
+              order: 3,
+              title: '3. Do Not Stand Up First',
+              titleNative: '3. 먼저 일어나지 마세요',
+              keyword: 'ETIQUETTE',
+              keywordNative: '에티켓',
+              description: 'Wait for direct confirmation before standing up.',
+              descriptionNative: '시선이 완벽하게 확인되어 남자가 다가올 때까지 차분히 앉아서 기다리는 매너.',
+              imageUrls: [
+                'https://tangoclass.co.kr/wp-content/uploads/2026/06/Stand1.jpg',
+                'https://tangoclass.co.kr/wp-content/uploads/2026/06/Stand2.jpg',
+                'https://tangoclass.co.kr/wp-content/uploads/2026/06/Stand3.jpg',
+                'https://tangoclass.co.kr/wp-content/uploads/2026/06/Stand4.jpg'
+              ],
+              content: 'Prevent awkward mistakes.',
+              contentNative: '섣불리 먼저 일어나면 옆 사람에게 청한 시선과 꼬여서 서로 민망한 상황이 생길 수 있습니다.'
+            },
+            {
+              order: 4,
+              title: '4. How to Avoid Awkwardness',
+              titleNative: '4. 민망함을 피하는 법',
+              keyword: 'ETIQUETTE',
+              keywordNative: '에티켓',
+              description: 'Keep the distance and confirm step-by-step.',
+              descriptionNative: '눈빛이 100% 매칭될 때까지 천천히 단계를 밟아가며 확인하는 습관.',
+              imageUrls: [
+                'https://tangoclass.co.kr/wp-content/uploads/2026/06/Avoid-Awkward1.jpg',
+                'https://tangoclass.co.kr/wp-content/uploads/2026/06/Avoid-Awkward2.jpg',
+                'https://tangoclass.co.kr/wp-content/uploads/2026/06/Avoid-Awkward3.jpg',
+                'https://tangoclass.co.kr/wp-content/uploads/2026/06/Avoid-Awkward4.jpg'
+              ],
+              content: 'Safety measures for connection.',
+              contentNative: '정확한 교감 신호를 통해 불필요한 마찰을 줄이고 모두가 기분 좋은 밀롱가를 만드는 지혜.'
+            },
+            {
+              order: 5,
+              title: '5. Next Time, Not Now',
+              titleNative: '5. 지금 말고 나중에',
+              keyword: 'ETIQUETTE',
+              keywordNative: '에티켓',
+              description: 'Let them know you want to dance later.',
+              descriptionNative: '지금은 휴식이 필요하지만, 다음 탄다에는 기쁘게 함께 춤출 것을 넌지시 표시하기.',
+              imageUrls: [
+                'https://tangoclass.co.kr/wp-content/uploads/2026/06/Right-Tanda1.jpg',
+                'https://tangoclass.co.kr/wp-content/uploads/2026/06/Right-Tanda2.jpg',
+                'https://tangoclass.co.kr/wp-content/uploads/2026/06/Right-Tanda3.jpg',
+                'https://tangoclass.co.kr/wp-content/uploads/2026/06/Right-Tanda4.jpg'
+              ],
+              content: 'Manage your energy and connections.',
+              contentNative: '체력이 다했거나 아끼고 싶을 때는 다음 기회를 암시하며 상대를 존중하며 사양합니다.'
+            },
+            {
+              order: 6,
+              title: '6. The Perfect Angle',
+              titleNative: '6. 바로 이 각도',
+              keyword: 'ETIQUETTE',
+              keywordNative: '에티켓',
+              description: 'Perfect line of sight for Cabeceo.',
+              descriptionNative: '상대방의 론다와 시야각을 배려해 시선이 가장 편안하게 닿을 수 있는 완벽한 각도 찾기.',
+              imageUrls: [
+                'https://tangoclass.co.kr/wp-content/uploads/2026/06/Right-Angle1.jpg',
+                'https://tangoclass.co.kr/wp-content/uploads/2026/06/Right-Angle2.jpg',
+                'https://tangoclass.co.kr/wp-content/uploads/2026/06/Right-Angle3.jpg',
+                'https://tangoclass.co.kr/wp-content/uploads/2026/06/Right-Angle4.jpg'
+              ],
+              content: 'Angle of interaction.',
+              contentNative: '시선이 마주하기 편하도록 몸의 방향이나 각도를 자연스럽게 매만지는 숨은 에티켓 스펙.'
+            },
+            {
+              order: 7,
+              title: '7. Too Much Pressure',
+              titleNative: '7. 너무 부담스러워요',
+              keyword: 'ETIQUETTE',
+              keywordNative: '에티켓',
+              description: 'Avoid staring or forcing connections.',
+              descriptionNative: '부담스러운 뚫어질 듯한 응시나 춤을 강요하는 시선은 상대에게 불편을 줍니다.',
+              imageUrls: [
+                'https://tangoclass.co.kr/wp-content/uploads/2026/06/Mirada1.jpg',
+                'https://tangoclass.co.kr/wp-content/uploads/2026/06/Mirada2.jpg',
+                'https://tangoclass.co.kr/wp-content/uploads/2026/06/Mirada3.jpg',
+                'https://tangoclass.co.kr/wp-content/uploads/2026/06/Mirada4.jpg'
+              ],
+              content: 'Respect personal space.',
+              contentNative: '음근하고 자연스러운 시선이 아닌, 레이저를 쏘듯 쳐다보는 강압적인 미라다는 피해야 합니다.'
+            },
+            {
+              order: 8,
+              title: '8. This Moment, You',
+              titleNative: '8. 이 순간, 바로 당신',
+              keyword: 'ETIQUETTE',
+              keywordNative: '에티켓',
+              description: 'Finding the exact connection partner.',
+              descriptionNative: '수많은 밀롱가의 군중 속에서 서로의 파동과 눈빛이 단 한 번에 일치되는 감동의 찰나.',
+              imageUrls: [
+                'https://tangoclass.co.kr/wp-content/uploads/2026/06/Right-Person1.jpg',
+                'https://tangoclass.co.kr/wp-content/uploads/2026/06/Right-Person2.jpg',
+                'https://tangoclass.co.kr/wp-content/uploads/2026/06/Right-Person3.jpg',
+                'https://tangoclass.co.kr/wp-content/uploads/2026/06/Right-Person4.jpg'
+              ],
+              content: 'The magic connection of gaze.',
+              contentNative: '서로가 원하는 춤의 주파수가 맞아떨어지는 아름다운 밀롱가의 순간을 선사합니다.'
+            },
+            {
+              order: 9,
+              title: '9. Power of Positivity',
+              titleNative: '9. 긍정의 힘!',
+              keyword: 'ETIQUETTE',
+              keywordNative: '에티켓',
+              description: 'Keep smiling and enjoy the waiting.',
+              descriptionNative: '지금 당장 춤을 추지 않더라도, 플로어를 감상하며 다음 기회를 즐겁게 준비하는 여유.',
+              imageUrls: [
+                'https://tangoclass.co.kr/wp-content/uploads/2026/06/Waiting1.jpg',
+                'https://tangoclass.co.kr/wp-content/uploads/2026/06/Waiting2.jpg',
+                'https://tangoclass.co.kr/wp-content/uploads/2026/06/Waiting3.jpg',
+                'https://tangoclass.co.kr/wp-content/uploads/2026/06/Waiting4.jpg'
+              ],
+              content: 'Patience and smile.',
+              contentNative: '밀롱가에 앉아있는 대기 시간조차 음악을 듣고 교류를 기쁘게 여기는 긍정의 마인드.'
+            },
+            {
+              order: 10,
+              title: '10. Ronda Guardians',
+              titleNative: '10. 여자는 론다 지키미',
+              keyword: 'ETIQUETTE',
+              keywordNative: '에티켓',
+              description: 'Observe and respect Ronda from the seats.',
+              descriptionNative: '춤을 직접 추지 않더라도, 플로어 론다의 흐름과 공간을 소중히 지키고 관찰하는 안목.',
+              imageUrls: [
+                'https://tangoclass.co.kr/wp-content/uploads/2026/06/Observe1.jpg',
+                'https://tangoclass.co.kr/wp-content/uploads/2026/06/Observe2.jpg',
+                'https://tangoclass.co.kr/wp-content/uploads/2026/06/Observe3.jpg',
+                'https://tangoclass.co.kr/wp-content/uploads/2026/06/Observe4.jpg'
+              ],
+              content: 'Protect the flow of tango floor.',
+              contentNative: '자리에 앉아 흐름을 면밀히 바라봄으로써, 플로어 위 댄서들이 완전한 신뢰 속에서 춤추게 돕습니다.'
+            },
+            {
+              order: 11,
+              title: '11. Glasses',
+              titleNative: '11. 안경',
+              keyword: 'ETIQUETTE',
+              keywordNative: '에티켓',
+              description: 'Slight helper for clear gaze connection.',
+              descriptionNative: '시력이 좋지 않다면 예쁜 안경이나 렌즈로 상대의 시선과 표정을 더욱 선명히 인식하기.',
+              imageUrls: [
+                'https://tangoclass.co.kr/wp-content/uploads/2026/06/Glasses1.jpg',
+                'https://tangoclass.co.kr/wp-content/uploads/2026/06/Glasses2.jpg',
+                'https://tangoclass.co.kr/wp-content/uploads/2026/06/Glasses3.jpg',
+                'https://tangoclass.co.kr/wp-content/uploads/2026/06/Glasses4.jpg'
+              ],
+              content: 'Clear vision for connection.',
+              contentNative: '눈이 마주쳤을 때 오해나 착오를 줄여주며, 눈 맞춤의 교감 감각을 정교하게 돕습니다.'
+            },
+            {
+              order: 12,
+              title: '12. What Style Do You Prefer?',
+              titleNative: '12. 어떤 스타일을 좋아하세요?',
+              keyword: 'ETIQUETTE',
+              keywordNative: '에티켓',
+              description: 'Recognize preferences and dance styles.',
+              descriptionNative: '밀롱가에 모인 다양한 댄서들의 취향과 개성을 폭넓게 마주하고 기쁘게 소통하는 방법.',
+              imageUrls: [
+                'https://tangoclass.co.kr/wp-content/uploads/2026/06/Way1.jpg',
+                'https://tangoclass.co.kr/wp-content/uploads/2026/06/Way2.jpg',
+                'https://tangoclass.co.kr/wp-content/uploads/2026/06/Way3.jpg',
+                'https://tangoclass.co.kr/wp-content/uploads/2026/06/Way4.jpg'
+              ],
+              content: 'Enjoy diversity on the floor.',
+              contentNative: '각자 지닌 춤의 선율과 깊이를 편견 없이 존중하며 서로의 아브라소를 나누어 보세요.'
+            }
+          ];
+
+          for (const item of etiquetteItems) {
+            await addDoc(collection(db, 'culture_contents'), {
+              ...item,
+              category: 'etiquette',
+              imageUrl: item.imageUrls[0],
+              createdAt: new Date()
+            });
+          }
+
+          const reSnap = await getDocs(q);
+          list = reSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        }
+
+        list.sort((a: any, b: any) => {
+          const orderA = a.order !== undefined ? a.order : 9999;
+          const orderB = b.order !== undefined ? b.order : 9999;
+          if (orderA !== orderB) return orderA - orderB;
+          const timeA = a.createdAt?.seconds || 0;
+          const timeB = b.createdAt?.seconds || 0;
+          return timeB - timeA;
+        });
+
+        setEtiquetteContents(list);
+      } catch (err) {
+        console.error('Error fetching etiquette contents:', err);
+      }
+    };
+    fetchEtiquetteContents();
+  }, [isEtiquetteOpen]);
 
   // Fetch featured users (instructors)
   useEffect(() => {
@@ -520,29 +934,76 @@ export default function SocietyPage() {
             />
             
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {/* Large Spotlight Card: 기존 포커스 바인딩 */}
-              <div 
-                className="col-span-2 row-span-2 relative h-[360px] md:h-[480px] rounded-2xl overflow-hidden group cursor-pointer border border-outline/5 shadow-sm"
-                onClick={() => setIsSafeFloorOpen(true)}
-              >
-                <img 
-                  alt={societyInfo.blog_title || "탱고, 우리 삶의 언어"} 
-                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" 
-                  src="/life_on_bg.jpg"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent flex flex-col justify-end p-6 text-left">
-                  <span className="absolute top-4 left-4 z-10 bg-[#6750A4] text-white text-[10px] font-bold px-2 py-0.5 rounded tracking-widest">FOCUS</span>
-                  <span className="text-white/60 text-xs font-semibold uppercase tracking-wider mb-1">
-                    {societyInfo.blog_core_keyword || "탱고칼럼"}
-                  </span>
-                  <h3 className="text-white font-bold text-2xl mb-2">
-                    {societyInfo.blog_title || "탱고, 우리 삶의 언어"}
-                  </h3>
-                  <p className="text-white/80 text-sm leading-relaxed max-w-md">
-                    {societyInfo.blog_description || "탱고는 단순한 춤이 아니라, 우리가 서로를 이해하는 방식이다."}
-                  </p>
-                </div>
-              </div>
+              {/* Large Spotlight Card: 동적 포커스 바인딩 */}
+              {(() => {
+                const defaultFocus = {
+                  id: 'default_safe_floor',
+                  category: 'focus',
+                  title: 'Safe Floor: Zero Tolerance Policy',
+                  titleNative: 'Safe Floor: 상호 존중 및 성희롱 제로 톨러런스 정책',
+                  keyword: 'ZERO TOLERANCE',
+                  keywordNative: '상호존중정책',
+                  description: 'Reaffirming our strict zero-tolerance policy against sexual harassment',
+                  descriptionNative: 'WoC 커뮤니티는 어떠한 형태의 성희롱이나 괴롭힘도 용납하지 않습니다.',
+                  imageUrl: '/life_on_bg.jpg',
+                  content: 'Default policy content...',
+                  createdAt: { seconds: Date.now() / 1000 }
+                };
+
+                const activeFocus = focusContents[0] || defaultFocus;
+
+                // 3일 내 등록 여부 판별
+                const isNewContent = (item: any) => {
+                  if (!item || !item.createdAt) return false;
+                  let time = 0;
+                  if (typeof item.createdAt.toDate === 'function') {
+                    time = item.createdAt.toDate().getTime();
+                  } else if (item.createdAt.seconds) {
+                    time = item.createdAt.seconds * 1000;
+                  } else {
+                    time = new Date(item.createdAt).getTime();
+                  }
+                  return Date.now() - time < 3 * 24 * 60 * 60 * 1000;
+                };
+
+                const resolvedKeyword = language === 'KR' && activeFocus.keywordNative ? activeFocus.keywordNative : activeFocus.keyword;
+                const resolvedTitle = language === 'KR' && activeFocus.titleNative ? activeFocus.titleNative : activeFocus.title;
+                const resolvedDesc = language === 'KR' && activeFocus.descriptionNative ? activeFocus.descriptionNative : activeFocus.description;
+
+                return (
+                  <div 
+                    className="col-span-2 row-span-2 relative h-[360px] md:h-[480px] rounded-2xl overflow-hidden group cursor-pointer border border-outline/5 shadow-sm"
+                    onClick={() => {
+                      setCurrentFocusIndex(0);
+                      setIsSafeFloorOpen(true);
+                    }}
+                  >
+                    <img 
+                      alt={resolvedTitle} 
+                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" 
+                      src={getSafeStorageUrl(activeFocus.imageUrl || '/life_on_bg.jpg')}
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent flex flex-col justify-end p-6 text-left">
+                      <span className="absolute top-4 left-4 z-10 bg-[#6750A4] text-white text-[10px] font-bold px-2 py-0.5 rounded tracking-widest">FOCUS</span>
+                      
+                      {/* 3일 내 등록된 새 글이 리스트에 있으면 NEW 뱃지 노출 */}
+                      {focusContents.some(item => isNewContent(item)) && (
+                        <span className="absolute top-4 right-4 z-10 bg-[#FF2D55] text-white text-[10px] font-black px-2.5 py-0.5 rounded-full tracking-wide shadow-md animate-pulse">NEW</span>
+                      )}
+
+                      <span className="text-white/60 text-xs font-semibold uppercase tracking-wider mb-1">
+                        {resolvedKeyword}
+                      </span>
+                      <h3 className="text-white font-bold text-2xl mb-2 line-clamp-2">
+                        {resolvedTitle}
+                      </h3>
+                      <p className="text-white/80 text-sm leading-relaxed max-w-md line-clamp-3">
+                        {resolvedDesc}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })()}
 
               {/* Card 1: 가비의 탱고툰 */}
               <div 
@@ -552,6 +1013,24 @@ export default function SocietyPage() {
                 <img alt="가비의 탱고툰" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" src="/gavi.jpg"/>
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-4 text-left">
                   <h4 className="text-white font-bold text-base">가비의 탱고툰</h4>
+                </div>
+              </div>
+
+              {/* Card 1.5: 밀롱가 에티켓 (신설) */}
+              <div 
+                className="relative h-[172px] md:h-[232px] rounded-2xl overflow-hidden group cursor-pointer border border-outline/5 shadow-sm"
+                onClick={() => {
+                  setCurrentEtiquetteIndex(0);
+                  setIsEtiquetteOpen(true);
+                }}
+              >
+                <img 
+                  alt="밀롱가 에티켓" 
+                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" 
+                  src="https://tangoclass.co.kr/wp-content/uploads/2026/06/2026-05-Cabeceo-Title-KO.jpg"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-4 text-left">
+                  <h4 className="text-white font-bold text-base">밀롱가 에티켓</h4>
                 </div>
               </div>
 
@@ -579,12 +1058,12 @@ export default function SocietyPage() {
 
               {/* Card 4: 탱고의 역사 리뷰 */}
               <div 
-                className="relative h-[172px] md:h-[232px] rounded-2xl overflow-hidden group cursor-pointer border border-outline/5 shadow-sm"
+                className="col-span-2 md:col-span-4 relative h-[120px] md:h-[160px] rounded-2xl overflow-hidden group cursor-pointer border border-outline/5 shadow-sm"
                 onClick={() => setComingSoonCard({ title: '탱고의 역사 리뷰', icon: 'history_edu', desc: '탱고의 역사 리뷰 세부 정보가 곧 공개됩니다.' })}
               >
                 <img alt="탱고의 역사 리뷰" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" src="/ddakji.jpg"/>
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-4 text-left">
-                  <h4 className="text-white font-bold text-base">탱고의 역사 리뷰</h4>
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-6 text-left">
+                  <h4 className="text-white font-bold text-lg md:text-2xl">탱고의 역사 리뷰</h4>
                 </div>
               </div>
             </div>
@@ -808,117 +1287,462 @@ export default function SocietyPage() {
         uid={selectedUserId || ''}
       />
 
-      {/* Safe Floor Policy Full-Screen Popup */}
-      {isSafeFloorOpen && (
-        <div className="fixed inset-0 z-[10000] bg-white flex flex-col animate-in fade-in duration-500 overflow-y-auto">
-          {/* High-Impact Hero Section */}
-          <div className="relative w-full h-[50vh] flex-shrink-0">
-            <img 
-              src="https://images.unsplash.com/photo-1518609878373-06d740f60d8b?q=80&w=1200" 
-              alt="Safe Floor" 
-              className="w-full h-full object-cover"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-black/30"></div>
-            
-            {/* Close Button */}
-            <div className="absolute top-0 left-0 w-full p-6 flex justify-end">
-              <button 
-                onClick={() => setIsSafeFloorOpen(false)}
-                className="w-12 h-12 flex items-center justify-center rounded-full bg-black/20 backdrop-blur-md text-white hover:bg-black/40 transition-all shadow-lg"
-              >
-                <span className="material-symbols-outlined text-[28px]">close</span>
-              </button>
-            </div>
+      {/* Safe Floor Policy & FOCUS Full-Screen Popup */}
+      {isSafeFloorOpen && (() => {
+        const defaultFocus = {
+          id: 'default_safe_floor',
+          category: 'focus',
+          title: 'Safe Floor: Zero Tolerance Policy',
+          titleNative: 'Safe Floor: 상호 존중 및 성희롱 제로 톨러런스 정책',
+          keyword: 'ZERO TOLERANCE',
+          keywordNative: '상호존중정책',
+          description: 'Reaffirming our strict zero-tolerance policy against sexual harassment',
+          descriptionNative: 'WoC 커뮤니티는 어떠한 형태의 성희롱이나 괴롭힘도 용납하지 않습니다.',
+          imageUrl: '/life_on_bg.jpg',
+          content: `WoC 커뮤니티는 상호 존중과 신뢰를 바탕으로 운영됩니다.
 
-            <div className="absolute bottom-0 left-0 w-full p-8 md:p-16">
-              <div className="max-w-4xl mx-auto w-full">
-                <span className="px-4 py-1.5 bg-red-600 text-white text-[12px] font-bold uppercase tracking-widest rounded-lg mb-6 inline-block shadow-xl animate-in slide-in-from-left duration-700">{t('home.policy.zero_tolerance')}</span>
-                <h2 className="text-4xl md:text-7xl font-extrabold text-slate-900 font-headline leading-tight animate-in slide-in-from-bottom duration-700 delay-100">
-                  {t('home.policy.headline')}
-                </h2>
+우리는 댄스 플로어 내외의 어떠한 형태의 원치 않는 신체 접촉, 성적 언동, 위협적 태도 및 괴롭힘도 일절 용납하지 않습니다.
+
+이 정책은 모든 회원, 강사, 오거나이저 및 관련 스태프에게 예외 없이 적용됩니다.
+
+수칙:
+1. 상대방의 동의를 항상 최우선으로 존중하십시오.
+2. 거절 의사는 명확히 존중되어야 하며, 보복 조치는 금지됩니다.
+3. 문제 발견 시 주저하지 말고 즉각 신고 채널로 제보해 주십시오.`,
+          createdAt: { seconds: Date.now() / 1000 }
+        };
+
+        const listToRender = focusContents.length > 0 ? focusContents : [defaultFocus];
+        const safeIndex = currentFocusIndex < listToRender.length ? currentFocusIndex : 0;
+        const activeFocus = listToRender[safeIndex] || defaultFocus;
+
+        const resolvedKeyword = language === 'KR' && activeFocus.keywordNative ? activeFocus.keywordNative : activeFocus.keyword;
+        const resolvedTitle = language === 'KR' && activeFocus.titleNative ? activeFocus.titleNative : activeFocus.title;
+        const resolvedDesc = language === 'KR' && activeFocus.descriptionNative ? activeFocus.descriptionNative : activeFocus.description;
+        const resolvedContent = language === 'KR' && activeFocus.contentNative ? activeFocus.contentNative : activeFocus.content;
+
+        const goPrev = () => {
+          if (safeIndex > 0) {
+            setCurrentFocusIndex(safeIndex - 1);
+            setActiveImageIndex(0);
+          }
+        };
+        const goNext = () => {
+          if (safeIndex < listToRender.length - 1) {
+            setCurrentFocusIndex(safeIndex + 1);
+            setActiveImageIndex(0);
+          }
+        };
+
+        // 다중 이미지 데이터 처리
+        const imagesToSlide = activeFocus.imageUrls && activeFocus.imageUrls.length > 0
+          ? activeFocus.imageUrls
+          : [activeFocus.imageUrl || '/life_on_bg.jpg'];
+
+        const prevImg = (e: React.MouseEvent) => {
+          e.stopPropagation();
+          if (activeImageIndex > 0) {
+            setActiveImageIndex(activeImageIndex - 1);
+          } else {
+            setActiveImageIndex(imagesToSlide.length - 1);
+          }
+        };
+        const nextImg = (e: React.MouseEvent) => {
+          e.stopPropagation();
+          if (activeImageIndex < imagesToSlide.length - 1) {
+            setActiveImageIndex(activeImageIndex + 1);
+          } else {
+            setActiveImageIndex(0);
+          }
+        };
+
+        return (
+          <div className="fixed inset-0 z-[10000] bg-white flex flex-col animate-in fade-in duration-500 overflow-y-auto">
+            {/* High-Impact Hero Section (Image Slider Container) */}
+            <div className="relative w-full h-[50vh] flex-shrink-0 bg-slate-900 group">
+              <img 
+                src={getSafeStorageUrl(imagesToSlide[activeImageIndex] || '/life_on_bg.jpg')} 
+                alt={resolvedTitle} 
+                className="w-full h-full object-cover transition-all duration-500"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-black/30"></div>
+              
+              {/* Top Navigation Row */}
+              <div className="absolute top-0 left-0 w-full p-6 flex justify-end items-center z-20">
+                {/* Close Button */}
+                <button 
+                  onClick={() => setIsSafeFloorOpen(false)}
+                  className="w-12 h-12 flex items-center justify-center rounded-full bg-black/20 backdrop-blur-md text-white hover:bg-black/40 transition-all shadow-lg border-none cursor-pointer"
+                >
+                  <span className="material-symbols-outlined text-[28px]">close</span>
+                </button>
+              </div>
+
+              {/* Image Slider Left/Right Arrows */}
+              {imagesToSlide.length > 1 && (
+                <div className="absolute inset-x-4 top-1/2 -translate-y-1/2 flex justify-between items-center z-20">
+                  <button 
+                    onClick={prevImg}
+                    className="w-10 h-10 rounded-full flex items-center justify-center bg-black/30 hover:bg-black/50 text-white border-none cursor-pointer shadow-md transition-all"
+                  >
+                    <span className="material-symbols-outlined">chevron_left</span>
+                  </button>
+                  <button 
+                    onClick={nextImg}
+                    className="w-10 h-10 rounded-full flex items-center justify-center bg-black/30 hover:bg-black/50 text-white border-none cursor-pointer shadow-md transition-all"
+                  >
+                    <span className="material-symbols-outlined">chevron_right</span>
+                  </button>
+                </div>
+              )}
+
+              {/* Image Slider Dots Indicator */}
+              {imagesToSlide.length > 1 && (
+                <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-1.5 z-20 bg-black/25 px-3 py-1.5 rounded-full backdrop-blur-sm">
+                  {imagesToSlide.map((_: any, i: number) => (
+                    <span 
+                      key={i} 
+                      onClick={() => setActiveImageIndex(i)}
+                      className={`w-2 h-2 rounded-full cursor-pointer transition-all duration-300 ${activeImageIndex === i ? 'bg-white w-4' : 'bg-white/40 hover:bg-white/70'}`}
+                    ></span>
+                  ))}
+                </div>
+              )}
+
+              <div className="absolute bottom-0 left-0 w-full p-8 md:p-16">
+                <div className="max-w-4xl mx-auto w-full">
+                  <span className="px-4 py-1.5 bg-red-600 text-white text-[12px] font-bold uppercase tracking-widest rounded-lg mb-6 inline-block shadow-xl">{resolvedKeyword}</span>
+                  <h2 className="text-4xl md:text-6xl font-extrabold text-slate-900 font-headline leading-tight">
+                    {resolvedTitle}
+                  </h2>
+                </div>
               </div>
             </div>
-          </div>
-          
-          {/* Policy Content */}
-          <div className="flex-1 bg-white pb-24">
-            <div className="max-w-4xl mx-auto px-8 md:px-16 py-12 space-y-12">
-              <div className="prose prose-slate prose-xl max-w-none">
-                <p className="text-2xl md:text-3xl font-medium text-slate-800 leading-relaxed font-headline italic border-l-8 border-primary pl-8 py-4 bg-slate-50 rounded-r-3xl animate-in fade-in duration-1000 delay-300">
-                  {t('home.policy.intro')}
-                </p>
-                
-                <div className="mt-16 grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
-                  <div className="relative group overflow-hidden rounded-[40px] shadow-2xl animate-in zoom-in duration-1000 delay-400">
-                    <img 
-                      src="https://images.unsplash.com/photo-1542332213-31f87348057f?q=80&w=800" 
-                      alt="Tango dancers" 
-                      className="w-full h-80 object-cover transition-transform duration-700 group-hover:scale-110"
-                    />
-                    <div className="absolute inset-0 ring-1 ring-inset ring-black/10 rounded-[40px]"></div>
-                  </div>
-                  <div className="flex flex-col justify-center animate-in slide-in-from-right duration-700 delay-500">
-                    <h3 className="text-3xl font-black text-slate-900 mb-6 font-headline tracking-tight">{t('home.policy.section1.title')}</h3>
-                    <p className="text-slate-600 text-lg leading-relaxed">
-                      {t('home.policy.section1.desc')}
-                    </p>
-                  </div>
-                </div>
 
-                <div className="pt-16 border-t border-slate-100 space-y-12">
-                  <h3 className="text-3xl md:text-4xl font-black text-slate-900 font-headline flex items-center gap-4 animate-in fade-in duration-700 delay-600">
-                    <span className="w-12 h-12 rounded-2xl bg-primary text-white flex items-center justify-center shadow-lg shadow-primary/20">
-                      <span className="material-symbols-outlined text-2xl" style={{ fontVariationSettings: "'FILL' 1" }}>verified_user</span>
-                    </span>
-                    {t('home.policy.promise.title')}
-                  </h3>
+            {/* Policy Content */}
+            <div className="flex-1 bg-white pb-24">
+              <div className="max-w-4xl mx-auto px-8 md:px-16 py-12 space-y-12">
+                <div className="prose prose-slate prose-xl max-w-none">
                   
-                  <div className="grid grid-cols-1 gap-6">
-                    {[
-                      { id: 1, title: t('home.policy.point1.title'), desc: t('home.policy.point1.desc'), color: 'red' },
-                      { id: 2, title: t('home.policy.point2.title'), desc: t('home.policy.point2.desc'), color: 'blue' },
-                      { id: 3, title: t('home.policy.point3.title'), desc: t('home.policy.point3.desc'), color: 'green' }
-                    ].map((point, idx) => (
-                      <div 
-                        key={point.id} 
-                        className="bg-white rounded-[32px] p-8 border border-slate-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 animate-in fade-in slide-in-from-bottom duration-700"
-                        style={{ animationDelay: `${700 + (idx * 100)}ms` }}
+                  {/* Navigator: 히어로 바로 아래 아코디언 툴바 */}
+                  <div className="bg-slate-50 border border-slate-200 rounded-2xl p-2.5 flex items-center justify-between gap-2 mb-8 shadow-sm relative min-w-0">
+                    <button
+                      onClick={goPrev}
+                      disabled={safeIndex === 0}
+                      className={`w-10 h-10 flex items-center justify-center rounded-xl bg-white text-slate-700 border border-slate-200 transition-all flex-shrink-0 ${safeIndex === 0 ? 'opacity-30 cursor-not-allowed' : 'hover:bg-slate-100 active:scale-95 cursor-pointer'}`}
+                    >
+                      <span className="material-symbols-outlined text-[20px]">chevron_left</span>
+                    </button>
+
+                    {/* 목록 아코디온 Dropdown */}
+                    <div className="relative flex-1 min-w-0">
+                      <button
+                        onClick={() => setIsAccordionOpen(!isAccordionOpen)}
+                        className="w-full flex items-center justify-between gap-2 px-3.5 py-2 rounded-xl bg-white text-slate-800 font-bold border border-slate-200 text-sm hover:bg-slate-100 cursor-pointer text-left shadow-sm min-w-0"
                       >
-                        <div className="flex items-start gap-6">
-                          <span className={`flex-shrink-0 w-14 h-14 rounded-2xl bg-${point.color}-50 text-${point.color}-600 flex items-center justify-center text-xl font-black border border-${point.color}-100 shadow-inner`}>
-                            {point.id}
-                          </span>
-                          <div>
-                            <h4 className="font-black text-slate-900 text-xl mb-3 font-headline">{point.title}</h4>
-                            <p className="text-slate-600 text-lg leading-relaxed">{point.desc}</p>
-                          </div>
+                        <span className="truncate max-w-[140px] sm:max-w-[280px] block">{safeIndex + 1}화. {resolvedTitle}</span>
+                        <span className={`material-symbols-outlined transition-transform duration-200 flex-shrink-0 ${isAccordionOpen ? 'rotate-180' : ''}`}>keyboard_arrow_down</span>
+                      </button>
+
+                      {isAccordionOpen && (
+                        <div className="absolute left-0 right-0 mt-2 z-50 bg-white border border-slate-200 rounded-2xl shadow-xl max-h-60 overflow-y-auto p-2 space-y-1">
+                          {listToRender.map((item, idx) => {
+                            const itTitle = language === 'KR' && item.titleNative ? item.titleNative : item.title;
+                            return (
+                              <div
+                                key={item.id}
+                                onClick={() => {
+                                  setCurrentFocusIndex(idx);
+                                  setActiveImageIndex(0);
+                                  setIsAccordionOpen(false);
+                                }}
+                                className={`px-4 py-2.5 rounded-xl text-sm font-semibold cursor-pointer transition-all ${safeIndex === idx ? 'bg-slate-900 text-white' : 'text-slate-700 hover:bg-slate-50'}`}
+                              >
+                                {idx + 1}화. {itTitle}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+
+                    <button
+                      onClick={goNext}
+                      disabled={safeIndex === listToRender.length - 1}
+                      className={`w-10 h-10 flex items-center justify-center rounded-xl bg-white text-slate-700 border border-slate-200 transition-all flex-shrink-0 ${safeIndex === listToRender.length - 1 ? 'opacity-30 cursor-not-allowed' : 'hover:bg-slate-100 active:scale-95 cursor-pointer'}`}
+                    >
+                      <span className="material-symbols-outlined text-[20px]">chevron_right</span>
+                    </button>
+                  </div>
+                  
+                  {/* 저자 공간 (Author Profile Section) */}
+                  {(() => {
+                    const isSafeFloor = activeFocus.title?.includes('Safe Floor') || activeFocus.titleNative?.includes('상호 존중');
+                    const authorName = isSafeFloor ? 'Stone' : 'Leo';
+                    const authorImg = isSafeFloor 
+                      ? '/life_on_bg.jpg' 
+                      : 'https://images.unsplash.com/photo-1542332213-31f87348057f?q=80&w=800';
+
+                    return (
+                      <div className="flex items-center gap-3.5 mb-8 bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
+                        <div className="w-11 h-11 rounded-full overflow-hidden flex-shrink-0 bg-slate-100 ring-2 ring-slate-100 shadow-sm">
+                          <img 
+                            src={getSafeStorageUrl(authorImg)} 
+                            alt={authorName} 
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                        <div className="flex flex-col text-left">
+                          <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-1">Written by</span>
+                          <span className="text-base font-black text-slate-800 leading-none">{authorName}</span>
                         </div>
                       </div>
-                    ))}
-                  </div>
-                </div>
+                    );
+                  })()}
+                  
+                  {/* Summary Block */}
+                  <p className="text-2xl md:text-3xl font-medium text-slate-800 leading-relaxed font-headline italic border-l-8 border-primary pl-8 py-4 bg-slate-50 rounded-r-3xl">
+                    {resolvedDesc}
+                  </p>
 
-                <div className="mt-20 p-12 md:p-20 bg-slate-900 text-white rounded-[60px] text-center relative overflow-hidden shadow-2xl animate-in zoom-in duration-1000 delay-1000">
-                  <div className="absolute inset-0 opacity-40 bg-[url('https://images.unsplash.com/photo-1508807526345-15e9b5f4eaff?q=80&w=1200')] bg-cover bg-center"></div>
-                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-900/90 to-transparent"></div>
-                  <div className="relative z-10 max-w-2xl mx-auto">
-                    <h3 className="text-3xl md:text-5xl font-black font-headline mb-8 leading-tight">{t('home.policy.footer.title')}</h3>
-                    <p className="text-white/80 text-xl leading-relaxed mb-10">
-                      {t('home.policy.footer.desc')}
-                    </p>
+                  {/* Main Content Markdown Parser Fallback */}
+                  <div className="mt-12 text-left whitespace-pre-wrap leading-relaxed text-lg text-slate-700 font-sans border-t border-slate-100 pt-8">
+                    {resolvedContent}
+                  </div>
+
+                  <div className="mt-12 text-center">
                     <button 
                       onClick={() => setIsSafeFloorOpen(false)}
-                      className="px-12 py-5 bg-white text-slate-900 text-lg font-black rounded-2xl hover:bg-slate-100 hover:scale-105 active:scale-95 transition-all shadow-xl"
+                      className="px-12 py-4 bg-slate-900 text-white text-base font-bold rounded-2xl hover:bg-slate-800 hover:scale-105 active:scale-95 transition-all shadow-lg border-none cursor-pointer"
                     >
-                      {t('home.policy.acknowledge')}
+                      창 닫기
                     </button>
                   </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
+
+      {/* Milonga Etiquette Full-Screen Popup */}
+      {isEtiquetteOpen && (() => {
+        const defaultEtiquette = {
+          id: 'default_eti',
+          category: 'etiquette',
+          title: 'Milonga Etiquette',
+          titleNative: '밀롱가 에티켓',
+          keyword: 'ETIQUETTE',
+          keywordNative: '에티켓',
+          description: 'Explore the 12 key etiquettes of tango milonga.',
+          descriptionNative: '밀롱가에서 지켜야 할 12가지 필수 에티켓을 살펴봅니다.',
+          imageUrls: ['https://tangoclass.co.kr/wp-content/uploads/2026/06/2026-05-Cabeceo-Title-KO.jpg'],
+          content: 'Tango manners matter.',
+          contentNative: '매너 있는 밀롱가는 서로를 더 깊게 포옹하게 만듭니다.',
+          createdAt: { seconds: Date.now() / 1000 }
+        };
+
+        const listToRender = etiquetteContents.length > 0 ? etiquetteContents : [defaultEtiquette];
+        const safeIndex = currentEtiquetteIndex < listToRender.length ? currentEtiquetteIndex : 0;
+        const activeEti = listToRender[safeIndex] || defaultEtiquette;
+
+        const resolvedKeyword = language === 'KR' && activeEti.keywordNative ? activeEti.keywordNative : activeEti.keyword;
+        const resolvedTitle = language === 'KR' && activeEti.titleNative ? activeEti.titleNative : activeEti.title;
+        const resolvedDesc = language === 'KR' && activeEti.descriptionNative ? activeEti.descriptionNative : activeEti.description;
+        const resolvedContent = language === 'KR' && activeEti.contentNative ? activeEti.contentNative : activeEti.content;
+
+        const goPrev = () => {
+          if (safeIndex > 0) {
+            setCurrentEtiquetteIndex(safeIndex - 1);
+            setActiveImageIndex(0);
+          }
+        };
+        const goNext = () => {
+          if (safeIndex < listToRender.length - 1) {
+            setCurrentEtiquetteIndex(safeIndex + 1);
+            setActiveImageIndex(0);
+          }
+        };
+
+        // 다중 만화 컷 이미지 목록화
+        const imagesToSlide = activeEti.imageUrls && activeEti.imageUrls.length > 0
+          ? activeEti.imageUrls
+          : [activeEti.imageUrl || 'https://tangoclass.co.kr/wp-content/uploads/2026/06/2026-05-Cabeceo-Title-KO.jpg'];
+
+        const prevImg = (e: React.MouseEvent) => {
+          e.stopPropagation();
+          if (activeImageIndex > 0) {
+            setActiveImageIndex(activeImageIndex - 1);
+          } else {
+            setActiveImageIndex(imagesToSlide.length - 1);
+          }
+        };
+        const nextImg = (e: React.MouseEvent) => {
+          e.stopPropagation();
+          if (activeImageIndex < imagesToSlide.length - 1) {
+            setActiveImageIndex(activeImageIndex + 1);
+          } else {
+            setActiveImageIndex(0);
+          }
+        };
+
+        return (
+          <div className="fixed inset-0 z-[10000] bg-white flex flex-col animate-in fade-in duration-500 overflow-y-auto">
+            {/* Cartoon Image Slider Container */}
+            <div className="relative w-full h-[55vh] flex-shrink-0 bg-slate-950 group">
+              <img 
+                src={getSafeStorageUrl(imagesToSlide[activeImageIndex] || 'https://tangoclass.co.kr/wp-content/uploads/2026/06/2026-05-Cabeceo-Title-KO.jpg')} 
+                alt={resolvedTitle} 
+                className="w-full h-full object-contain transition-all duration-500"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-black/20"></div>
+              
+              {/* Top Navigation Row */}
+              <div className="absolute top-0 left-0 w-full p-6 flex justify-end items-center z-20">
+                <button 
+                  onClick={() => setIsEtiquetteOpen(false)}
+                  className="w-12 h-12 flex items-center justify-center rounded-full bg-black/20 backdrop-blur-md text-white hover:bg-black/40 transition-all shadow-lg border-none cursor-pointer"
+                >
+                  <span className="material-symbols-outlined text-[28px]">close</span>
+                </button>
+              </div>
+
+              {/* Slider Left/Right Arrows */}
+              {imagesToSlide.length > 1 && (
+                <div className="absolute inset-x-4 top-1/2 -translate-y-1/2 flex justify-between items-center z-20">
+                  <button 
+                    onClick={prevImg}
+                    className="w-10 h-10 rounded-full flex items-center justify-center bg-black/30 hover:bg-black/50 text-white border-none cursor-pointer shadow-md transition-all"
+                  >
+                    <span className="material-symbols-outlined">chevron_left</span>
+                  </button>
+                  <button 
+                    onClick={nextImg}
+                    className="w-10 h-10 rounded-full flex items-center justify-center bg-black/30 hover:bg-black/50 text-white border-none cursor-pointer shadow-md transition-all"
+                  >
+                    <span className="material-symbols-outlined">chevron_right</span>
+                  </button>
+                </div>
+              )}
+
+              {/* Slider Dots Indicator */}
+              {imagesToSlide.length > 1 && (
+                <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-1.5 z-20 bg-black/25 px-3 py-1.5 rounded-full backdrop-blur-sm">
+                  {imagesToSlide.map((_: any, i: number) => (
+                    <span 
+                      key={i} 
+                      onClick={() => setActiveImageIndex(i)}
+                      className={`w-2 h-2 rounded-full cursor-pointer transition-all duration-300 ${activeImageIndex === i ? 'bg-white w-4' : 'bg-white/40 hover:bg-white/70'}`}
+                    ></span>
+                  ))}
+                </div>
+              )}
+
+              <div className="absolute bottom-0 left-0 w-full p-8">
+                <div className="max-w-4xl mx-auto w-full">
+                  <span className="px-3 py-1 bg-amber-500 text-white text-[11px] font-extrabold uppercase tracking-widest rounded-md mb-4 inline-block shadow-md">{resolvedKeyword}</span>
+                  <h2 className="text-3xl md:text-5xl font-extrabold text-slate-900 font-headline leading-tight">
+                    {resolvedTitle}
+                  </h2>
+                </div>
+              </div>
+            </div>
+
+            {/* Cartoon Content Body */}
+            <div className="flex-1 bg-white pb-24">
+              <div className="max-w-4xl mx-auto px-8 md:px-16 py-10 space-y-10">
+                <div className="prose prose-slate prose-xl max-w-none">
+                  
+                  {/* Navigator: 아코디언 툴바 */}
+                  <div className="bg-slate-50 border border-slate-200 rounded-2xl p-2.5 flex items-center justify-between gap-2 mb-8 shadow-sm relative min-w-0">
+                    <button
+                      onClick={goPrev}
+                      disabled={safeIndex === 0}
+                      className={`w-10 h-10 flex items-center justify-center rounded-xl bg-white text-slate-700 border border-slate-200 transition-all flex-shrink-0 ${safeIndex === 0 ? 'opacity-30 cursor-not-allowed' : 'hover:bg-slate-100 active:scale-95 cursor-pointer'}`}
+                    >
+                      <span className="material-symbols-outlined text-[20px]">chevron_left</span>
+                    </button>
+
+                    {/* 목록 아코디온 Dropdown */}
+                    <div className="relative flex-1 min-w-0">
+                      <button
+                        onClick={() => setIsAccordionOpen(!isAccordionOpen)}
+                        className="w-full flex items-center justify-between gap-2 px-3.5 py-2 rounded-xl bg-white text-slate-800 font-bold border border-slate-200 text-sm hover:bg-slate-100 cursor-pointer text-left shadow-sm min-w-0"
+                      >
+                        <span className="truncate max-w-[140px] sm:max-w-[280px] block">{safeIndex + 1}화. {resolvedTitle}</span>
+                        <span className={`material-symbols-outlined transition-transform duration-200 flex-shrink-0 ${isAccordionOpen ? 'rotate-180' : ''}`}>keyboard_arrow_down</span>
+                      </button>
+
+                      {isAccordionOpen && (
+                        <div className="absolute left-0 right-0 mt-2 z-50 bg-white border border-slate-200 rounded-2xl shadow-xl max-h-60 overflow-y-auto p-2 space-y-1">
+                          {listToRender.map((item, idx) => {
+                            const itTitle = language === 'KR' && item.titleNative ? item.titleNative : item.title;
+                            return (
+                              <div
+                                key={item.id}
+                                onClick={() => {
+                                  setCurrentEtiquetteIndex(idx);
+                                  setActiveImageIndex(0);
+                                  setIsAccordionOpen(false);
+                                }}
+                                className={`px-4 py-2.5 rounded-xl text-sm font-semibold cursor-pointer transition-all ${safeIndex === idx ? 'bg-slate-900 text-white' : 'text-slate-700 hover:bg-slate-50'}`}
+                              >
+                                {idx + 1}화. {itTitle}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+
+                    <button
+                      onClick={goNext}
+                      disabled={safeIndex === listToRender.length - 1}
+                      className={`w-10 h-10 flex items-center justify-center rounded-xl bg-white text-slate-700 border border-slate-200 transition-all flex-shrink-0 ${safeIndex === listToRender.length - 1 ? 'opacity-30 cursor-not-allowed' : 'hover:bg-slate-100 active:scale-95 cursor-pointer'}`}
+                    >
+                      <span className="material-symbols-outlined text-[20px]">chevron_right</span>
+                    </button>
+                  </div>
+                  
+                  {/* 저자 공간: Leo (고정 사진 + 이름) */}
+                  <div className="flex items-center gap-3.5 mb-8 bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
+                    <div className="w-11 h-11 rounded-full overflow-hidden flex-shrink-0 bg-slate-100 ring-2 ring-slate-100 shadow-sm">
+                      <img 
+                        src={getSafeStorageUrl('https://images.unsplash.com/photo-1542332213-31f87348057f?q=80&w=800')} 
+                        alt="Leo" 
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <div className="flex flex-col text-left">
+                      <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-1">Author / Cartoonist</span>
+                      <span className="text-base font-black text-slate-800 leading-none">Leo</span>
+                    </div>
+                  </div>
+                  
+                  {/* Summary Block */}
+                  <p className="text-xl md:text-2xl font-medium text-slate-800 leading-relaxed font-headline italic border-l-8 border-amber-500 pl-8 py-4 bg-slate-50 rounded-r-3xl">
+                    {resolvedDesc}
+                  </p>
+
+                  {/* Main Content Info */}
+                  <div className="mt-10 text-left whitespace-pre-wrap leading-relaxed text-lg text-slate-700 font-sans border-t border-slate-100 pt-8">
+                    {resolvedContent}
+                  </div>
+
+                  <div className="mt-12 text-center">
+                    <button 
+                      onClick={() => setIsEtiquetteOpen(false)}
+                      className="px-12 py-4 bg-slate-900 text-white text-base font-bold rounded-2xl hover:bg-slate-800 hover:scale-105 active:scale-95 transition-all shadow-lg border-none cursor-pointer"
+                    >
+                      창 닫기
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Coming Soon Fullscreen */}
       {comingSoonCard && (

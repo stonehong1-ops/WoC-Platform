@@ -109,6 +109,9 @@ export const en: Record<string, string> = {
 
 
 
+    'home.spotlight.social_summary': 'SOCIAL · {socialCount} socials & {practicaCount} practicas in {city}',
+    'home.spotlight.class_summary': 'CLASS · {count} classes in {city}',
+
     'nav.home': 'SOCIETY',
     'nav.society': 'SOCIETY',
     'nav.jump': 'JUMP (Hobbies Jump)',
