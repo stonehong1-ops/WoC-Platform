@@ -9,6 +9,9 @@ workflows:
       node: 22.19.0
       xcode: latest
       cocoapods: default
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.woc.today
       vars:
         NEXT_PUBLIC_FIREBASE_API_KEY: "AIzaSyBFLzc4F7F_E9XidGRwB4EsAr5LN-Hu7i0"
         NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: "www.woc.today"
@@ -48,34 +51,6 @@ workflows:
             exit 1
           fi
           echo "iOS Project validated successfully."
-      - name: Codemagic Automatic Code Signing
-        script: |
-          # 1. 키체인 초기화 및 프로필 자동 생성/다운로드
-          keychain initialize
-          app-store-connect fetch-signing-files "com.woc.today" --type IOS_APP_STORE --create
-          
-          # 2. 다운로드된 프로필에서 Team ID 동적 파싱
-          PROFILE_PATH=$(find ~/Library/MobileDevice/Provisioning\ Profiles -name "*.mobileprovision" | head -n 1)
-          if [ -z "$PROFILE_PATH" ]; then
-            echo "Error: No provisioning profile found!"
-            exit 1
-          fi
-          TEAM_ID=$(security cms -D -i "$PROFILE_PATH" | plutil -extract "TeamIdentifier.0" raw -)
-          echo "Extracted Apple Team ID: $TEAM_ID"
-          
-          # 3. Xcode 프로젝트 파일에 Team ID 주입 및 수동 서명 스타일 강제 설정
-          python3 -c "
-          import sys
-          with open('ios/App/App.xcodeproj/project.pbxproj', 'r') as f:
-              content = f.read()
-          content = content.replace('CODE_SIGN_STYLE = Automatic;', 'CODE_SIGN_STYLE = Manual;\n\t\t\t\tDEVELOPMENT_TEAM = ' + sys.argv[1] + ';')
-          with open('ios/App/App.xcodeproj/project.pbxproj', 'w') as f:
-              f.write(content)
-          " \"$TEAM_ID\"
-          
-          # 4. 키체인에 인증서 등록 후 프로젝트 서명 매핑 실행
-          keychain add-certificates
-          xcode-project use-profiles --project ios/App/App.xcodeproj
       - name: Build Xcode Archive & Export IPA
         script: |
           xcode-project build-ipa \
