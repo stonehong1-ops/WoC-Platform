@@ -56,6 +56,16 @@ workflows:
           
           # 2. 업로드된 프로필 매핑 적용
           xcode-project use-profiles --project ios/App/App.xcodeproj
+      - name: Code Signing Debug Info
+        script: |
+          echo "=== 1. Installed Provisioning Profiles ==="
+          ls -la ~/Library/MobileDevice/Provisioning\ Profiles/ || true
+          
+          echo "=== 2. App Target Build Settings ==="
+          xcodebuild -project ios/App/App.xcodeproj -scheme App -showBuildSettings | grep -E "PRODUCT_BUNDLE_IDENTIFIER|DEVELOPMENT_TEAM|PROVISIONING_PROFILE|CODE_SIGN" || true
+          
+          echo "=== 3. Profile UUID/Name Verification ==="
+          security cms -D -i ~/Library/MobileDevice/Provisioning\ Profiles/*.mobileprovision | grep -E "UUID|Name|application-identifier" || true
       - name: Build Xcode Archive & Export IPA
         script: |
           xcode-project build-ipa \
