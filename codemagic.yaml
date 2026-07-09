@@ -9,6 +9,11 @@ workflows:
       node: 22.19.0
       xcode: latest
       cocoapods: default
+      ios_signing:
+        certificates:
+          - woc_distribution_cert
+        provisioning_profiles:
+          - woc_app_store_profile
       vars:
         NEXT_PUBLIC_FIREBASE_API_KEY: "AIzaSyBFLzc4F7F_E9XidGRwB4EsAr5LN-Hu7i0"
         NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: "www.woc.today"
