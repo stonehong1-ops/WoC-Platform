@@ -9,6 +9,9 @@ workflows:
       node: 22.19.0
       xcode: latest
       cocoapods: default
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.woc.today
       vars:
         NEXT_PUBLIC_FIREBASE_API_KEY: "AIzaSyBFLzc4F7F_E9XidGRwB4EsAr5LN-Hu7i0"
         NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: "www.woc.today"
@@ -48,12 +51,6 @@ workflows:
             exit 1
           fi
           echo "iOS Project validated successfully."
-      - name: Codemagic Automatic Code Signing
-        script: |
-          keychain initialize
-          app-store-connect fetch-signing-files "com.woc.today" --type IOS_APP_STORE --create
-          keychain add-certificates
-          xcode-project use-profiles --project ios/App/App.xcodeproj
       - name: Build Xcode Archive & Export IPA
         script: |
           xcode-project build-ipa \
