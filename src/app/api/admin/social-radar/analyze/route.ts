@@ -3,16 +3,43 @@ import admin from 'firebase-admin';
 import fs from 'fs';
 import { matchSocialCandidate, MiniSocial } from '@/app/admin/social-radar/lib/socialMatchService';
 
-const serviceAccountPath = './woc-platform-seoul-1234-firebase-adminsdk-fbsvc-225cc1138a.json';
-const serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8'));
-
+// Firebase Admin SDK 초기화 (환경변수 우선, 로컬 JSON 파일 폴백)
 if (admin.apps.length === 0) {
-  admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount)
-  });
+  const privateKey = process.env.FIREBASE_PRIVATE_KEY;
+  const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+  const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+
+  if (privateKey && clientEmail && projectId) {
+    try {
+      admin.initializeApp({
+        credential: admin.credential.cert({
+          projectId: projectId.trim(),
+          clientEmail: clientEmail.trim(),
+          privateKey: privateKey.replace(/\\n/g, '\n').trim(),
+        }),
+      });
+    } catch (error: any) {
+      console.error('Firebase Admin 초기화 오류 (환경변수):', error.stack);
+    }
+  } else {
+    // 로컬 JSON 파일 폴백
+    const serviceAccountPath = './woc-platform-seoul-1234-firebase-adminsdk-fbsvc-225cc1138a.json';
+    if (fs.existsSync(serviceAccountPath)) {
+      try {
+        const serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8'));
+        admin.initializeApp({
+          credential: admin.credential.cert(serviceAccount)
+        });
+      } catch (error: any) {
+        console.error('Firebase Admin 초기화 오류 (로컬 JSON):', error.stack);
+      }
+    } else {
+      console.warn('Firebase Admin 환경 변수 및 로컬 JSON 파일이 누락되어 초기화를 건너뜁니다.');
+    }
+  }
 }
 
-const db = admin.firestore();
+const getDb = () => admin.firestore();
 
 export async function POST(req: Request) {
   try {
@@ -92,7 +119,7 @@ export async function POST(req: Request) {
     const parsedData = JSON.parse(extractedJsonText);
 
     // 2. 기존 socials 데이터 로드 후 매칭 보조 서비스 구동
-    const socialsSnap = await db.collection('socials').get();
+    const socialsSnap = await getDb().collection('socials').get();
     const existingSocials: MiniSocial[] = [];
     socialsSnap.forEach(docSnap => {
       const data = docSnap.data();
@@ -164,7 +191,7 @@ export async function POST(req: Request) {
       updatedAt: admin.firestore.FieldValue.serverTimestamp()
     };
 
-    const docRef = await db.collection('socialRadarCandidates').add(candidateData);
+    const docRef = await getDb().collection('socialRadarCandidates').add(candidateData);
     const finalResponse = {
       id: docRef.id,
       ...candidateData,

@@ -3,16 +3,43 @@ import admin from 'firebase-admin';
 import fs from 'fs';
 import path from 'path';
 
-const serviceAccountPath = './woc-platform-seoul-1234-firebase-adminsdk-fbsvc-225cc1138a.json';
-const serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8'));
-
+// Firebase Admin SDK 초기화 (환경변수 우선, 로컬 JSON 파일 폴백)
 if (admin.apps.length === 0) {
-  admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount)
-  });
+  const privateKey = process.env.FIREBASE_PRIVATE_KEY;
+  const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+  const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
+
+  if (privateKey && clientEmail && projectId) {
+    try {
+      admin.initializeApp({
+        credential: admin.credential.cert({
+          projectId: projectId.trim(),
+          clientEmail: clientEmail.trim(),
+          privateKey: privateKey.replace(/\\n/g, '\n').trim(),
+        }),
+      });
+    } catch (error: any) {
+      console.error('Firebase Admin 초기화 오류 (환경변수):', error.stack);
+    }
+  } else {
+    // 로컬 JSON 파일 폴백
+    const serviceAccountPath = './woc-platform-seoul-1234-firebase-adminsdk-fbsvc-225cc1138a.json';
+    if (fs.existsSync(serviceAccountPath)) {
+      try {
+        const serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8'));
+        admin.initializeApp({
+          credential: admin.credential.cert(serviceAccount)
+        });
+      } catch (error: any) {
+        console.error('Firebase Admin 초기화 오류 (로컬 JSON):', error.stack);
+      }
+    } else {
+      console.warn('Firebase Admin 환경 변수 및 로컬 JSON 파일이 누락되어 초기화를 건너뜁니다.');
+    }
+  }
 }
 
-const db = admin.firestore();
+const getDb = () => admin.firestore();
 
 export async function POST(req: Request) {
   try {
@@ -22,7 +49,7 @@ export async function POST(req: Request) {
     }
 
     // 1. Candidate 문서 조회
-    const candidateRef = db.collection('socialRadarCandidates').doc(candidateId);
+    const candidateRef = getDb().collection('socialRadarCandidates').doc(candidateId);
     const candidateDoc = await candidateRef.get();
     if (!candidateDoc.exists) {
       return NextResponse.json({ error: '해당 후보 정보를 찾을 수 없습니다.' }, { status: 404 });
@@ -93,7 +120,7 @@ Do not directly write from Social Radar into socials unless this task is explici
 `;
 
     // 3. Firestore socialRegisterTasks 컬렉션에 영구 저장 (핵심 성공 요건)
-    const taskRef = await db.collection('socialRegisterTasks').add({
+    const taskRef = await getDb().collection('socialRegisterTasks').add({
       candidateId,
       markdownContent,
       status: 'pending',
