@@ -71,7 +71,7 @@ workflows:
         script: |
           echo "=================================================================="
           echo "🚀 빌드 완료 및 TestFlight 업로드 단계 진입"
-          echo "📦 빌드 번호: 2 (CURRENT_PROJECT_VERSION)"
+          echo "📦 빌드 번호: 3 (CURRENT_PROJECT_VERSION)"
           echo "🔗 App Store Connect 링크: https://appstoreconnect.apple.com/"
           echo "=================================================================="
     artifacts:
