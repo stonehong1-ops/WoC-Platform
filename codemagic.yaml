@@ -53,13 +53,14 @@ workflows:
           keychain initialize
           app-store-connect fetch-signing-files "com.woc.today" --type IOS_APP_STORE --create
           keychain add-certificates
-          xcode-project use-profiles
+          xcode-project use-profiles --project ios/App/App.xcodeproj
       - name: Build Xcode Archive & Export IPA
         script: |
           xcode-project build-ipa \
             --project ios/App/App.xcodeproj \
             --scheme App \
-            --config Release
+            --config Release \
+            --export-method app-store
       - name: Print Build & Upload Info
         script: |
           echo "=================================================================="
