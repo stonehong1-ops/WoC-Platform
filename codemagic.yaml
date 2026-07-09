@@ -59,8 +59,7 @@ workflows:
           xcode-project build-ipa \
             --project ios/App/App.xcodeproj \
             --scheme App \
-            --config Release \
-            --export-method app-store
+            --config Release
       - name: Print Build & Upload Info
         script: |
           echo "=================================================================="
