@@ -41,21 +41,13 @@ workflows:
       - name: Sync Capacitor iOS
         script: |
           npx cap sync ios
-      - name: Validate iOS Workspace
+      - name: Validate iOS Project
         script: |
-          if [ ! -e "ios/App/App.xcworkspace" ]; then
-            echo "Error: ios/App/App.xcworkspace not found!"
+          if [ ! -e "ios/App/App.xcodeproj" ]; then
+            echo "Error: ios/App/App.xcodeproj not found!"
             exit 1
           fi
-          echo "iOS Workspace validated successfully."
-      - name: Check and Install Cocoapods
-        script: |
-          if [ -f "ios/App/Podfile" ]; then
-            echo "Podfile found. Running pod install..."
-            cd ios/App && pod install --repo-update
-          else
-            echo "No Podfile found. Skipping pod install."
-          fi
+          echo "iOS Project validated successfully."
       - name: Codemagic Automatic Code Signing
         script: |
           keychain initialize
@@ -65,7 +57,7 @@ workflows:
       - name: Build Xcode Archive & Export IPA
         script: |
           xcode-project build-ipa \
-            --workspace ios/App/App.xcworkspace \
+            --project ios/App/App.xcodeproj \
             --scheme App \
             --configuration Release
       - name: Print Build & Upload Info
