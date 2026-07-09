@@ -1,0 +1,73 @@
+workflows:
+  ios-release:
+    name: iOS Release Build & TestFlight Upload
+    max_build_duration: 60
+    instance_type: mac_mini_m1
+    environment:
+      node: 22.19.0
+      xcode: latest
+      cocoapods: default
+    triggering:
+      events: [] # 수동 실행 전용
+    scripts:
+      - name: Install npm dependencies
+        script: |
+          npm install
+      - name: Build Web Assets (Next.js)
+        script: |
+          npm run build
+      - name: Copy Static Assets to Web Directory
+        script: |
+          # 정적 빌드 폴더 존재 시 public 디렉토리로 복사하는 프로젝트 절차 이행
+          if [ -d "out" ]; then
+            echo "Copying out/ to public/..."
+            cp -R out/* public/
+          elif [ -d "dist" ]; then
+            echo "Copying dist/ to public/..."
+            cp -R dist/* public/
+          else
+            echo "Using default public/ web assets."
+          fi
+      - name: Sync Capacitor iOS
+        script: |
+          npx cap sync ios
+      - name: Validate iOS Workspace
+        script: |
+          if [ ! -e "ios/App/App.xcworkspace" ]; then
+            echo "Error: ios/App/App.xcworkspace not found!"
+            exit 1
+          fi
+          echo "iOS Workspace validated successfully."
+      - name: Check and Install Cocoapods
+        script: |
+          if [ -f "ios/App/Podfile" ]; then
+            echo "Podfile found. Running pod install..."
+            cd ios/App && pod install --repo-update
+          else
+            echo "No Podfile found. Skipping pod install."
+          fi
+      - name: Codemagic Automatic Code Signing
+        script: |
+          keychain initialize
+          app-store-connect fetch-signing-files "com.woc.today" --type IOS_APP_STORE --create
+          keychain add-certificates
+          xcode-project use-profiles
+      - name: Build Xcode Archive & Export IPA
+        script: |
+          xcode-project build-ipa \
+            --workspace ios/App/App.xcworkspace \
+            --scheme App \
+            --configuration Release
+      - name: Print Build & Upload Info
+        script: |
+          echo "=================================================================="
+          echo "🚀 빌드 완료 및 TestFlight 업로드 단계 진입"
+          echo "📦 빌드 번호: 2 (CURRENT_PROJECT_VERSION)"
+          echo "🔗 App Store Connect 링크: https://appstoreconnect.apple.com/"
+          echo "=================================================================="
+    artifacts:
+      - build/ios/ipa/*.ipa
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true

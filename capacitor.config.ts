@@ -6,7 +6,7 @@ const config: CapacitorConfig = {
   webDir: 'public',
   server: {
     url: 'https://www.woc.today',
-    cleartext: true
+    cleartext: false
   }
 };
 
