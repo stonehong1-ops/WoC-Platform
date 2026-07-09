@@ -12,6 +12,10 @@ workflows:
       ios_signing:
         distribution_type: app_store
         bundle_identifier: com.woc.today
+        certificate_private_keys:
+          - woc_distribution_cert
+        provisioning_profiles:
+          - woc_app_store_profile
       vars:
         NEXT_PUBLIC_FIREBASE_API_KEY: "AIzaSyBFLzc4F7F_E9XidGRwB4EsAr5LN-Hu7i0"
         NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: "www.woc.today"
