@@ -9,11 +9,6 @@ workflows:
       node: 22.19.0
       xcode: latest
       cocoapods: default
-      ios_signing:
-        certificate_private_keys:
-          - woc_distribution_cert
-        provisioning_profiles:
-          - woc_app_store_profile
       vars:
         NEXT_PUBLIC_FIREBASE_API_KEY: "AIzaSyBFLzc4F7F_E9XidGRwB4EsAr5LN-Hu7i0"
         NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: "www.woc.today"
@@ -53,6 +48,12 @@ workflows:
             exit 1
           fi
           echo "iOS Project validated successfully."
+      - name: Codemagic Code Signing
+        script: |
+          # 업로드된 수동 인증서와 프로필을 빌드 환경에 주입하고 매핑합니다.
+          keychain initialize
+          keychain add-certificates
+          xcode-project use-profiles --project ios/App/App.xcodeproj
       - name: Build Xcode Archive & Export IPA
         script: |
           xcode-project build-ipa \
