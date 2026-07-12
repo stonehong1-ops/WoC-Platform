@@ -1003,11 +1003,17 @@ We review Simon Collier, Artemis Cooper, María Susana Azzi, and Richard Martin'
                 }}
                 className="relative w-full h-36 md:h-44 rounded-2xl overflow-hidden shadow-sm group block cursor-pointer"
               >
-                <img 
-                  alt={evt.title} 
-                  className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105" 
-                  src={evt.imageUrl || "/slide4_bg_cinematic.jpg"}
-                />
+                {evt.imageUrl ? (
+                  <img 
+                    alt={evt.title} 
+                    className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105" 
+                    src={evt.imageUrl}
+                  />
+                ) : (
+                  <div className="w-full h-full bg-gradient-to-br from-slate-800 to-slate-950 flex flex-col items-center justify-center gap-2">
+                    <span className="material-symbols-outlined text-white/20 !text-[40px]">event</span>
+                  </div>
+                )}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/35 to-transparent flex flex-col justify-end p-5 text-left">
                   <h1 className="text-white font-headline text-lg md:text-2xl font-black tracking-tight mb-2 uppercase leading-tight line-clamp-1">
                     {language === 'KR' && evt.titleNative ? evt.titleNative : evt.title}
@@ -1690,12 +1696,16 @@ We review Simon Collier, Artemis Cooper, María Susana Azzi, and Richard Martin'
         };
 
         // 다중 만화 컷 이미지 목록화
-        const imagesToSlide = activeEti.imageUrls && activeEti.imageUrls.length > 0
-          ? activeEti.imageUrls
-          : [activeEti.imageUrl || 'https://tangoclass.co.kr/wp-content/uploads/2026/06/2026-05-Cabeceo-Title-KO.jpg'];
+        const hasImages = (activeEti.imageUrl && activeEti.imageUrl.trim() !== '') || 
+                          (activeEti.imageUrls && activeEti.imageUrls.length > 0 && activeEti.imageUrls.some((url: any) => url && url.trim() !== ''));
+
+        const imagesToSlide = hasImages 
+          ? (activeEti.imageUrls && activeEti.imageUrls.length > 0 ? activeEti.imageUrls : [activeEti.imageUrl])
+          : [];
 
         const prevImg = (e: React.MouseEvent) => {
           e.stopPropagation();
+          if (imagesToSlide.length === 0) return;
           if (activeImageIndex > 0) {
             setActiveImageIndex(activeImageIndex - 1);
           } else {
@@ -1704,6 +1714,7 @@ We review Simon Collier, Artemis Cooper, María Susana Azzi, and Richard Martin'
         };
         const nextImg = (e: React.MouseEvent) => {
           e.stopPropagation();
+          if (imagesToSlide.length === 0) return;
           if (activeImageIndex < imagesToSlide.length - 1) {
             setActiveImageIndex(activeImageIndex + 1);
           } else {
@@ -1715,11 +1726,18 @@ We review Simon Collier, Artemis Cooper, María Susana Azzi, and Richard Martin'
           <div className="fixed inset-0 z-[10000] bg-white flex flex-col animate-in fade-in duration-500 overflow-y-auto">
             {/* Cartoon Image Slider Container */}
             <div className="relative w-full h-[55vh] flex-shrink-0 bg-slate-950 group">
-              <img 
-                src={getSafeStorageUrl(imagesToSlide[activeImageIndex] || 'https://tangoclass.co.kr/wp-content/uploads/2026/06/2026-05-Cabeceo-Title-KO.jpg')} 
-                alt={resolvedTitle} 
-                className="w-full h-full object-contain transition-all duration-500"
-              />
+              {hasImages && imagesToSlide[activeImageIndex] ? (
+                <img 
+                  src={getSafeStorageUrl(imagesToSlide[activeImageIndex])} 
+                  alt={resolvedTitle} 
+                  className="w-full h-full object-contain transition-all duration-500"
+                />
+              ) : (
+                <div className="w-full h-full bg-gradient-to-br from-slate-800 to-slate-950 flex flex-col items-center justify-center gap-2">
+                  <span className="material-symbols-outlined text-white/20 !text-[64px]">menu_book</span>
+                  <span className="text-white/40 text-xs font-semibold">{language === 'KR' ? '이미지 준비 중' : 'Image coming soon'}</span>
+                </div>
+              )}
               <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-black/20"></div>
               
               {/* Top Navigation Row */}
@@ -2126,12 +2144,16 @@ We review Simon Collier, Artemis Cooper, María Susana Azzi, and Richard Martin'
         };
 
         // 다중 이미지 슬라이더 연동
-        const imagesToSlide = activeHist.imageUrls && activeHist.imageUrls.length > 0
-          ? activeHist.imageUrls
-          : [activeHist.imageUrl || 'https://tangoclass.co.kr/wp-content/uploads/2026/06/2026-05-Cabeceo-Title-KO.jpg'];
+        const hasImages = (activeHist.imageUrl && activeHist.imageUrl.trim() !== '') || 
+                          (activeHist.imageUrls && activeHist.imageUrls.length > 0 && activeHist.imageUrls.some((url: any) => url && url.trim() !== ''));
+
+        const imagesToSlide = hasImages 
+          ? (activeHist.imageUrls && activeHist.imageUrls.length > 0 ? activeHist.imageUrls : [activeHist.imageUrl])
+          : [];
 
         const prevImg = (e: React.MouseEvent) => {
           e.stopPropagation();
+          if (imagesToSlide.length === 0) return;
           if (activeImageIndex > 0) {
             setActiveImageIndex(activeImageIndex - 1);
           } else {
@@ -2140,6 +2162,7 @@ We review Simon Collier, Artemis Cooper, María Susana Azzi, and Richard Martin'
         };
         const nextImg = (e: React.MouseEvent) => {
           e.stopPropagation();
+          if (imagesToSlide.length === 0) return;
           if (activeImageIndex < imagesToSlide.length - 1) {
             setActiveImageIndex(activeImageIndex + 1);
           } else {
@@ -2151,11 +2174,18 @@ We review Simon Collier, Artemis Cooper, María Susana Azzi, and Richard Martin'
           <div className="fixed inset-0 z-[10000] bg-white flex flex-col animate-in fade-in duration-500 overflow-y-auto">
             {/* Image Slider Container */}
             <div className="relative w-full h-[55vh] flex-shrink-0 bg-slate-950 group">
-              <img 
-                src={getSafeStorageUrl(imagesToSlide[activeImageIndex] || 'https://tangoclass.co.kr/wp-content/uploads/2026/06/2026-05-Cabeceo-Title-KO.jpg')} 
-                alt={resolvedTitle} 
-                className="w-full h-full object-contain transition-all duration-500"
-              />
+              {hasImages && imagesToSlide[activeImageIndex] ? (
+                <img 
+                  src={getSafeStorageUrl(imagesToSlide[activeImageIndex])} 
+                  alt={resolvedTitle} 
+                  className="w-full h-full object-contain transition-all duration-500"
+                />
+              ) : (
+                <div className="w-full h-full bg-gradient-to-br from-slate-800 to-slate-950 flex flex-col items-center justify-center gap-2">
+                  <span className="material-symbols-outlined text-white/20 !text-[64px]">history</span>
+                  <span className="text-white/40 text-xs font-semibold">{language === 'KR' ? '이미지 준비 중' : 'Image coming soon'}</span>
+                </div>
+              )}
               <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-black/20"></div>
               
               {/* Top Navigation Row */}
@@ -2360,12 +2390,16 @@ We review Simon Collier, Artemis Cooper, María Susana Azzi, and Richard Martin'
         };
 
         // 다중 이미지 슬라이더 연동
-        const imagesToSlide = activeTravel.imageUrls && activeTravel.imageUrls.length > 0
-          ? activeTravel.imageUrls
-          : [activeTravel.imageUrl || '/travel_beijing1.png'];
+        const hasImages = (activeTravel.imageUrl && activeTravel.imageUrl.trim() !== '') || 
+                          (activeTravel.imageUrls && activeTravel.imageUrls.length > 0 && activeTravel.imageUrls.some((url: any) => url && url.trim() !== ''));
+
+        const imagesToSlide = hasImages 
+          ? (activeTravel.imageUrls && activeTravel.imageUrls.length > 0 ? activeTravel.imageUrls : [activeTravel.imageUrl])
+          : [];
 
         const prevImg = (e: React.MouseEvent) => {
           e.stopPropagation();
+          if (imagesToSlide.length === 0) return;
           if (activeImageIndex > 0) {
             setActiveImageIndex(activeImageIndex - 1);
           } else {
@@ -2374,6 +2408,7 @@ We review Simon Collier, Artemis Cooper, María Susana Azzi, and Richard Martin'
         };
         const nextImg = (e: React.MouseEvent) => {
           e.stopPropagation();
+          if (imagesToSlide.length === 0) return;
           if (activeImageIndex < imagesToSlide.length - 1) {
             setActiveImageIndex(activeImageIndex + 1);
           } else {
@@ -2385,11 +2420,18 @@ We review Simon Collier, Artemis Cooper, María Susana Azzi, and Richard Martin'
           <div className="fixed inset-0 z-[10000] bg-white flex flex-col animate-in fade-in duration-500 overflow-y-auto">
             {/* Image Slider Container */}
             <div className="relative w-full h-[55vh] flex-shrink-0 bg-slate-950 group">
-              <img 
-                src={getSafeStorageUrl(imagesToSlide[activeImageIndex] || '/travel_beijing1.png')} 
-                alt={resolvedTitle} 
-                className="w-full h-full object-contain transition-all duration-500"
-              />
+              {hasImages && imagesToSlide[activeImageIndex] ? (
+                <img 
+                  src={getSafeStorageUrl(imagesToSlide[activeImageIndex])} 
+                  alt={resolvedTitle} 
+                  className="w-full h-full object-contain transition-all duration-500"
+                />
+              ) : (
+                <div className="w-full h-full bg-gradient-to-br from-slate-800 to-slate-950 flex flex-col items-center justify-center gap-2">
+                  <span className="material-symbols-outlined text-white/20 !text-[64px]">flight_takeoff</span>
+                  <span className="text-white/40 text-xs font-semibold">{language === 'KR' ? '이미지 준비 중' : 'Image coming soon'}</span>
+                </div>
+              )}
               <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-black/20"></div>
               
               {/* Top Navigation Row */}

@@ -1386,7 +1386,7 @@ export default function ClassPortal() {
               >
                 <div className="w-12 h-12 rounded-full overflow-hidden bg-slate-100 border border-slate-100/50 mb-2">
                   <img 
-                    src={teacher.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=80'} 
+                    src={teacher.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(teacher.name || 'User')}&background=0057bd&color=fff&bold=true`} 
                     alt={teacher.name} 
                     className="w-full h-full object-cover"
                   />
@@ -1886,7 +1886,7 @@ export default function ClassPortal() {
                             {cls.instructors?.slice(0, 2).map((inst: any, idx: number) => (
                               <div key={idx} className="w-5.5 h-5.5 rounded-full overflow-hidden border border-white bg-slate-100">
                                 <img 
-                                  src={inst.avatar || inst.photoURL || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=80'} 
+                                  src={inst.avatar || inst.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(inst.name || 'User')}&background=0057bd&color=fff&bold=true`} 
                                   alt="" 
                                   className="w-full h-full object-cover"
                                 />

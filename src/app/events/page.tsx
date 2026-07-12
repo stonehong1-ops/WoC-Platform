@@ -494,11 +494,17 @@ export default function EventsPage() {
                 onClick={() => setSelectedEvent(featuredEvent)}
                 className="relative w-[310px] h-56 rounded-3xl overflow-hidden shadow-md group cursor-pointer flex-shrink-0"
               >
-                <img 
-                  src={featuredEvent.imageUrl || 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=600'} 
-                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-103"
-                  alt=""
-                />
+                {featuredEvent.imageUrl ? (
+                  <img 
+                    src={featuredEvent.imageUrl} 
+                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-103"
+                    alt=""
+                  />
+                ) : (
+                  <div className="w-full h-full bg-gradient-to-br from-slate-800 to-slate-950 flex flex-col items-center justify-center gap-2">
+                    <span className="material-symbols-outlined text-white/20 !text-[44px]">event</span>
+                  </div>
+                )}
                 <div 
                   className="absolute inset-0 flex flex-col justify-end p-5"
                   style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.3) 60%, transparent 100%)' }}
@@ -746,11 +752,17 @@ export default function EventsPage() {
                   onClick={() => setSelectedEvent(featuredEvent)}
                   className="relative w-full h-64 rounded-none overflow-hidden shadow-sm group block cursor-pointer mb-6 animate-in fade-in slide-in-from-top-4 duration-500"
                 >
-                  <img
-                    alt={featuredEvent.title}
-                    className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
-                    src={featuredEvent.imageUrl || 'https://lh3.googleusercontent.com/aida-public/AB6AXuAM-qcbRNMJdZLS9Ca7Gp1EjVkOyWQhtKBiYOVV8jYdBKKdmtYDvyKh8uAbGKuFuWSqYG_cwZyguPHzTslh1whMR66-pyycVhSWNYgJjvbFatGIX03BxE1lE-1iBMQjH7_2F8g6-LvoJIcnlB0MGrlKJYOVJZFWQyKma420t8TJpTbYWVZog86VoGm2oqMpqqloZzF_17DT9iJk6dbzfGibveQrX7XmbdfyWCQaGlMZuD8TON4K8v5PG8jgMr8kEfGxpq99xneK9p4'}
-                  />
+                  {featuredEvent.imageUrl ? (
+                    <img
+                      alt={featuredEvent.title}
+                      className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
+                      src={featuredEvent.imageUrl}
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-br from-slate-800 to-slate-950 flex flex-col items-center justify-center gap-2">
+                      <span className="material-symbols-outlined text-white/20 !text-[48px]">event</span>
+                    </div>
+                  )}
                   <div className="absolute inset-0 flex flex-col justify-end p-6"
                     style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.3) 50%, transparent 100%)' }}>
                     <p className="text-white mb-1 tracking-tight"
