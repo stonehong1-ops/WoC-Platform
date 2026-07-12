@@ -12,8 +12,8 @@ const SLIDES = [
 ];
 
 const SLIDE_URLS: Record<number, string> = {
-  0: '/today',                  // Slide 0: 인트로
-  1: '/today',                  // Slide 1: 앱구성도 (App Structure)
+  0: '/social',                  // Slide 0: 인트로
+  1: '/social',                  // Slide 1: 앱구성도 (App Structure)
   2: '/groups/freestyle-tango',                  // Slide 2: 더 스토리
   3: '/groups/freestyle-tango?tab=class',        // Slide 3: 라이프 고즈 온 (스토리 1)
   4: '/groups/freestyle-tango',                  // Slide 4: Broken Experience (스토리 2)
@@ -211,7 +211,7 @@ const PresentationPage = () => {
   const [isDemoMode, setIsDemoMode] = useState(false);
   
   // Iframe states
-  const [iframeUrl, setIframeUrl] = useState('/today');
+  const [iframeUrl, setIframeUrl] = useState('/social');
   const [fadeIframe, setFadeIframe] = useState(false);
 
   // 초고화질 원클릭 PDF 변환 저장 빌더

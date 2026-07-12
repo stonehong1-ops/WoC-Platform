@@ -31,25 +31,12 @@ export default function PageWrapper({ children }: { children: React.ReactNode })
     if (typeof window === 'undefined' || !Capacitor.isNativePlatform()) return;
 
     const backButtonHandler = App.addListener('backButton', ({ canGoBack }) => {
-      // 1. 현재 떠 있는 팝업, 모달, 바텀시트 등의 닫기 버튼이 존재하는지 감지
-      const closeButtons = document.querySelectorAll<HTMLButtonElement>(
-        'button[aria-label="close"], button[class*="close"], button.close-btn, .modal-close-btn'
-      );
-      if (closeButtons.length > 0) {
-        // 비회원이 비공개 페이지(/live 등)에 들어왔으나 로그인 팝업을 닫았거나 취소한 경우 
-        // 엉뚱한 /social이 아닌 로그인 첫페이지인 /home으로 리디렉션하여 정렬
-        router.replace('/home');
-        // 최상위에 배치된 닫기 버튼을 가상 클릭하여 닫음
-        const lastBtn = closeButtons[closeButtons.length - 1];
-        lastBtn.click();
-        return;
-      }
-
-      // 2. 닫을 모달이 없으면 브라우저 히스토리 백 수행
+      // useBackButtonClose 훅이 pushState로 히스토리를 추가한 상태이므로
+      // history.back()을 호출하면 popstate 이벤트가 발생하여 모달이 닫힘
       if (canGoBack) {
         window.history.back();
       } else {
-        // 더 이상 뒤로갈 곳이 없으면 안전하게 앱 백그라운드 최소화 처리
+        // 더 이상 뒤로갈 곳이 없으면 앱 최소화
         App.minimizeApp();
       }
     });

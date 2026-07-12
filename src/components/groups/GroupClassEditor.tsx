@@ -1,5 +1,5 @@
 // 클래스 스케줄 및 번들 할인 목록을 관리하고 에디터를 매핑하는 메인 대시보드 컴포넌트
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { Group, GroupClass, ClassDiscount } from "@/types/group";
 import { groupService } from "@/lib/firebase/groupService";
@@ -16,6 +16,7 @@ import { useRouter } from "next/navigation";
 import { GroupClassRegistrations } from "./GroupClassRegistrations";
 import { GroupClassStats } from "./GroupClassStats";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useBackButtonClose } from "@/hooks/useBackButtonClose";
 
 interface GroupClassEditorProps {
   group: Group;
@@ -100,6 +101,12 @@ const GroupClassEditor: React.FC<GroupClassEditorProps> = ({ group, onSave, onCl
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'register' | 'application' | 'stats'>('register');
   const [isFullScreenTextOpen, setIsFullScreenTextOpen] = useState(false);
+
+  const closeEditing = useCallback(() => setEditingState(null), []);
+  const closeFullScreenText = useCallback(() => setIsFullScreenTextOpen(false), []);
+
+  useBackButtonClose(!!editingState, closeEditing);
+  useBackButtonClose(isFullScreenTextOpen, closeFullScreenText);
 
   const generateScheduleText = () => {
     let text = "";

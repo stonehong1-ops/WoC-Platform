@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { Group, GroupBoard } from "@/types/group";
 import { groupService } from "@/lib/firebase/groupService";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useBackButtonClose } from '@/hooks/useBackButtonClose';
 
 interface GroupBoardEditorProps {
   group: Group;
@@ -17,6 +18,8 @@ const GroupBoardEditor: React.FC<GroupBoardEditorProps> = ({ group, onClose }) =
     { id: 'notice', title: t('group.board.editor.notice_title') || "Group Announcements", permission: 'Only Admin', order: 0 }
   ]);
   const [isSaving, setIsSaving] = useState(false);
+
+  useBackButtonClose(true, onClose);
 
   const handleSave = async () => {
     setIsSaving(true);

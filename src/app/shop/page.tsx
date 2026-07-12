@@ -12,6 +12,7 @@ import ProductDetail from '@/components/shop/ProductDetail';
 import CreateProduct from '@/components/shop/CreateProduct';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { useModalNavigation } from '@/hooks/useModalNavigation';
+import { useBackButtonClose } from '@/hooks/useBackButtonClose';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { AnimatePresence } from 'framer-motion';
 
@@ -86,6 +87,9 @@ function ShopPageContent() {
     openModal: openCreate,
     closeModal: closeCreate
   } = useModalNavigation('create');
+
+  useBackButtonClose(isDetailOpen, handleCloseDetail);
+  useBackButtonClose(isCreateOpen, closeCreate);
 
   // Listen to global compose event
   useEffect(() => {

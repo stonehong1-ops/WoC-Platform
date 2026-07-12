@@ -1,11 +1,12 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useNavigation } from '@/components/providers/NavigationProvider';
 import UniversalFeed from './UniversalFeed';
+import { useBackButtonClose } from '@/hooks/useBackButtonClose';
 
 export default function HelpDeskView() {
   const router = useRouter();
@@ -13,6 +14,9 @@ export default function HelpDeskView() {
   const { t } = useLanguage();
   const { setGlobalNavHidden } = useNavigation();
   
+  const handleClose = useCallback(() => router.back(), [router]);
+  useBackButtonClose(true, handleClose);
+
   // Accordion active index state
   const [activeFaqIndex, setActiveFaqIndex] = useState<number | null>(null);
 

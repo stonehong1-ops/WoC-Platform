@@ -173,7 +173,8 @@ export default function LivePortalHome() {
           <div className="relative aspect-[1.12/1] w-full bg-slate-50 overflow-hidden border border-slate-100">
             {collageCards[0].img.toLowerCase().includes('.mp4') || collageCards[0].img.toLowerCase().includes('.mov') ? (
               <video 
-                src={getSafeStorageUrl(collageCards[0].img)} 
+                src={`${getSafeStorageUrl(collageCards[0].img)}#t=0.001`} 
+                preload="metadata"
                 muted 
                 playsInline 
                 className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" 
@@ -222,7 +223,8 @@ export default function LivePortalHome() {
           <div className="relative aspect-[1.12/1] w-full bg-slate-50 overflow-hidden border border-slate-100">
             {collageCards[1].img.toLowerCase().includes('.mp4') || collageCards[1].img.toLowerCase().includes('.mov') ? (
               <video 
-                src={getSafeStorageUrl(collageCards[1].img)} 
+                src={`${getSafeStorageUrl(collageCards[1].img)}#t=0.001`} 
+                preload="metadata"
                 muted 
                 playsInline 
                 className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" 
@@ -271,7 +273,8 @@ export default function LivePortalHome() {
           <div className="relative aspect-[1.12/1] w-full bg-slate-50 overflow-hidden border border-slate-100">
             {collageCards[2].img.toLowerCase().includes('.mp4') || collageCards[2].img.toLowerCase().includes('.mov') ? (
               <video 
-                src={getSafeStorageUrl(collageCards[2].img)} 
+                src={`${getSafeStorageUrl(collageCards[2].img)}#t=0.001`} 
+                preload="metadata"
                 muted 
                 playsInline 
                 className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" 

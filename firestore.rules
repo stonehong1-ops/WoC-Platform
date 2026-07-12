@@ -308,5 +308,10 @@ service cloud.firestore {
     match /culture_contents/{docId} {
       allow read, write: if true;
     }
+
+    match /groupScheduleImages/{docId} {
+      allow read: if true;
+      allow write: if true;
+    }
   }
 }

@@ -1311,13 +1311,7 @@ const GalleryCard = ({
           initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}
           className={`absolute right-2 flex flex-col items-center gap-4 z-20 transition-all duration-300 pointer-events-auto ${isImmersive ? 'bottom-12 pb-safe' : 'bottom-12 md:bottom-16'}`}
         >
-          {!isImmersive && (
-            <Link href={entityType === 'group' && entityId ? `/live/create?source=live&groupId=${entityId}` : "/live/create?source=live"} onClick={(e) => e.stopPropagation()} className="flex flex-col items-center group">
-              <div className="w-9 h-9 rounded-full flex items-center justify-center bg-black/20 backdrop-blur-md border border-white/10 text-white transition-transform active:scale-90 shadow-sm">
-                <Plus size={18} className="drop-shadow-md" />
-              </div>
-            </Link>
-          )}
+
 
           {/* Filter Button (Positioned under Plus button, always visible) */}
           <button 

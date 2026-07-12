@@ -190,7 +190,12 @@ export function useGroupsData() {
     }
   }, [user, groups.length, fetchGroups]);
 
-  const handleCreateClose = () => setIsCreateOpen(false);
+  const handleCreateClose = () => {
+    setIsCreateOpen(false);
+    if (searchParams.get('action') === 'create') {
+      router.replace(pathname, { scroll: false });
+    }
+  };
 
   const handleGroupBeforeClose = useCallback(() => {
     const now = Date.now();

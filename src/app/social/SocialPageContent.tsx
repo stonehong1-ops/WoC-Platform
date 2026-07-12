@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSocialData } from './hooks/useSocialData';
 import EditSocialEvent from '@/components/social/EditSocialEvent';
@@ -63,8 +63,21 @@ export default function SocialPageContent() {
     return getWeekOrdinal(new Date());
   });
 
-  // activeWeek 변경 시 해당 주차의 첫 날짜 요소로 부드럽게 스크롤
+  const isInitialMount = useRef(true);
+
+  // activeWeek 변경 시 해당 주차의 첫 날짜 요소로 부드럽게 스크롤 (단, 첫 진입 시에는 오늘로 스크롤)
   useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      setTimeout(() => {
+        const todayEl = document.querySelector('[data-today="true"]');
+        if (todayEl) {
+          todayEl.scrollIntoView({ behavior: 'auto', block: 'start' });
+        }
+      }, 150);
+      return;
+    }
+
     const el = document.getElementById(`week-${activeWeek}`);
     if (el) {
       el.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -384,6 +397,7 @@ export default function SocialPageContent() {
                   <div 
                     key={idx} 
                     id={isFirstDayOfWeek ? `week-${weekNum}` : undefined}
+                    data-today={isToday ? 'true' : undefined}
                     className="overflow-hidden rounded-xl border border-slate-100 shadow-[0_2px_10px_-3px_rgba(0,0,0,0.05)] bg-white scroll-mt-28"
                   >
                     {/* Day Header */}

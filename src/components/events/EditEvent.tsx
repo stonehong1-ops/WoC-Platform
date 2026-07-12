@@ -13,6 +13,7 @@ import { Timestamp } from 'firebase/firestore';
 import ProgramEditor from './ProgramEditor';
 import { syncMilongasToSocial, deleteLinkedSocials } from '@/lib/firebase/syncMilongaToSocial';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useBackButtonClose } from '@/hooks/useBackButtonClose';
 
 interface Props { onClose: () => void; onSuccess?: (id?: string) => void; eventData?: Event; }
 
@@ -48,6 +49,8 @@ export default function EditEvent({ onClose, onSuccess, eventData }: Props) {
   const { user } = useAuth();
   const { location, openSelectorWithCallback } = useLocation();
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useBackButtonClose(true, onClose);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Basic

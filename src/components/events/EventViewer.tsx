@@ -6,6 +6,7 @@ import { useAuth } from "@/components/providers/AuthProvider";
 import { eventService } from "@/lib/firebase/eventService";
 import { chatService } from "@/lib/firebase/chatService";
 import { useModalNavigation } from "@/hooks/useModalNavigation";
+import { useBackButtonClose } from '@/hooks/useBackButtonClose';
 import ChatRoom from "@/components/chat/ChatRoom";
 import UniversalFeed from "@/components/feed/UniversalFeed";
 import EventHomeTab from "./EventHomeTab";
@@ -32,6 +33,8 @@ export default function EventViewer({ event: initialEvent, onClose }: EventViewe
   const [event, setEvent] = useState<Event>(initialEvent);
   const [activeTab, setActiveTab] = useState<TabId>("home");
   const [showEdit, setShowEdit] = useState(false);
+
+  useBackButtonClose(true, onClose);
 
   useEffect(() => {
     setGlobalNavHidden(true);

@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { Event } from '@/types/event';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { eventService } from '@/lib/firebase/eventService';
+import { useBackButtonClose } from '@/hooks/useBackButtonClose';
 import { Timestamp } from 'firebase/firestore';
 import UserProfileClickable from '@/components/common/UserProfileClickable';
 import UserAvatar from '@/components/common/UserAvatar';
@@ -31,6 +32,8 @@ export default function EventDetail({ event, onClose, onEdit, onDelete }: EventD
   const [isDeleting, setIsDeleting] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const { setGlobalNavHidden } = useNavigation();
+
+  useBackButtonClose(true, onClose);
 
   React.useEffect(() => {
     setGlobalNavHidden(true);

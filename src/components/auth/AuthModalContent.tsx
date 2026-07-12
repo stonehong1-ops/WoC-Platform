@@ -1,10 +1,11 @@
 "use client";
 
-import React from 'react';
+import React, { useCallback } from 'react';
 import { COUNTRY_CODES } from '@/constants/countryCodes';
 import { useAuthFlow } from './hooks/useAuthFlow';
 import { getRegionName } from './helpers/authHelpers';
 import { Capacitor } from '@capacitor/core';
+import { useBackButtonClose } from '@/hooks/useBackButtonClose';
 
 export function AuthModalContent() {
   const {
@@ -40,6 +41,10 @@ export function AuthModalContent() {
     handleVerifyCode,
     handleCompleteRegistration
   } = useAuthFlow();
+
+  // 뒤로가기 버튼으로 인증 모달 닫기
+  const handleBackClose = useCallback(() => handleClose(), [handleClose]);
+  useBackButtonClose(showLogin, handleBackClose);
 
   if (!showLogin) return null;
 
@@ -149,32 +154,6 @@ export function AuthModalContent() {
                 <span className="absolute top-1.5 right-2 text-[8px] font-black text-gray-300 uppercase tracking-wider">Soon</span>
               </button>
             </div>
-
-            {/* Premium iOS Installation Guide - Non-modal Native Scroll Flow */}
-            {typeof window !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.matchMedia('(display-mode: standalone)').matches && (
-              <div className="mt-8 p-6 bg-blue-50/50 border border-blue-100 rounded-3xl text-left animate-in slide-in-from-bottom-2 duration-500">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center shadow-md">
-                    <span className="material-symbols-outlined text-[20px] font-variation-fill" style={{ fontVariationSettings: "'FILL' 1" }}>add_to_home_screen</span>
-                  </div>
-                  <div>
-                    <h3 className="text-[14px] font-black text-blue-950 font-headline">{t('auth.ios_pwa_title')}</h3>
-                    <p className="text-[10px] text-blue-600/80 font-bold">{t('auth.ios_pwa_desc')}</p>
-                  </div>
-                </div>
-                
-                <div className="space-y-2.5 font-body text-xs font-semibold text-blue-900/90">
-                  <div className="flex items-center justify-between p-3.5 bg-white rounded-2xl border border-blue-50 shadow-sm">
-                    <span>{t('auth.ios_pwa_step1')}</span>
-                    <span className="material-symbols-outlined text-blue-600 text-[18px]">ios_share</span>
-                  </div>
-                  <div className="flex items-center justify-between p-3.5 bg-white rounded-2xl border border-blue-50 shadow-sm">
-                    <span>{t('auth.ios_pwa_step2')}</span>
-                    <span className="material-symbols-outlined text-blue-600 text-[18px]">add_box</span>
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
         ) : step === 'EMAIL_INPUT' ? (
           <div className="animate-in slide-in-from-bottom-4 duration-500 space-y-6">

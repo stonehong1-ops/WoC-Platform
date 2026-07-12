@@ -1,7 +1,7 @@
 "use client";
 import { reportError } from '@/lib/utils/errorHandler';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Group } from '@/types/group';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -12,6 +12,7 @@ import { groupService } from '@/lib/firebase/groupService';
 import { chatService } from '@/lib/firebase/chatService';
 import { socialService } from '@/lib/firebase/socialService';
 import UserBadge from '@/components/common/UserBadge';
+import { useBackButtonClose } from '@/hooks/useBackButtonClose';
 
 
 interface GroupAboutProps {
@@ -158,7 +159,9 @@ const GroupAbout: React.FC<GroupAboutProps> = ({
   const img4 = displayImages[3] || displayImages[0];
   const moreCount = displayImages.length > 4 ? displayImages.length - 4 : 0;
 
-  const closeViewer = () => setIsViewerOpen(false); // Replaced useHistoryBack
+  const closeViewer = useCallback(() => setIsViewerOpen(false), []); // Replaced useHistoryBack
+
+  useBackButtonClose(isViewerOpen, closeViewer);
 
   const openViewer = (index: number) => {
     if (displayImages.length === 0) return;

@@ -11,6 +11,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { chatService } from '@/lib/firebase/chatService';
 import { toast } from 'sonner';
 import { useNavigation } from '@/components/providers/NavigationProvider';
+import { useBackButtonClose } from '@/hooks/useBackButtonClose';
 
 function ChatContent() {
   const { user, profile } = useAuth();
@@ -145,14 +146,17 @@ function ChatContent() {
     router.push(`/chat?roomId=${id}`);
   };
 
-  const handleBack = () => {
+  const handleBack = useCallback(() => {
     setSelectedRoomId(null);
     router.replace('/chat');
-  };
+  }, [router]);
+
+  // 뒤로가기 버튼으로 채팅방 풀스크린 닫기
+  useBackButtonClose(!!selectedRoomId, handleBack);
 
   return (
     <PageWrapper>
-      <div className="flex h-[calc(100vh-124px)] bg-[#FAF8FF] overflow-hidden font-manrope relative">
+      <div className="flex h-[calc(100dvh-60px-84px)] bg-[#FAF8FF] overflow-hidden font-manrope relative">
         {/* Left Side: Chat List (Always visible as background on mobile, side-by-side on desktop) */}
         <div className="w-full md:w-[380px] border-r border-slate-100 flex flex-col pt-2">
           <ChatList 

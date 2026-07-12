@@ -1,12 +1,13 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Event, EventArtist, EventVenueItem, EventPackage } from "@/types/event";
 import { userService } from "@/lib/firebase/userService";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase/clientApp";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { toast } from "sonner";
+import { useBackButtonClose } from '@/hooks/useBackButtonClose';
 
 interface Props {
   event: Event;
@@ -37,6 +38,16 @@ export default function EventHomeTab({ event, onChatWithHost, canEdit }: Props) 
   const [activeScheduleDay, setActiveScheduleDay] = useState(0);
   const [selectedPackage, setSelectedPackage] = useState<EventPackage | null>(null);
   const [timetablePopupUrl, setTimetablePopupUrl] = useState<string | null>(null);
+
+  const closeGallery = useCallback(() => setGalleryIdx(null), []);
+  const closeArtist = useCallback(() => setSelectedArtist(null), []);
+  const closePackage = useCallback(() => setSelectedPackage(null), []);
+  const closeTimetable = useCallback(() => setTimetablePopupUrl(null), []);
+
+  useBackButtonClose(galleryIdx !== null, closeGallery);
+  useBackButtonClose(!!selectedArtist, closeArtist);
+  useBackButtonClose(!!selectedPackage, closePackage);
+  useBackButtonClose(!!timetablePopupUrl, closeTimetable);
 
   useEffect(() => {
     if (event.venueId) {

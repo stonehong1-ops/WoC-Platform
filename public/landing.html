@@ -1,6 +1,11 @@
 <!DOCTYPE html><html lang="ko" style=""><head>
 <script>
-  // 이미 앱 상태로 구동 중인 경우 즉시 메인 서비스(/live) 화면으로 강제 이동
+  // 네이티브 앱(Capacitor) 또는 PWA standalone 상태면 즉시 메인으로 이동
+  try {
+    if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) {
+      window.location.replace('/live');
+    }
+  } catch(e) {}
   if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) {
     window.location.replace('/live');
   }

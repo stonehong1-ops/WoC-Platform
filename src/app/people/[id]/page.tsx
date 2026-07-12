@@ -2,22 +2,28 @@
 
 import React, { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { peopleService } from '@/lib/firebase/peopleService';
 import { Person } from '@/types/people';
+import { PlatformUser } from '@/types/user';
 import { useNavigation } from '@/components/providers/NavigationProvider';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { doc, onSnapshot } from 'firebase/firestore';
+import { db } from '@/lib/firebase/clientApp';
 
 const ADMIN_UIDS = ['7iaZAmaYY9dNNEShmJmROI8XrtH2'];
 
 export default function PeopleDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const isPreview = searchParams.get('preview') === '1';
   const { user } = useAuth();
   const { setGlobalNavHidden } = useNavigation();
   const { t } = useLanguage();
   const [person, setPerson] = useState<Person | null>(null);
+  const [previewUser, setPreviewUser] = useState<PlatformUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [showMenu, setShowMenu] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -48,14 +54,26 @@ export default function PeopleDetailPage() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  // 데이터 로딩: preview 모드면 users 조회, 아니면 people 조회
   useEffect(() => {
     if (!id) return;
-    const unsub = peopleService.subscribeOne(id, (data) => {
-      setPerson(data);
-      setLoading(false);
-    });
-    return () => unsub();
-  }, [id]);
+    if (isPreview) {
+      // users 컬렉션에서 기본정보 조회
+      const unsub = onSnapshot(doc(db, 'users', id), (snap) => {
+        if (snap.exists()) {
+          setPreviewUser({ id: snap.id, ...snap.data() } as PlatformUser);
+        }
+        setLoading(false);
+      });
+      return () => unsub();
+    } else {
+      const unsub = peopleService.subscribeOne(id, (data) => {
+        setPerson(data);
+        setLoading(false);
+      });
+      return () => unsub();
+    }
+  }, [id, isPreview]);
 
   if (loading) {
     return (
@@ -65,6 +83,96 @@ export default function PeopleDetailPage() {
           <p className="text-sm">{t('people.alert_loading')}</p>
         </div>
       </div>
+    );
+  }
+
+  // Preview 모드: users 기본정보 간략 프로필
+  if (isPreview && previewUser) {
+    const roleLabels: string[] = [];
+    if (previewUser.isInstructor) roleLabels.push(t('people.filter_instructor'));
+    if (previewUser.isDj) roleLabels.push(t('people.filter_dj', 'DJ'));
+    if (previewUser.isOrganizer) roleLabels.push(t('people.filter_organizer'));
+    if (previewUser.isSeller) roleLabels.push(t('people.filter_seller', '판매자'));
+
+    return (
+      <main className="pt-0 pb-20 max-w-[480px] mx-auto bg-surface min-h-screen shadow-2xl relative">
+        {/* Header */}
+        <header className="fixed top-0 w-full z-50 bg-white shadow-md py-2 max-w-[480px]">
+          <div className="relative flex justify-between items-center px-6">
+            <button onClick={() => router.back()}
+              className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-slate-100 transition-colors">
+              <span className="material-symbols-outlined text-on-surface">arrow_back</span>
+            </button>
+            <h1 className="text-base font-black text-on-surface truncate max-w-[200px]">
+              {previewUser.nickname || previewUser.nativeNickname || '멤버'}
+            </h1>
+            <div className="w-10" />
+          </div>
+        </header>
+
+        {/* Profile Card */}
+        <div className="pt-20 px-6">
+          <div className="flex flex-col items-center text-center pt-8">
+            <div className="w-28 h-28 rounded-full overflow-hidden bg-slate-100 border-4 border-white shadow-xl mb-4">
+              {previewUser.photoURL ? (
+                <img src={previewUser.photoURL} className="w-full h-full object-cover" alt="" />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center bg-violet-100 text-violet-600 text-4xl font-black">
+                  {(previewUser.nickname || '?')[0]}
+                </div>
+              )}
+            </div>
+            <h2 className="text-2xl font-black text-on-surface">{previewUser.nickname || previewUser.nativeNickname || '멤버'}</h2>
+            {previewUser.nativeNickname && previewUser.nickname !== previewUser.nativeNickname && (
+              <p className="text-sm text-slate-500 font-bold mt-1">{previewUser.nativeNickname}</p>
+            )}
+
+            {/* 역할 뱃지 */}
+            {roleLabels.length > 0 && (
+              <div className="flex flex-wrap gap-2 mt-4 justify-center">
+                {roleLabels.map(label => (
+                  <span key={label} className="px-3 py-1 bg-violet-50 text-violet-650 text-xs font-black rounded-full">{label}</span>
+                ))}
+              </div>
+            )}
+
+            {/* 기본 정보 */}
+            <div className="mt-8 w-full space-y-4">
+              {previewUser.career && (
+                <div className="bg-slate-50 rounded-2xl p-4 text-left">
+                  <p className="text-xs font-bold text-slate-400 mb-1">{t('people.preview_career', '경력')}</p>
+                  <p className="text-sm font-bold text-on-surface">{previewUser.career}</p>
+                </div>
+              )}
+              {previewUser.partnerStatus && (
+                <div className="bg-slate-50 rounded-2xl p-4 text-left">
+                  <p className="text-xs font-bold text-slate-400 mb-1">{t('people.preview_partner', '파트너')}</p>
+                  <p className="text-sm font-bold text-on-surface">{previewUser.partnerStatus}</p>
+                </div>
+              )}
+              {(previewUser.socialLinks?.instagram || previewUser.socialLinks?.facebook) && (
+                <div className="bg-slate-50 rounded-2xl p-4 text-left">
+                  <p className="text-xs font-bold text-slate-400 mb-1">{t('people.preview_social', 'SNS')}</p>
+                  <div className="flex gap-3 mt-1">
+                    {previewUser.socialLinks?.instagram && (
+                      <a href={`https://instagram.com/${previewUser.socialLinks.instagram}`} target="_blank" rel="noopener noreferrer" className="text-sm font-bold text-violet-600 hover:underline">Instagram</a>
+                    )}
+                    {previewUser.socialLinks?.facebook && (
+                      <a href={previewUser.socialLinks.facebook} target="_blank" rel="noopener noreferrer" className="text-sm font-bold text-blue-600 hover:underline">Facebook</a>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* 상세 프로필 미등록 안내 */}
+            <div className="mt-8 p-4 bg-amber-50 rounded-2xl w-full text-center">
+              <span className="material-symbols-outlined text-amber-500 text-2xl">info</span>
+              <p className="text-xs font-bold text-amber-700 mt-1">{t('people.preview_no_detail', '상세 프로필이 아직 등록되지 않았습니다.')}</p>
+            </div>
+          </div>
+        </div>
+      </main>
     );
   }
 

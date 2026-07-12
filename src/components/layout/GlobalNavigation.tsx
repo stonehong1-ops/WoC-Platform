@@ -114,7 +114,7 @@ export default function GlobalNavigation(props: { children: React.ReactNode }) {
     if (pathname.startsWith('/shop')) { toast(t('create_btn.group_owner_only', '그룹에서 오너만 등록 가능합니다')); return; }
     if (pathname.startsWith('/rental')) { toast(t('create_btn.group_owner_setting', '그룹에서 오너만 설정 가능합니다')); return; }
     if (pathname.startsWith('/stay')) { toast(t('create_btn.group_owner_setting', '그룹에서 오너만 설정 가능합니다')); return; }
-    if (pathname.startsWith('/class')) { toast(t('create_btn.group_instructor_only', '그룹에서 오너 또는 강사만 등록 가능합니다')); return; }
+    if (pathname.startsWith('/class')) { router.push('/class?view=special&createSpecial=true'); return; }
     if (pathname.startsWith('/pics')) { toast(t('create_btn.ai_photos_only', '시스템에서 AI가 생성한 사진만 등록됩니다')); return; }
     if (pathname.startsWith('/hub')) { toast(t('create_btn.hub_admin_only', '물품입고는 WoC 관리자만 등록 가능합니다')); return; }
     if (pathname.startsWith('/explore')) { toast(t('create_btn.jump_admin_only', '취미는 WoC 관리자만 등록 가능합니다')); return; }

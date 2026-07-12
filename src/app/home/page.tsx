@@ -21,6 +21,7 @@ import { getSafeStorageUrl } from '@/lib/utils/storageUtils';
 // 공통 UI 컴포넌트 임포트
 import SectionHeader from '@/components/common/SectionHeader';
 import HorizontalScroller from '@/components/common/HorizontalScroller';
+import BottomSheet from '@/components/common/BottomSheet';
 
 export default function SocietyPage() {
   const { t, language, setLanguage } = useLanguage();
@@ -94,6 +95,10 @@ export default function SocietyPage() {
   const [music365Contents, setMusic365Contents] = useState<any[]>([]);
   const [isMusic365Open, setIsMusic365Open] = useState(false);
   const [currentMusic365Index, setCurrentMusic365Index] = useState(0);
+  const [selectedSubcategory, setSelectedSubcategory] = useState<'music365' | 'best160' | 'mapofm'>('music365');
+  const [isMusicSheetOpen, setIsMusicSheetOpen] = useState(false);
+  const [isHistorySheetOpen, setIsHistorySheetOpen] = useState(false);
+  const [isTravelSheetOpen, setIsTravelSheetOpen] = useState(false);
 
   const [historyContents, setHistoryContents] = useState<any[]>([]);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
@@ -1878,7 +1883,18 @@ We review Simon Collier, Artemis Cooper, María Susana Azzi, and Richard Martin'
           createdAt: { seconds: Date.now() / 1000 }
         };
 
-        const listToRender = music365Contents.length > 0 ? music365Contents : [defaultMusic];
+        const listToRender = music365Contents.filter(item => {
+          if (selectedSubcategory === 'music365') {
+            return !item.subcategory || item.subcategory === 'music365';
+          }
+          return item.subcategory === selectedSubcategory;
+        }).length > 0 ? music365Contents.filter(item => {
+          if (selectedSubcategory === 'music365') {
+            return !item.subcategory || item.subcategory === 'music365';
+          }
+          return item.subcategory === selectedSubcategory;
+        }) : [defaultMusic];
+
         const safeIndex = currentMusic365Index < listToRender.length ? currentMusic365Index : 0;
         const activeMusic = listToRender[safeIndex] || defaultMusic;
 
@@ -1895,6 +1911,23 @@ We review Simon Collier, Artemis Cooper, María Susana Azzi, and Richard Martin'
             setCurrentMusic365Index(safeIndex + 1);
           }
         };
+
+        let broadcasterName = t('home.music.tab.music365');
+        let broadcasterImg = 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=800';
+        let badgeText = 'Tango Music 365';
+        let episodePrefix = 'Day';
+
+        if (selectedSubcategory === 'best160') {
+          broadcasterName = t('home.music.tab.best160');
+          broadcasterImg = 'https://images.unsplash.com/photo-1511192336575-5a79af67a629?q=80&w=800';
+          badgeText = 'BEST 160';
+          episodePrefix = 'Track';
+        } else if (selectedSubcategory === 'mapofm') {
+          broadcasterName = t('home.music.tab.mapofm');
+          broadcasterImg = 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=800';
+          badgeText = 'Immortal Tango Music';
+          episodePrefix = 'Ep.';
+        }
 
         return (
           <div className="fixed inset-0 z-[10000] bg-white flex flex-col animate-in fade-in duration-500 overflow-y-auto">
@@ -1921,8 +1954,36 @@ We review Simon Collier, Artemis Cooper, María Susana Azzi, and Richard Martin'
             {/* Content Details & Selector */}
             <div className="flex-1 bg-white pb-24">
               <div className="max-w-4xl mx-auto px-8 md:px-16 py-10 space-y-8">
+                {/* Custom Segmented Tabs (Horizontal Scrollable with Wide Padding) */}
+                <div className="flex gap-3.5 overflow-x-auto whitespace-nowrap pb-4 border-b border-slate-100 scrollbar-none -mx-6 px-6 sm:mx-0 sm:px-0">
+                  {(['music365', 'best160', 'mapofm'] as const).map((sub) => {
+                    const isActive = selectedSubcategory === sub;
+                    let label = '';
+                    if (sub === 'music365') label = t('home.music.tab.music365');
+                    else if (sub === 'best160') label = t('home.music.tab.best160');
+                    else if (sub === 'mapofm') label = t('home.music.tab.mapofm');
+
+                    return (
+                      <button
+                        key={sub}
+                        onClick={() => {
+                          setSelectedSubcategory(sub);
+                          setCurrentMusic365Index(0);
+                        }}
+                        className={`shrink-0 whitespace-nowrap px-6 py-2.5 rounded-full text-[13px] sm:text-sm font-bold border-none cursor-pointer transition-all ${
+                          isActive
+                            ? 'bg-slate-900 text-white shadow-md scale-105'
+                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    );
+                  })}
+                </div>
+
                 <div className="text-left">
-                  <span className="px-3 py-1 bg-blue-600 text-white text-[11px] font-extrabold uppercase tracking-widest rounded-md mb-4 inline-block shadow-md">Tango Music 365</span>
+                  <span className="px-3 py-1 bg-blue-600 text-white text-[11px] font-extrabold uppercase tracking-widest rounded-md mb-4 inline-block shadow-md">{badgeText}</span>
                   <h2 className="text-2xl md:text-4xl font-extrabold text-slate-900 font-headline leading-tight mb-2">
                     {resolvedTitle}
                   </h2>
@@ -1931,7 +1992,7 @@ We review Simon Collier, Artemis Cooper, María Susana Azzi, and Richard Martin'
                   </p>
                 </div>
 
-                {/* Navigator Accordion Toolbar */}
+                {/* Navigator Toolbar */}
                 <div className="bg-slate-50 border border-slate-200 rounded-2xl p-2.5 flex items-center justify-between gap-2 shadow-sm relative min-w-0">
                   <button
                     onClick={goPrev}
@@ -1941,36 +2002,14 @@ We review Simon Collier, Artemis Cooper, María Susana Azzi, and Richard Martin'
                     <span className="material-symbols-outlined text-[20px]">chevron_left</span>
                   </button>
 
-                  {/* Accordion Dropdown */}
-                  <div className="relative flex-1 min-w-0">
-                    <button
-                      onClick={() => setIsAccordionOpen(!isAccordionOpen)}
-                      className="w-full flex items-center justify-between gap-2 px-3.5 py-2 rounded-xl bg-white text-slate-800 font-bold border border-slate-200 text-sm hover:bg-slate-100 cursor-pointer text-left shadow-sm min-w-0"
-                    >
-                      <span className="truncate max-w-[140px] sm:max-w-[280px] block">{safeIndex + 1}화. {resolvedTitle}</span>
-                      <span className={`material-symbols-outlined transition-transform duration-200 flex-shrink-0 ${isAccordionOpen ? 'rotate-180' : ''}`}>keyboard_arrow_down</span>
-                    </button>
-
-                    {isAccordionOpen && (
-                      <div className="absolute left-0 right-0 mt-2 z-50 bg-white border border-slate-200 rounded-2xl shadow-xl max-h-60 overflow-y-auto p-2 space-y-1">
-                        {listToRender.map((item, idx) => {
-                          const itTitle = language === 'KR' && item.titleNative ? item.titleNative : item.title;
-                          return (
-                            <div
-                              key={item.id}
-                              onClick={() => {
-                                setCurrentMusic365Index(idx);
-                                setIsAccordionOpen(false);
-                              }}
-                              className={`px-4 py-2.5 rounded-xl text-sm font-semibold cursor-pointer transition-all ${safeIndex === idx ? 'bg-slate-900 text-white' : 'text-slate-700 hover:bg-slate-50'}`}
-                            >
-                              {idx + 1}화. {itTitle}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
+                  {/* Bottom Sheet Trigger Button */}
+                  <button
+                    onClick={() => setIsMusicSheetOpen(true)}
+                    className="flex-1 flex items-center justify-between gap-2 px-3.5 py-2.5 rounded-xl bg-white text-slate-800 font-bold border border-slate-200 text-sm hover:bg-slate-100 cursor-pointer text-left shadow-sm min-w-0"
+                  >
+                    <span className="truncate max-w-[140px] sm:max-w-[280px] block">{episodePrefix} {safeIndex + 1}. {resolvedTitle}</span>
+                    <span className="material-symbols-outlined text-slate-400 flex-shrink-0">unfold_more</span>
+                  </button>
 
                   <button
                     onClick={goNext}
@@ -1985,14 +2024,14 @@ We review Simon Collier, Artemis Cooper, María Susana Azzi, and Richard Martin'
                 <div className="flex items-center gap-3.5 bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
                   <div className="w-11 h-11 rounded-full overflow-hidden flex-shrink-0 bg-slate-100 ring-2 ring-slate-100 shadow-sm">
                     <img 
-                      src={getSafeStorageUrl('https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=800')} 
-                      alt="MapoFM" 
+                      src={getSafeStorageUrl(broadcasterImg)} 
+                      alt={broadcasterName} 
                       className="w-full h-full object-cover"
                     />
                   </div>
                   <div className="flex flex-col text-left">
                     <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-1">Broadcaster</span>
-                    <span className="text-base font-black text-slate-800 leading-none">마포FM 불멸의 탱고음악</span>
+                    <span className="text-base font-black text-slate-800 leading-none">{broadcasterName}</span>
                   </div>
                 </div>
 
@@ -2006,6 +2045,43 @@ We review Simon Collier, Artemis Cooper, María Susana Azzi, and Richard Martin'
                 </div>
               </div>
             </div>
+
+            {/* Episode Selector BottomSheet */}
+            <BottomSheet
+              isOpen={isMusicSheetOpen}
+              onClose={() => setIsMusicSheetOpen(false)}
+              title={broadcasterName}
+              height="60vh"
+            >
+              <div className="flex flex-col gap-1.5 py-2">
+                {listToRender.map((item, idx) => {
+                  const itTitle = language === 'KR' && item.titleNative ? item.titleNative : item.title;
+                  const isSelected = safeIndex === idx;
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => {
+                        setCurrentMusic365Index(idx);
+                        setIsMusicSheetOpen(false);
+                      }}
+                      className={`w-full text-left px-4 py-3 rounded-xl border-none font-semibold text-sm cursor-pointer transition-all flex items-center gap-3 ${
+                        isSelected 
+                          ? 'bg-slate-900 text-white font-extrabold shadow-md scale-[1.01]' 
+                          : 'bg-slate-50 text-slate-700 hover:bg-slate-100'
+                      }`}
+                    >
+                      <span className={`w-6 h-6 flex items-center justify-center rounded-full text-xs font-bold ${isSelected ? 'bg-white/20 text-white' : 'bg-white text-slate-400 border border-slate-100'}`}>
+                        {idx + 1}
+                      </span>
+                      <span className="truncate flex-1">{itTitle}</span>
+                      {isSelected && (
+                        <span className="material-symbols-outlined text-[18px] text-emerald-400">check_circle</span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </BottomSheet>
           </div>
         );
       })()}
@@ -2138,7 +2214,7 @@ We review Simon Collier, Artemis Cooper, María Susana Azzi, and Richard Martin'
               <div className="max-w-4xl mx-auto px-8 md:px-16 py-10 space-y-10">
                 <div className="prose prose-slate prose-xl max-w-none">
                   
-                  {/* Navigator: 아코디언 툴바 */}
+                  {/* Navigator Toolbar */}
                   <div className="bg-slate-50 border border-slate-200 rounded-2xl p-2.5 flex items-center justify-between gap-2 mb-8 shadow-sm relative min-w-0">
                     <button
                       onClick={goPrev}
@@ -2148,37 +2224,14 @@ We review Simon Collier, Artemis Cooper, María Susana Azzi, and Richard Martin'
                       <span className="material-symbols-outlined text-[20px]">chevron_left</span>
                     </button>
 
-                    {/* 목록 아코디온 Dropdown */}
-                    <div className="relative flex-1 min-w-0">
-                      <button
-                        onClick={() => setIsAccordionOpen(!isAccordionOpen)}
-                        className="w-full flex items-center justify-between gap-2 px-3.5 py-2 rounded-xl bg-white text-slate-800 font-bold border border-slate-200 text-sm hover:bg-slate-100 cursor-pointer text-left shadow-sm min-w-0"
-                      >
-                        <span className="truncate max-w-[140px] sm:max-w-[280px] block">{safeIndex + 1}화. {resolvedTitle}</span>
-                        <span className={`material-symbols-outlined transition-transform duration-200 flex-shrink-0 ${isAccordionOpen ? 'rotate-180' : ''}`}>keyboard_arrow_down</span>
-                      </button>
-
-                      {isAccordionOpen && (
-                        <div className="absolute left-0 right-0 mt-2 z-50 bg-white border border-slate-200 rounded-2xl shadow-xl max-h-60 overflow-y-auto p-2 space-y-1">
-                          {listToRender.map((item, idx) => {
-                            const itTitle = language === 'KR' && item.titleNative ? item.titleNative : item.title;
-                            return (
-                              <div
-                                key={item.id}
-                                onClick={() => {
-                                  setCurrentHistoryIndex(idx);
-                                  setActiveImageIndex(0);
-                                  setIsAccordionOpen(false);
-                                }}
-                                className={`px-4 py-2.5 rounded-xl text-sm font-semibold cursor-pointer transition-all ${safeIndex === idx ? 'bg-slate-900 text-white' : 'text-slate-700 hover:bg-slate-50'}`}
-                              >
-                                {idx + 1}화. {itTitle}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </div>
+                    {/* Bottom Sheet Trigger Button */}
+                    <button
+                      onClick={() => setIsHistorySheetOpen(true)}
+                      className="flex-1 flex items-center justify-between gap-2 px-3.5 py-2.5 rounded-xl bg-white text-slate-800 font-bold border border-slate-200 text-sm hover:bg-slate-100 cursor-pointer text-left shadow-sm min-w-0"
+                    >
+                      <span className="truncate max-w-[140px] sm:max-w-[280px] block">{safeIndex + 1}화. {resolvedTitle}</span>
+                      <span className="material-symbols-outlined text-slate-400 flex-shrink-0">unfold_more</span>
+                    </button>
 
                     <button
                       onClick={goNext}
@@ -2225,6 +2278,44 @@ We review Simon Collier, Artemis Cooper, María Susana Azzi, and Richard Martin'
                 </div>
               </div>
             </div>
+
+            {/* History Episode Selector BottomSheet */}
+            <BottomSheet
+              isOpen={isHistorySheetOpen}
+              onClose={() => setIsHistorySheetOpen(false)}
+              title={resolvedKeyword}
+              height="60vh"
+            >
+              <div className="flex flex-col gap-1.5 py-2">
+                {listToRender.map((item, idx) => {
+                  const itTitle = language === 'KR' && item.titleNative ? item.titleNative : item.title;
+                  const isSelected = safeIndex === idx;
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => {
+                        setCurrentHistoryIndex(idx);
+                        setActiveImageIndex(0);
+                        setIsHistorySheetOpen(false);
+                      }}
+                      className={`w-full text-left px-4 py-3 rounded-xl border-none font-semibold text-sm cursor-pointer transition-all flex items-center gap-3 ${
+                        isSelected 
+                          ? 'bg-slate-900 text-white font-extrabold shadow-md scale-[1.01]' 
+                          : 'bg-slate-50 text-slate-700 hover:bg-slate-100'
+                      }`}
+                    >
+                      <span className={`w-6 h-6 flex items-center justify-center rounded-full text-xs font-bold ${isSelected ? 'bg-white/20 text-white' : 'bg-white text-slate-400 border border-slate-100'}`}>
+                        {idx + 1}
+                      </span>
+                      <span className="truncate flex-1">{itTitle}</span>
+                      {isSelected && (
+                        <span className="material-symbols-outlined text-[18px] text-emerald-400">check_circle</span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </BottomSheet>
           </div>
         );
       })()}
@@ -2370,33 +2461,14 @@ We review Simon Collier, Artemis Cooper, María Susana Azzi, and Richard Martin'
                     {/* 목록 아코디온 Dropdown */}
                     <div className="relative flex-1 min-w-0">
                       <button
-                        onClick={() => setIsAccordionOpen(!isAccordionOpen)}
-                        className="w-full flex items-center justify-between gap-2 px-3.5 py-2 rounded-xl bg-white text-slate-800 font-bold border border-slate-200 text-sm hover:bg-slate-100 cursor-pointer text-left shadow-sm min-w-0"
+                        onClick={() => setIsTravelSheetOpen(true)}
+                        className="w-full flex items-center justify-between gap-2 px-3.5 py-2.5 rounded-xl bg-white text-slate-800 font-bold border border-slate-200 text-sm hover:bg-slate-100 cursor-pointer text-left shadow-sm min-w-0"
                       >
                         <span className="truncate max-w-[140px] sm:max-w-[280px] block">{safeIndex + 1}화. {resolvedTitle}</span>
-                        <span className={`material-symbols-outlined transition-transform duration-200 flex-shrink-0 ${isAccordionOpen ? 'rotate-185' : ''}`}>keyboard_arrow_down</span>
+                        <span className="material-symbols-outlined text-slate-400 flex-shrink-0">unfold_more</span>
                       </button>
 
-                      {isAccordionOpen && (
-                        <div className="absolute left-0 right-0 mt-2 z-50 bg-white border border-slate-200 rounded-2xl shadow-xl max-h-60 overflow-y-auto p-2 space-y-1">
-                          {listToRender.map((item, idx) => {
-                            const itTitle = language === 'KR' && item.titleNative ? item.titleNative : item.title;
-                            return (
-                              <div
-                                key={item.id}
-                                onClick={() => {
-                                  setCurrentTravelIndex(idx);
-                                  setActiveImageIndex(0);
-                                  setIsAccordionOpen(false);
-                                }}
-                                className={`px-4 py-2.5 rounded-xl text-sm font-semibold cursor-pointer transition-all ${safeIndex === idx ? 'bg-slate-900 text-white' : 'text-slate-700 hover:bg-slate-50'}`}
-                              >
-                                {idx + 1}화. {itTitle}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
+
                     </div>
 
                     <button
@@ -2444,6 +2516,44 @@ We review Simon Collier, Artemis Cooper, María Susana Azzi, and Richard Martin'
                 </div>
               </div>
             </div>
+
+            {/* Travel Episode Selector BottomSheet */}
+            <BottomSheet
+              isOpen={isTravelSheetOpen}
+              onClose={() => setIsTravelSheetOpen(false)}
+              title={resolvedKeyword}
+              height="60vh"
+            >
+              <div className="flex flex-col gap-1.5 py-2">
+                {listToRender.map((item, idx) => {
+                  const itTitle = language === 'KR' && item.titleNative ? item.titleNative : item.title;
+                  const isSelected = safeIndex === idx;
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => {
+                        setCurrentTravelIndex(idx);
+                        setActiveImageIndex(0);
+                        setIsTravelSheetOpen(false);
+                      }}
+                      className={`w-full text-left px-4 py-3 rounded-xl border-none font-semibold text-sm cursor-pointer transition-all flex items-center gap-3 ${
+                        isSelected 
+                          ? 'bg-slate-900 text-white font-extrabold shadow-md scale-[1.01]' 
+                          : 'bg-slate-50 text-slate-700 hover:bg-slate-100'
+                      }`}
+                    >
+                      <span className={`w-6 h-6 flex items-center justify-center rounded-full text-xs font-bold ${isSelected ? 'bg-white/20 text-white' : 'bg-white text-slate-400 border border-slate-100'}`}>
+                        {idx + 1}
+                      </span>
+                      <span className="truncate flex-1">{itTitle}</span>
+                      {isSelected && (
+                        <span className="material-symbols-outlined text-[18px] text-emerald-400">check_circle</span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </BottomSheet>
           </div>
         );
       })()}

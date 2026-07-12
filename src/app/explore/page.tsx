@@ -11,7 +11,13 @@ export default function ExplorePage() {
   const { profile, user } = useAuth();
   const { location, setIsSelectorOpen } = useLocation();
   const { t } = useLanguage();
-  const displayName = profile?.nickname || user?.displayName || 'Stone';
+
+  const [mounted, setMounted] = React.useState(false);
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const displayName = mounted ? (profile?.nickname || user?.displayName || 'Stone') : 'Stone';
 
   return (
     <div className="bg-[#FAF8FF] text-black antialiased w-full pb-32 pt-4">

@@ -76,6 +76,13 @@ export default function EventsPage() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const { isOpen: isCreateOpenURL, openModal: openCreateURL, closeModal: closeCreateURL } = useModalNavigation('create');
 
+  // 최초 진입 시 메인 홈을 다가오는 일정(view=list)으로 강제 리디렉션
+  useEffect(() => {
+    if (!viewParam) {
+      router.replace('/events?view=list');
+    }
+  }, [viewParam, router]);
+
   // URL 쿼리와 로컬 등록 모달 상태의 무결점 실시간 정밀 동기화
   useEffect(() => {
     setShowCreateModal(isCreateOpenURL);
@@ -297,36 +304,10 @@ export default function EventsPage() {
 
   // SubHeader Injection
   useEffect(() => {
-    // 1) 메인 포털 홈 상태 (viewParam이 없는 경우)
+    // 1) 메인 포털 홈 상태 (viewParam이 없는 경우 리디렉션 대응)
     if (!viewParam) {
-      const filterBar = (
-        <div className="relative w-full bg-white h-11 px-4 flex items-center justify-end border-b border-slate-100 z-30">
-          <div className="flex items-center bg-slate-100 rounded-lg p-0.5 border border-slate-200/50">
-            <button
-              onClick={() => setIsWorldEvent(false)}
-              className={`px-3 py-1 rounded-md text-[11px] font-bold uppercase tracking-widest transition-all duration-200 ${
-                !isWorldEvent
-                  ? 'bg-white text-blue-600 shadow-sm border border-slate-200/80'
-                  : 'text-slate-400 hover:text-slate-500'
-              }`}
-            >
-              Local
-            </button>
-            <button
-              onClick={() => setIsWorldEvent(true)}
-              className={`px-3 py-1 rounded-md text-[11px] font-bold uppercase tracking-widest transition-all duration-200 ${
-                isWorldEvent
-                  ? 'bg-white text-blue-600 shadow-sm border border-slate-200/80'
-                  : 'text-slate-400 hover:text-slate-500'
-              }`}
-            >
-              World
-            </button>
-          </div>
-        </div>
-      );
-      setSubHeader(filterBar, 44);
-      return () => setSubHeader(null);
+      setSubHeader(null);
+      return;
     }
 
     // 2) 개별 리스트/캘린더 뷰 상태 (viewParam이 있는 경우)
@@ -335,8 +316,8 @@ export default function EventsPage() {
         {/* Row 1: Scrollable Tabs */}
         <div className="w-full px-3 py-2 flex items-center gap-2 overflow-x-auto no-scrollbar">
           {[
-            { id: 'calendar', label: t('event.tab_calendar'), path: '/events?view=calendar' },
-            { id: 'upcoming', label: t('event.tab_upcoming'), path: '/events?view=list' }
+            { id: 'upcoming', label: t('event.tab_upcoming'), path: '/events?view=list' },
+            { id: 'calendar', label: t('event.tab_calendar'), path: '/events?view=calendar' }
           ].map((tab) => {
             const isTabActive = tab.id === activeTab;
             return (
@@ -355,33 +336,34 @@ export default function EventsPage() {
           })}
         </div>
         
-        {/* Row 2: Month Filter and/or World Event Toggle */}
-        <div className={`w-full h-11 px-4 flex items-center ${activeTab === 'calendar' ? 'justify-between' : 'justify-end'}`}>
-          {activeTab === 'calendar' && (
-            <div className="flex items-center gap-2 bg-slate-50 rounded-lg px-1.5 py-0.5 border border-slate-100">
+        {/* Row 2: Month Filter and/or World Event Toggle in a single compact line */}
+        <div className="w-full h-9 px-4 flex items-center justify-between gap-2 border-t border-slate-100/50">
+          {activeTab === 'calendar' ? (
+            <div className="flex items-center gap-1 bg-slate-50 rounded-lg px-1 py-0.5 border border-slate-100">
               <button 
                 onClick={() => setCurrentDate(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1))} 
-                className="w-6 h-6 flex items-center justify-center hover:bg-white rounded-md transition-all text-slate-400"
+                className="w-5 h-5 flex items-center justify-center hover:bg-white rounded-md transition-all text-slate-400"
               >
-                <span className="material-symbols-outlined text-[16px]">chevron_left</span>
+                <span className="material-symbols-outlined text-[13px]">chevron_left</span>
               </button>
-              <span className="text-[13px] font-bold text-slate-900 uppercase tracking-tight w-[80px] text-center">
+              <span className="text-[10px] font-black text-slate-700 uppercase tracking-tight w-[68px] text-center">
                 {formattedMonth}
               </span>
               <button 
                 onClick={() => setCurrentDate(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1))} 
-                className="w-6 h-6 flex items-center justify-center hover:bg-white rounded-md transition-all text-slate-400"
+                className="w-5 h-5 flex items-center justify-center hover:bg-white rounded-md transition-all text-slate-400"
               >
-                <span className="material-symbols-outlined text-[16px]">chevron_right</span>
+                <span className="material-symbols-outlined text-[13px]">chevron_right</span>
               </button>
             </div>
-          )}
-          <div className="flex items-center bg-slate-100 rounded-lg p-0.5 border border-slate-200/50">
+          ) : <div />}
+          
+          <div className="flex items-center bg-slate-100 rounded-md p-0.5 border border-slate-200/30 ml-auto">
             <button
               onClick={() => setIsWorldEvent(false)}
-              className={`px-3 py-1 rounded-md text-[11px] font-bold uppercase tracking-widest transition-all duration-200 ${
+              className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider transition-all duration-200 ${
                 !isWorldEvent
-                  ? 'bg-white text-blue-600 shadow-sm border border-slate-200/80'
+                  ? 'bg-white text-blue-600 shadow-sm border border-slate-200/50'
                   : 'text-slate-400 hover:text-slate-500'
               }`}
             >
@@ -389,9 +371,9 @@ export default function EventsPage() {
             </button>
             <button
               onClick={() => setIsWorldEvent(true)}
-              className={`px-3 py-1 rounded-md text-[11px] font-bold uppercase tracking-widest transition-all duration-200 ${
+              className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider transition-all duration-200 ${
                 isWorldEvent
-                  ? 'bg-white text-blue-600 shadow-sm border border-slate-200/80'
+                  ? 'bg-white text-blue-600 shadow-sm border border-slate-200/50'
                   : 'text-slate-400 hover:text-slate-500'
               }`}
             >

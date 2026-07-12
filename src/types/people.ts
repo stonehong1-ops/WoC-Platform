@@ -1,4 +1,4 @@
-export type PersonRole = 'Instructor' | 'Organizer' | 'Couple' | 'Touring' | 'Dancer';
+export type PersonRole = 'Instructor' | 'DJ' | 'Organizer' | 'Couple' | 'Touring' | 'Dancer' | 'Seller';
 
 export interface TourStop {
   city: string;
@@ -25,6 +25,7 @@ export interface MediaItem {
 
 export interface Person {
   id: string;
+  userId: string;              // users 컬렉션 문서 ID (= Firebase Auth UID)
   name: string;
   roles: PersonRole[];
   partnerName?: string;

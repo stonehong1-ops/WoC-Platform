@@ -172,10 +172,10 @@ export default function SearchPage() {
   }, [debouncedQuery]);
 
   return (
-    <div className="max-w-md mx-auto w-full h-[calc(100vh-124px)] flex flex-col overflow-hidden bg-surface font-manrope">
+    <div className="max-w-md mx-auto w-full h-[calc(100dvh-60px-84px)] flex flex-col overflow-hidden bg-surface font-manrope">
       {/* Search Input Area */}
       <div className="px-4 pt-4 pb-4 bg-surface z-40 border-b border-on-surface/5 shrink-0">
-        <div className={`flex items-center bg-surface rounded-2xl px-4 py-3 transition-all duration-300 ${isFocused ? 'ring-2 ring-primary shadow-lg shadow-primary/10' : 'border border-on-surface/10'}`}>
+        <div className={`flex items-center bg-white rounded-2xl px-4 py-3 transition-all duration-300 ${isFocused ? 'ring-2 ring-primary shadow-lg shadow-primary/10' : 'border border-on-surface/10'}`}>
           <span className="material-symbols-outlined text-on-surface/40 mr-2 text-[22px]">search</span>
           <input
             type="text"

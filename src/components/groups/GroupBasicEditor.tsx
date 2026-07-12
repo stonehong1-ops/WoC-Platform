@@ -7,6 +7,7 @@ import { storageService } from "@/lib/firebase/storageService";
 import { toast } from "sonner";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { getContrastColor } from "@/lib/utils";
+import { useBackButtonClose } from '@/hooks/useBackButtonClose';
 
 interface GroupBasicEditorProps {
   group: Group;
@@ -34,6 +35,8 @@ export default function GroupBasicEditor({ group, onClose }: GroupBasicEditorPro
   const [uploadProgress, setUploadProgress] = useState(0);
   const coverInputRef = useRef<HTMLInputElement>(null);
   const aboutPhotosInputRef = useRef<HTMLInputElement>(null);
+
+  useBackButtonClose(true, onClose);
 
   const handleMultipleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;

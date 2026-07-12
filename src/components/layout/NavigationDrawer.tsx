@@ -7,6 +7,7 @@ import { useNavigation } from '@/components/providers/NavigationProvider';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useLanguage } from '@/contexts/LanguageContext';
 import AppSettingsPopup from './AppSettingsPopup';
+import { useBackButtonClose } from '@/hooks/useBackButtonClose';
 import UserBadge from '../common/UserBadge';
 
 const LANGUAGES = [
@@ -24,6 +25,9 @@ const LANGUAGES = [
 
 export default function NavigationDrawer() {
   const { isDrawerOpen, closeDrawer } = useNavigation();
+
+  // 뒤로가기 버튼으로 드로어 닫기
+  useBackButtonClose(isDrawerOpen, closeDrawer);
   const { profile, user, signOut } = useAuth();
   const { t } = useLanguage();
   const router = useRouter();

@@ -99,6 +99,7 @@ export interface Group {
     avatar?: string;
   };
   address?: string;
+  city?: string;
   detailedAddress?: string;
   publicTransport?: string;
   coordinates?: {

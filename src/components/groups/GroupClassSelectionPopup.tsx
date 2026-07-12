@@ -7,6 +7,7 @@ import { ClassRegistration, GroupClass } from '@/types/group';
 import { classRegistrationService } from '@/lib/firebase/classRegistrationService';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { toast } from 'sonner';
+import { useBackButtonClose } from '@/hooks/useBackButtonClose';
 
 interface GroupClassSelectionPopupProps {
   isOpen: boolean;
@@ -31,6 +32,8 @@ export const GroupClassSelectionPopup: React.FC<GroupClassSelectionPopupProps> =
   // Track partner names locally before saving
   const [partners, setPartners] = useState<Record<string, string>>(registration.participatingClassPartners || {});
   const [isSaving, setIsSaving] = useState(false);
+
+  useBackButtonClose(isOpen, onClose);
 
   if (!isOpen) return null;
 

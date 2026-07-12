@@ -1,10 +1,11 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useBackButtonClose } from '@/hooks/useBackButtonClose';
 
 interface UniversalComposeProps {
   id: string; // Unique ID for the event trigger (e.g., 'social')
@@ -46,6 +47,10 @@ export default function UniversalCompose({
       setInternalIsOpen(val);
     }
   };
+
+  // 뒤로가기 버튼으로 모달 닫기
+  const handleBackClose = useCallback(() => setIsOpen(false), []);
+  useBackButtonClose(isOpen, handleBackClose);
 
   useEffect(() => {
     setMounted(true);

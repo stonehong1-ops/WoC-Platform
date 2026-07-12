@@ -1,6 +1,7 @@
 "use client";
 
 import React from 'react';
+import { useBackButtonClose } from '@/hooks/useBackButtonClose';
 import ChatRoom from '@/components/chat/ChatRoom';
 import { GroupClassSelectionPopup } from '@/components/groups/GroupClassSelectionPopup';
 import { useHistoryData } from './hooks/useHistoryData';
@@ -56,6 +57,15 @@ export function HistoryPageContent() {
   const [tempPartnerName, setTempPartnerName] = React.useState('');
   const [isSavingMemo, setIsSavingMemo] = React.useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = React.useState(false);
+
+  // 뒤로가기 버튼으로 모달 닫기 훅 적용
+  const closeSelectedDetail = React.useCallback(() => handleCloseDetail(), [handleCloseDetail]);
+  const closeManageMenu = React.useCallback(() => setIsManageMenuOpen(false), []);
+  const closeCancelConfirm = React.useCallback(() => setShowCancelConfirm(false), []);
+
+  useBackButtonClose(selectedDetail !== null, closeSelectedDetail);
+  useBackButtonClose(isManageMenuOpen, closeManageMenu);
+  useBackButtonClose(showCancelConfirm, closeCancelConfirm);
 
   React.useEffect(() => {
     if (selectedDetail) {

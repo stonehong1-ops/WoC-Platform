@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
+import { useBackButtonClose } from '@/hooks/useBackButtonClose';
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useModalNavigation } from "@/hooks/useModalNavigation";
@@ -9,8 +10,9 @@ import { useLocation } from "@/components/providers/LocationProvider";
 import { socialService } from "@/lib/firebase/socialService";
 import { eventService } from "@/lib/firebase/eventService";
 import { groupService } from "@/lib/firebase/groupService";
-import { db } from "@/lib/firebase/clientApp";
-import { collection, getDocs, query, limit, doc, getDoc } from "firebase/firestore";
+import { db, storage } from "@/lib/firebase/clientApp";
+import { collection, getDocs, query, limit, doc, getDoc, setDoc, onSnapshot, where, deleteDoc } from "firebase/firestore";
+import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import { Social } from "@/types/social";
 import { Event } from "@/types/event";
 import { GroupClass, Group } from "@/types/group";
@@ -228,21 +230,27 @@ function TimelineEventItem({ ev, onClick, language }: { ev: any; onClick: () => 
         {/* 우측: 제목 및 메타정보 */}
         <div className="min-w-0 flex-1 flex flex-col gap-0.5 pt-0.5">
           {/* 제목 라인 */}
-          <span className="text-[12.5px] font-black text-slate-700 truncate leading-snug">
+          <span className="text-[12.5px] font-black text-slate-700 leading-snug line-clamp-2">
             {ev.title}
           </span>
           
           {/* 하단 메타 정보 라인 */}
           <div className="flex items-center gap-2 text-[10px] text-slate-400 font-semibold flex-wrap">
             {ev.location && (
-              <span className="flex items-center gap-0.5 max-w-[120px] truncate">
-                <span className="material-symbols-outlined !text-[10.3px] text-slate-300">location_on</span>
+              <span className="flex items-center gap-0.5 max-w-[100px] truncate">
+                <span className="material-symbols-outlined !text-[10px] text-slate-300">location_on</span>
                 {ev.location}
               </span>
             )}
+            {ev.org && (
+              <span className="flex items-center gap-0.5 max-w-[100px] truncate">
+                <span className="material-symbols-outlined !text-[10px] text-slate-300">person</span>
+                {ev.org}
+              </span>
+            )}
             {ev.djOrInstructor && (
-              <span className="flex items-center gap-0.5 max-w-[120px] truncate">
-                <span className="material-symbols-outlined !text-[10.3px] text-slate-300">
+              <span className="flex items-center gap-0.5 max-w-[100px] truncate">
+                <span className="material-symbols-outlined !text-[10px] text-slate-300">
                   {ev.type === "class" ? "school" : "headphones"}
                 </span>
                 {ev.djOrInstructor}
@@ -283,15 +291,30 @@ export default function TodayPageContent() {
   const [showFilterDropdown, setShowFilterDropdown] = useState(false);
   const [filterTab, setFilterTab] = useState<"group" | "dj">("group");
   const [showTypeDropdown, setShowTypeDropdown] = useState(false);
+  const [showGroupDropdown, setShowGroupDropdown] = useState(false);
+  const [showDjDropdown, setShowDjDropdown] = useState(false);
   const [groupEvents, setGroupEvents] = useState<any[]>([]);
   const { isOpen: showMonthCalendar, openModal: openMonthCalendar, closeModal: closeMonthCalendar } = useModalNavigation("viewMonth");
   const [selectedMonthTab, setSelectedMonthTab] = useState<number>(0);
   const [allSocials, setAllSocials] = useState<Social[]>([]);
 
   // 오늘 일정 뷰 모드 상태 (list: 목록 방식, timeline: 시간대별 통합 방식)
-  const [todayViewMode, setTodayViewMode] = useState<"list" | "timeline">("list");
+  const [todayViewMode, setTodayViewMode] = useState<"list" | "timeline" | "calendar">("list");
   const [todayTypeFilter, setTodayTypeFilter] = useState<"all" | "social" | "practice">("all");
   const [showColorPicker, setShowColorPicker] = useState(false);
+
+  // 뒤로가기 버튼으로 드롭다운/피커 닫기 훅 적용
+  const closeFilterDropdown = useCallback(() => setShowFilterDropdown(false), []);
+  const closeTypeDropdown = useCallback(() => setShowTypeDropdown(false), []);
+  const closeColorPicker = useCallback(() => setShowColorPicker(false), []);
+  const closeGroupDropdown = useCallback(() => setShowGroupDropdown(false), []);
+  const closeDjDropdown = useCallback(() => setShowDjDropdown(false), []);
+
+  useBackButtonClose(showFilterDropdown, closeFilterDropdown);
+  useBackButtonClose(showTypeDropdown, closeTypeDropdown);
+  useBackButtonClose(showColorPicker, closeColorPicker);
+  useBackButtonClose(showGroupDropdown, closeGroupDropdown);
+  useBackButtonClose(showDjDropdown, closeDjDropdown);
 
   // 주간 일정 배경색 및 무늬 패턴 상태
   const [weeklyBgColor, setWeeklyBgColor] = useState<string>("#f5f7fa");
@@ -571,7 +594,7 @@ export default function TodayPageContent() {
     return counts;
   }, [thisWeekAllSocialEvents]);
 
-  // 이번 주 각 그룹별 횟수 계산 (소셜 + 클래스)
+  // 이번 주 각 그룹별 횟수 계산 (소셜만)
   const groupWeeklyCounts = useMemo(() => {
     const counts: Record<string, number> = {};
     allGroups.forEach(g => {
@@ -589,14 +612,8 @@ export default function TodayPageContent() {
       });
     });
 
-    thisWeekAllClassEvents.forEach(({ cls }) => {
-      if (cls.groupId) {
-        counts[cls.groupId] = (counts[cls.groupId] || 0) + 1;
-      }
-    });
-
     return counts;
-  }, [thisWeekAllSocialEvents, thisWeekAllClassEvents, allGroups]);
+  }, [thisWeekAllSocialEvents, allGroups]);
 
   const sortedActiveGroups = useMemo(() => {
     const groupsList = [...activeGroupsInLocation];
@@ -1313,6 +1330,9 @@ export default function TodayPageContent() {
               return formattedNames.join(", ");
             };
 
+            const matchedGroup = allGroups.find(g => g.id === cls.groupId);
+            const orgName = matchedGroup ? (language === "KR" ? (matchedGroup.nativeName || matchedGroup.name) : (matchedGroup.name || matchedGroup.nativeName)) : "";
+
             events.push({
               id: `class-month-${cls.id}-${clsDate.toDateString()}`,
               itemId: cls.id,
@@ -1328,6 +1348,7 @@ export default function TodayPageContent() {
               instructor: getInstructorsLabel(cls.instructors || []),
               level: cls.level || "",
               imageUrl: cls.imageUrl || "",
+              org: orgName,
               weekPlans: cls.schedule ? cls.schedule.map((sch: any) => sch.content || "") : [],
             });
           }
@@ -1335,7 +1356,7 @@ export default function TodayPageContent() {
       });
     });
     return events;
-  }, [allClasses, selectedGroupId, language]);
+  }, [allClasses, selectedGroupId, language, allGroups]);
 
   // 4. 월간 달력 소셜 이벤트 목록
   const monthlySocialEvents = useMemo(() => {
@@ -1501,13 +1522,33 @@ export default function TodayPageContent() {
     const year = now.getFullYear();
     const month = now.getMonth();
 
-    const weeks = [
-      { id: 0, labelKo: "1주차 (1-7일)", labelEn: "Week 1 (1-7)", start: 1, end: 7 },
-      { id: 1, labelKo: "2주차 (8-14일)", labelEn: "Week 2 (8-14)", start: 8, end: 14 },
-      { id: 2, labelKo: "3주차 (15-21일)", labelEn: "Week 3 (15-21)", start: 15, end: 21 },
-      { id: 3, labelKo: "4주차 (22-28일)", labelEn: "Week 4 (22-28)", start: 22, end: 28 },
-      { id: 4, labelKo: "5주차 (29일~)", labelEn: "Week 5 (29~)", start: 29, end: 31 }
-    ];
+    // 월요일 시작 기준 실제 주차 계산
+    // 해당 월의 1일이 속한 주 = 1주차, 다음 월요일부터 = 2주차, ...
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0).getDate();
+    
+    // 월요일=0, 화=1, ... 일=6 으로 변환 (JS: 일=0, 월=1 ... 토=6)
+    const firstDayOfWeek = (firstDay.getDay() + 6) % 7; // 0=Mon ... 6=Sun
+    
+    // 1주차 종료일 = 첫 번째 일요일
+    const firstWeekEnd = firstDayOfWeek === 6 ? 1 : (7 - firstDayOfWeek);
+    
+    const weeks: { id: number; labelKo: string; labelEn: string; start: number; end: number }[] = [];
+    let weekStart = 1;
+    let weekId = 0;
+    
+    while (weekStart <= lastDay && weekId < 6) {
+      const weekEnd = weekId === 0 ? Math.min(firstWeekEnd, lastDay) : Math.min(weekStart + 6, lastDay);
+      weeks.push({
+        id: weekId,
+        labelKo: `${weekId + 1}주차 (${weekStart}-${weekEnd}일)`,
+        labelEn: `Week ${weekId + 1} (${weekStart}-${weekEnd})`,
+        start: weekStart,
+        end: weekEnd,
+      });
+      weekStart = weekEnd + 1;
+      weekId++;
+    }
 
     const mappedGroupEvents = groupEvents.map(e => ({
       ...e,
@@ -1618,360 +1659,915 @@ export default function TodayPageContent() {
       : `${selectedGroupDisplay} Week ${selectedWeekTab + 1} Schedule (${filterLabel})`;
   }, [selectedGroupDisplay, baseMonth, selectedWeekTab, filterLabel, language]);
 
+  // ── 클럽별 일정표 이미지 (월간/주간 구분) ──────────────────────────────────────────
+  interface ScheduleImageDoc { id: string; groupId: string; imageUrl: string; year: number; month: number; type: "monthly" | "weekly"; weekNum?: number; uploadedAt: string; storagePath: string; }
+  const [scheduleImages, setScheduleImages] = useState<ScheduleImageDoc[]>([]);
+  const [scheduleImageUploading, setScheduleImageUploading] = useState(false);
+  const [scheduleImageFullscreen, setScheduleImageFullscreen] = useState<string | null>(null);
+  const [scheduleUploadModal, setScheduleUploadModal] = useState(false);
+  const scheduleImageInputRef = React.useRef<HTMLInputElement>(null);
+  const [pendingScheduleType, setPendingScheduleType] = useState<"monthly" | "weekly">("monthly");
+  const [pendingScheduleWeek, setPendingScheduleWeek] = useState(1);
+
+  // Firestore 실시간 구독: 해당 그룹 + 현재 월의 모든 일정표 이미지
+  useEffect(() => {
+    if (selectedGroupId === "All") {
+      setScheduleImages([]);
+      return;
+    }
+    const now = new Date();
+    const q = query(
+      collection(db, "groupScheduleImages"),
+      where("groupId", "==", selectedGroupId),
+      where("year", "==", now.getFullYear()),
+      where("month", "==", now.getMonth() + 1)
+    );
+    const unsub = onSnapshot(q, (snap) => {
+      const docs: ScheduleImageDoc[] = [];
+      snap.forEach(d => docs.push({ id: d.id, ...d.data() } as ScheduleImageDoc));
+      setScheduleImages(docs);
+    });
+    return () => unsub();
+  }, [selectedGroupId]);
+
+  // 현재 주차에 표시할 이미지 필터링
+  const visibleScheduleImages = useMemo(() => {
+    return scheduleImages.filter(img => {
+      if (img.type === "monthly") return true;
+      if (img.type === "weekly" && img.weekNum === selectedWeekTab + 1) return true;
+      return false;
+    });
+  }, [scheduleImages, selectedWeekTab]);
+
+  // 업로드 모달에서 파일 선택 후 업로드
+  const handleScheduleImageUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error(language === "KR" ? "파일 크기는 10MB 이하여야 합니다." : "File must be under 10MB.");
+      return;
+    }
+    setScheduleImageUploading(true);
+    setScheduleUploadModal(false);
+    try {
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = now.getMonth() + 1;
+      const suffix = pendingScheduleType === "monthly" ? "monthly" : `weekly_${pendingScheduleWeek}`;
+      const storagePath = `groupScheduleImages/${selectedGroupId}/${year}_${month}_${suffix}.jpg`;
+      const storageRef = ref(storage, storagePath);
+      await uploadBytes(storageRef, file);
+      const downloadUrl = await getDownloadURL(storageRef);
+      const docId = `${selectedGroupId}_${year}_${month}_${suffix}`;
+      await setDoc(doc(db, "groupScheduleImages", docId), {
+        groupId: selectedGroupId,
+        imageUrl: downloadUrl,
+        year, month,
+        type: pendingScheduleType,
+        ...(pendingScheduleType === "weekly" ? { weekNum: pendingScheduleWeek } : {}),
+        uploadedAt: new Date().toISOString(),
+        storagePath,
+      });
+      toast.success(t("today.schedule_image_success"));
+    } catch (err) {
+      console.error("Schedule image upload error:", err);
+      toast.error(t("today.schedule_image_fail"));
+    } finally {
+      setScheduleImageUploading(false);
+      if (scheduleImageInputRef.current) scheduleImageInputRef.current.value = "";
+    }
+  }, [selectedGroupId, pendingScheduleType, pendingScheduleWeek, language, t]);
+
+  // 삭제 핸들러
+  const handleScheduleImageDelete = useCallback(async (img: ScheduleImageDoc) => {
+    if (!confirm(t("today.schedule_image_delete_confirm"))) return;
+    try {
+      await deleteDoc(doc(db, "groupScheduleImages", img.id));
+      if (img.storagePath) {
+        try { await deleteObject(ref(storage, img.storagePath)); } catch {}
+      }
+      toast.success(t("today.schedule_image_deleted"));
+    } catch (err) {
+      console.error("Schedule image delete error:", err);
+      toast.error(t("today.schedule_image_fail"));
+    }
+  }, [t]);
+
+  // 주차 수 (업로드 모달에서 주차 선택용)
+  const totalWeeksForUpload = useMemo(() => {
+    return monthlyEventsByWeek.length || 4;
+  }, [monthlyEventsByWeek]);
+
+  // ── 주차별 캘린더 뷰 렌더링 헬퍼 ──────────────────────────────────────────────────
+  const renderWeeklyCalendarView = () => {
+    return (
+      <div className="pt-2">
+        {/* 일정표 이미지 (컴팩트, 현재 주차에 맞는 것만) */}
+        {selectedGroupId !== "All" && visibleScheduleImages.length > 0 && (
+          <div className="space-y-2 mb-3">
+            {visibleScheduleImages.map(img => (
+              <div key={img.id} className="relative group rounded-xl overflow-hidden border border-slate-200/80 shadow-sm">
+                <button
+                  onClick={() => setScheduleImageFullscreen(img.imageUrl)}
+                  className="w-full cursor-pointer"
+                >
+                  <img
+                    src={img.imageUrl}
+                    alt="schedule"
+                    className="w-full max-h-[120px] object-cover"
+                  />
+                </button>
+                {/* 타입 뱃지 */}
+                <span className="absolute top-2 left-2 bg-black/50 backdrop-blur-sm text-white text-[9px] font-bold px-2 py-0.5 rounded-md">
+                  {img.type === "monthly" ? t("today.schedule_image_type_monthly") : `${img.weekNum}${t("today.schedule_image_week_label")}`}
+                </span>
+                {/* 수정/삭제 */}
+                <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button
+                    onClick={() => { setPendingScheduleType(img.type); if (img.weekNum) setPendingScheduleWeek(img.weekNum); scheduleImageInputRef.current?.click(); }}
+                    className="bg-black/50 backdrop-blur-sm text-white p-1 rounded-md hover:bg-black/70 cursor-pointer"
+                    title={language === "KR" ? "수정" : "Edit"}
+                  >
+                    <span className="material-symbols-outlined !text-[14px]">edit</span>
+                  </button>
+                  <button
+                    onClick={() => handleScheduleImageDelete(img)}
+                    className="bg-black/50 backdrop-blur-sm text-white p-1 rounded-md hover:bg-red-600/80 cursor-pointer"
+                    title={language === "KR" ? "삭제" : "Delete"}
+                  >
+                    <span className="material-symbols-outlined !text-[14px]">delete</span>
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* 표 형식/다운로드/일정표등록: 특정 그룹 선택 시에만 표시 */}
+        {selectedGroupId !== "All" && (
+          <div className="flex items-center justify-between mb-3">
+            {/* 일정표등록 버튼 (왼쪽) */}
+            <button
+              onClick={() => { setPendingScheduleWeek(selectedWeekTab + 1); setScheduleUploadModal(true); }}
+              disabled={scheduleImageUploading}
+              className="flex items-center gap-1.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 hover:text-indigo-600 rounded-lg px-2.5 py-1.5 text-[12px] font-bold shadow-sm transition-all active:scale-95 cursor-pointer disabled:opacity-50"
+            >
+              <span className="material-symbols-outlined !text-[16px]">
+                {scheduleImageUploading ? "hourglass_top" : "calendar_month"}
+              </span>
+              <span>{t("today.schedule_image_register")}</span>
+            </button>
+
+            {/* 뷰 모드 및 다운로드 버튼 (오른쪽) */}
+            <div className="flex items-center gap-1.5">
+              {weekEventsByDate.length > 0 && (
+                <>
+                  <button
+                    onClick={() => setWeeklyViewMode(weeklyViewMode === "list" ? "tile" : "list")}
+                    className="flex items-center justify-center bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 hover:text-indigo-600 rounded-lg p-2 text-[14px] shadow-sm transition-all active:scale-95 cursor-pointer"
+                    title={language === "KR" ? (weeklyViewMode === "list" ? "타일 보기로 전환" : "리스트 보기로 전환") : (weeklyViewMode === "list" ? "Switch to Tile" : "Switch to List")}
+                  >
+                    <span className="material-symbols-outlined !text-[16px]">
+                      {weeklyViewMode === "list" ? "grid_view" : "format_list_bulleted"}
+                    </span>
+                  </button>
+                  <button
+                    onClick={handleDownloadWeeklySchedule}
+                    className="flex items-center justify-center bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 hover:text-indigo-600 rounded-lg p-2 text-[14px] shadow-sm transition-all active:scale-95 cursor-pointer"
+                    title={language === "KR" ? "이미지 저장" : "Save Image"}
+                  >
+                    <span className="material-symbols-outlined !text-[16px]">download</span>
+                  </button>
+                </>
+              )}
+            </div>
+            <input
+              ref={scheduleImageInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleScheduleImageUpload}
+            />
+          </div>
+        )}
+
+        {/* 업로드 모달 (월간/주간 선택) */}
+        {scheduleUploadModal && (
+          <div className="fixed inset-0 z-[9999] bg-black/40 flex items-center justify-center" onClick={() => setScheduleUploadModal(false)}>
+            <div className="bg-white rounded-2xl p-5 w-[280px] shadow-2xl" onClick={e => e.stopPropagation()}>
+              <h3 className="text-[14px] font-bold text-slate-800 mb-4">{t("today.schedule_image_upload_title")}</h3>
+              <div className="flex gap-2 mb-4">
+                <button
+                  onClick={() => setPendingScheduleType("monthly")}
+                  className={`flex-1 py-2 rounded-lg text-[12px] font-bold transition-all cursor-pointer ${pendingScheduleType === "monthly" ? "bg-indigo-600 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}
+                >
+                  {t("today.schedule_image_type_monthly")}
+                </button>
+                <button
+                  onClick={() => setPendingScheduleType("weekly")}
+                  className={`flex-1 py-2 rounded-lg text-[12px] font-bold transition-all cursor-pointer ${pendingScheduleType === "weekly" ? "bg-indigo-600 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}
+                >
+                  {t("today.schedule_image_type_weekly")}
+                </button>
+              </div>
+              {pendingScheduleType === "weekly" && (
+                <div className="flex gap-1.5 mb-4 flex-wrap">
+                  {Array.from({ length: totalWeeksForUpload }, (_, i) => i + 1).map(w => (
+                    <button
+                      key={w}
+                      onClick={() => setPendingScheduleWeek(w)}
+                      className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${pendingScheduleWeek === w ? "bg-indigo-600 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}
+                    >
+                      {w}{t("today.schedule_image_week_label")}
+                    </button>
+                  ))}
+                </div>
+              )}
+              <button
+                onClick={() => scheduleImageInputRef.current?.click()}
+                className="w-full py-2.5 bg-indigo-600 text-white text-[12px] font-bold rounded-lg hover:bg-indigo-700 transition-all cursor-pointer active:scale-[0.98] flex items-center justify-center gap-1.5"
+              >
+                <span className="material-symbols-outlined !text-[16px]">upload</span>
+                {t("today.schedule_image_register")}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* 풀스크린 이미지 뷰어 */}
+        {scheduleImageFullscreen && (
+          <div className="fixed inset-0 z-[9999] bg-black/90 flex items-center justify-center" onClick={() => setScheduleImageFullscreen(null)}>
+            <button className="absolute top-4 right-4 text-white/80 hover:text-white cursor-pointer z-10" onClick={() => setScheduleImageFullscreen(null)}>
+              <span className="material-symbols-outlined !text-[28px]">close</span>
+            </button>
+            <img
+              src={scheduleImageFullscreen}
+              alt="schedule fullscreen"
+              className="max-w-full max-h-full object-contain"
+              onClick={e => e.stopPropagation()}
+            />
+          </div>
+        )}
+
+
+        {/* 타일 뷰 커스터마이징 제어판 (배경색 및 무늬 패턴) */}
+        {weeklyViewMode === "tile" && weekEventsByDate.length > 0 && (
+          <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm mb-4 space-y-4 animate-in fade-in slide-in-from-top-1 duration-300">
+            {/* 배경색 선택 */}
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-black text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                <span className="material-symbols-outlined !text-[14px]">palette</span>
+                {t("today.weekly_bg_color")}
+              </span>
+              
+              <div className="relative">
+                {/* 현재 선택된 컬러 표시 버튼 */}
+                <button
+                  onClick={() => setShowColorPicker(!showColorPicker)}
+                  className="flex items-center gap-2 bg-slate-50 border border-slate-200 hover:bg-slate-100 rounded-xl px-3 py-1.5 text-[11px] font-black text-slate-700 transition-all shadow-sm active:scale-95 cursor-pointer"
+                >
+                  <span 
+                    className="w-3.5 h-3.5 rounded-full border border-black/10 flex-shrink-0"
+                    style={{ backgroundColor: weeklyBgColor }}
+                  />
+                  <span className="font-mono text-[10px] uppercase">{weeklyBgColor}</span>
+                  <span className="material-symbols-outlined !text-[14px] text-slate-400">
+                    {showColorPicker ? "expand_less" : "expand_more"}
+                  </span>
+                </button>
+
+                {/* 드롭다운 레이어 */}
+                {showColorPicker && (
+                  <>
+                    {/* 외부 클릭 감지용 투명 오버레이 */}
+                    <div 
+                      className="fixed inset-0 z-40" 
+                      onClick={() => setShowColorPicker(false)}
+                    />
+                    <div className="absolute right-0 mt-1.5 w-48 bg-white border border-slate-200/80 rounded-2xl shadow-xl p-2.5 z-50 grid grid-cols-5 gap-1.5 animate-in fade-in slide-in-from-top-1 duration-150">
+                      {PALETTE_COLORS.map((color) => {
+                        const isSelected = weeklyBgColor === color;
+                        const dark = isDark(color);
+                        return (
+                          <button
+                            key={color}
+                            onClick={() => {
+                              setWeeklyBgColor(color);
+                              setShowColorPicker(false);
+                            }}
+                            className={`w-7 h-7 rounded-full border transition-all active:scale-90 relative ${
+                              isSelected ? "border-slate-800 scale-105 shadow-sm" : "border-slate-200/60 hover:scale-105"
+                            }`}
+                            style={{ backgroundColor: color }}
+                            title={color}
+                          >
+                            {isSelected && (
+                              <span className={`absolute inset-0 flex items-center justify-center text-[10px] ${dark ? "text-white" : "text-slate-800"}`}>
+                                <span className="material-symbols-outlined !text-[12px] font-bold">check</span>
+                              </span>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* 무늬 패턴 선택 */}
+            <div className="flex flex-col gap-2">
+              <span className="text-[11px] font-black text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                <span className="material-symbols-outlined !text-[14px]">texture</span>
+                {t("today.weekly_pattern")}
+              </span>
+              <div className="flex items-center gap-1.5">
+                {(["none", "stripe", "dot"] as const).map((pat) => {
+                  const isSelected = weeklyPattern === pat;
+                  const label = t(`today.weekly_pattern_${pat}`);
+                  return (
+                    <button
+                      key={pat}
+                      onClick={() => setWeeklyPattern(pat)}
+                      className={`px-3 py-1.5 rounded-lg text-[10px] font-black transition-all border active:scale-95 cursor-pointer ${
+                        isSelected
+                          ? "bg-[#1e293b] text-white border-[#1e293b] shadow-sm"
+                          : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100"
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {weekEventsByDate.length > 0 ? (
+          weeklyViewMode === "list" ? (
+            <div 
+              id="weekly-schedule-capture-area" 
+              className="space-y-4 p-2 rounded-2xl transition-all duration-300"
+              style={{ backgroundColor: weeklyBgColor, ...getPatternStyle(weeklyPattern, weeklyBgColor) }}
+            >
+
+              {weekEventsByDate.map(({ date, ymd, events }) => {
+                const formattedDate = language === "KR"
+                  ? `${date.getMonth() + 1}월 ${date.getDate()}일 (${getDayLabel(language, date)})`
+                  : date.toLocaleDateString("en-US", { month: "short", day: "numeric", weekday: "short" });
+
+                const dayOfWeek = date.getDay();
+                const headerStyle = (dayOfWeek === 0 || dayOfWeek === 6)
+                  ? { bg: "bg-rose-50/40 border-b border-rose-100/50", text: "text-rose-600/90", badge: "bg-rose-100/50 text-rose-600" }
+                  : { bg: "bg-slate-50/80 border-b border-slate-100", text: "text-slate-700", badge: "bg-slate-200/60 text-slate-600" };
+
+                return (
+                  <div key={ymd} className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-300">
+                    {/* 요일 헤더 */}
+                    <div className={`px-4 py-2.5 flex items-center justify-between ${headerStyle.bg}`}>
+                      <span className={`text-[12px] font-black tracking-tight ${headerStyle.text}`}>{formattedDate}</span>
+                      <span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${headerStyle.badge}`}>{events.length}</span>
+                    </div>
+
+                    {/* 요일 내 이벤트 리스트 */}
+                    <div className="divide-y divide-slate-100/60">
+                      {events.map((ev: any, idx: number) => {
+                        const isClickable = ["class", "social", "milonga", "practice"].includes(ev.type);
+                        const hasMessage = ev.message && ev.message.trim() !== "";
+
+                        const typeColors: Record<string, { bg: string; text: string; labelKo: string; labelEn: string }> = {
+                          milonga: { bg: "bg-rose-50 text-rose-600", text: "text-rose-600", labelKo: "소셜", labelEn: "Social" },
+                          social: { bg: "bg-rose-50 text-rose-600", text: "text-rose-600", labelKo: "소셜", labelEn: "Social" },
+                          class: { bg: "bg-blue-50 text-blue-600", text: "text-blue-600", labelKo: "클래스", labelEn: "Class" },
+                          practice: { bg: "bg-amber-50 text-amber-600", text: "text-amber-600", labelKo: "쁘락띠까", labelEn: "Practica" },
+                          general: { bg: "bg-slate-50 text-slate-600", text: "text-slate-600", labelKo: "일반", labelEn: "General" },
+                          rental: { bg: "bg-purple-50 text-purple-600", text: "text-purple-600", labelKo: "대관", labelEn: "Rental" },
+                        };
+                        const typeMeta = typeColors[ev.type] || typeColors.general;
+                        const typeLabel = language === "KR" ? typeMeta.labelKo : typeMeta.labelEn;
+
+                        return (
+                          <div 
+                            key={`${ev.id}-${idx}`}
+                            onClick={isClickable ? () => handleEventClick(ev) : undefined}
+                            className={`p-4 flex gap-3.5 items-start transition-all ${isClickable ? "cursor-pointer hover:bg-slate-50/40 active:bg-slate-50/80" : ""}`}
+                            role={isClickable ? "button" : undefined}
+                            tabIndex={isClickable ? 0 : undefined}
+                          >
+                            {/* 썸네일 이미지 */}
+                            <div className="w-12 h-12 rounded-lg overflow-hidden bg-slate-100 flex-shrink-0 relative border border-slate-100/60 shadow-sm">
+                              {ev.imageUrl ? (
+                                <>
+                                  <img 
+                                    src={getProxyImageUrl(ev.imageUrl)} 
+                                    alt={ev.title} 
+                                    className="w-full h-full object-cover"
+                                    loading="lazy"
+                                    onError={(e) => {
+                                      e.currentTarget.style.display = 'none';
+                                      const sibling = e.currentTarget.nextSibling as HTMLElement;
+                                      if (sibling) sibling.style.setProperty('display', 'flex', 'important');
+                                    }}
+                                  />
+                                  <div 
+                                    className={`w-full h-full bg-gradient-to-br ${
+                                      ev.type === 'class' ? 'from-blue-400 to-indigo-500' :
+                                      ev.type === 'practice' ? 'from-amber-400 to-orange-500' :
+                                      'from-rose-400 to-pink-500'
+                                    } flex items-center justify-center`}
+                                    style={{ display: 'none' }}
+                                  >
+                                    <span className="material-symbols-outlined text-white !text-[16px]">
+                                      {ev.type === 'class' ? 'school' :
+                                       ev.type === 'practice' ? 'directions_run' :
+                                       ev.type === 'milonga' ? 'local_fire_department' : 'event'}
+                                    </span>
+                                  </div>
+                                </>
+                              ) : (
+                                <div className={`w-full h-full bg-gradient-to-br ${
+                                  ev.type === 'class' ? 'from-blue-400 to-indigo-500' :
+                                  ev.type === 'practice' ? 'from-amber-400 to-orange-500' :
+                                  'from-rose-400 to-pink-500'
+                                } flex items-center justify-center`}>
+                                  <span className="material-symbols-outlined text-white !text-[16px]">
+                                    {ev.type === 'class' ? 'school' :
+                                     ev.type === 'practice' ? 'directions_run' :
+                                     ev.type === 'milonga' ? 'local_fire_department' : 'event'}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+
+                            {/* 텍스트 영역 */}
+                            <div className="min-w-0 flex-1 space-y-1">
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <span className={`text-[8px] font-black px-1.5 py-0.5 rounded ${typeMeta.bg}`}>
+                                  {typeLabel}
+                                </span>
+                                {ev.startTime && (
+                                  <span className="text-[10px] font-bold text-slate-400">
+                                    {ev.startTime} {ev.endTime ? `~ ${ev.endTime}` : ""}
+                                  </span>
+                                )}
+                              </div>
+
+                              <div className="space-y-0.5">
+                                <h4 className="text-[12.5px] font-black text-slate-800 leading-tight line-clamp-2">
+                                  {ev.title}
+                                  {ev.subtitle && (
+                                    <span className="text-[10.5px] font-semibold text-slate-400 ml-1.5">
+                                      / {ev.subtitle}
+                                    </span>
+                                  )}
+                                </h4>
+                              </div>
+
+                              {/* 메타 배지 */}
+                              <div className="flex flex-wrap gap-x-2.5 gap-y-0.5 text-[9.5px] font-semibold text-slate-400 leading-tight">
+                                {hasMessage && (
+                                  <span className="text-rose-500 bg-rose-50 font-bold px-1 rounded">
+                                    {ev.message}
+                                  </span>
+                                )}
+                                {ev.location && (
+                                  <div className="flex items-center gap-0.5">
+                                    <span className="material-symbols-outlined !text-[10px]">location_on</span>
+                                    <span className="whitespace-nowrap">{ev.location}</span>
+                                  </div>
+                                )}
+                                {ev.org && (
+                                  <div className="flex items-center gap-0.5">
+                                    <span className="material-symbols-outlined !text-[10px]">person</span>
+                                    <span className="whitespace-nowrap">{ev.org}</span>
+                                  </div>
+                                )}
+                                {ev.dj && (
+                                  <div className="flex items-center gap-0.5">
+                                    <span className="material-symbols-outlined !text-[10px]">headphones</span>
+                                    <span className="whitespace-nowrap">{formatDjFilterName(ev.dj, language)}</span>
+                                  </div>
+                                )}
+                                {ev.instructor && (
+                                  <div className="flex items-center gap-0.5">
+                                    <span className="material-symbols-outlined !text-[10px]">school</span>
+                                    <span className="whitespace-nowrap">{formatInstructorNames(ev.instructor, language)}</span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div 
+              id="weekly-schedule-capture-area" 
+              className="grid grid-cols-3 sm:grid-cols-4 gap-0 p-0 border-t border-l border-slate-200 overflow-hidden transition-all duration-300"
+              style={{ backgroundColor: weeklyBgColor, ...getPatternStyle(weeklyPattern, weeklyBgColor) }}
+            >
+
+              {weekEventsFlat.map(({ ev, date, ymd }, idx) => {
+                const yoil = getDayLabel("KR", date);
+                
+                const isSunday = date.getDay() === 0;
+                const isSaturday = date.getDay() === 6;
+                const dateColorClass = isSunday ? "text-red-500 font-bold" : isSaturday ? "text-blue-500 font-bold" : "text-slate-500 font-semibold";
+
+                const isClickable = ["class", "social", "milonga", "practice"].includes(ev.type);
+                const orgDisplay = ev.org || getOrgDisplayForSocial(ev) || ev.groupName || ev.organizerName || "";
+                
+                // 시간 중복 노출 방어 처리
+                const hasRange = ev.startTime && (ev.startTime.includes("-") || ev.startTime.includes("~"));
+                const displayTime = hasRange ? ev.startTime : `${ev.startTime || ""}${ev.endTime ? ` ~ ${ev.endTime}` : ""}`;
+
+                return (
+                  <div 
+                    key={`${ev.id}-${idx}`} 
+                    onClick={isClickable ? () => handleEventClick(ev) : undefined}
+                    className={`bg-white border-r border-b border-slate-200 p-2 flex flex-col justify-between items-center text-center min-h-[145px] transition-all duration-300 ${
+                      isClickable ? "cursor-pointer hover:bg-slate-50/40 active:bg-slate-50" : ""
+                    }`}
+                    role={isClickable ? "button" : undefined}
+                    tabIndex={isClickable ? 0 : undefined}
+                  >
+                    {/* 상단 날짜 및 시간 영역 (요일 요동 보정 flex 연동) */}
+                    <div className="flex flex-col items-center w-full">
+                      <div className={`flex items-center justify-center gap-0.5 text-[10px] tracking-tight ${dateColorClass}`}>
+                        <span>{date.getMonth() + 1}/{date.getDate()}</span>
+                        <span className="leading-none flex items-center justify-center">({yoil})</span>
+                      </div>
+                      <span className="text-[10px] md:text-[11px] font-normal text-slate-500 whitespace-nowrap truncate w-full mt-0.5 leading-none">
+                        {displayTime}
+                      </span>
+                    </div>
+
+                    {/* 구분선 (단순 실선) */}
+                    <div className="h-[1px] bg-slate-100 w-full my-1"></div>
+
+                    {/* 중앙 콘텐츠 영역 (제목 및 조직/org) */}
+                    <div className="flex-1 flex flex-col justify-center items-center w-full py-0.5">
+                      <h4 className="text-[12px] md:text-[13px] font-black text-slate-900 tracking-tight leading-tight line-clamp-2">
+                        {ev.title}
+                      </h4>
+                      {orgDisplay && (
+                        <div className="flex items-center justify-center gap-0.5 text-[9px] font-semibold text-slate-400 mt-0.5 truncate max-w-full leading-none">
+                          <span className="material-symbols-outlined !text-[10px]">person</span>
+                          <span className="truncate">{orgDisplay}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* 하단 강사/DJ 영역 */}
+                    <div className="w-full space-y-1">
+                      {ev.dj ? (
+                        <div className="flex items-center justify-center gap-0.5 border border-slate-200 rounded-lg px-1 py-1 bg-slate-50/50 w-full text-[8.5px] md:text-[9.5px] tracking-tight">
+                          <span className="material-symbols-outlined !text-[10px] text-slate-400">headphones</span>
+                          <span className="text-slate-700 font-bold text-center truncate leading-tight">{formatDjFilterName(ev.dj, language)}</span>
+                        </div>
+                      ) : ev.instructor ? (
+                        <div className="flex items-center justify-center gap-0.5 border border-slate-200 rounded-lg px-1 py-1 bg-slate-50/50 w-full text-[8.5px] md:text-[9.5px] tracking-tight">
+                          <span className="material-symbols-outlined !text-[10px] text-slate-400">school</span>
+                          <span className="text-slate-700 font-bold text-center truncate leading-tight">{formatInstructorNames(ev.instructor, language)}</span>
+                        </div>
+                      ) : null}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )
+        ) : (
+          <div className="flex flex-col items-center justify-center py-8 bg-white rounded-2xl border border-dashed border-slate-200">
+            <span className="material-symbols-outlined !text-[32px] text-slate-300 mb-2">event_busy</span>
+            <p className="text-[12px] font-semibold text-slate-400">{t("today.no_schedule")}</p>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div className="min-h-screen bg-[#f5f7fa]">
 
-      {/* ── 요일 탭바 (이전/다음 주 네비) ── */}
-      <div className="bg-white border-b border-slate-100/80 px-1 py-2">
-        <div className="flex items-center gap-0.5">
+      {/* ── 라인1: 그룹 선택 + DJ 선택 + 카드|시간|주간 토글 ── */}
+      <div className="relative z-30 px-4 py-2.5 flex items-center justify-between bg-white border-b border-slate-100/80">
+        <div className="flex items-center gap-1.5">
+
+          {/* 그룹 선택 드롭다운 */}
+          <div className="relative">
+            <button
+              onClick={() => {
+                if (selectedGroupId !== "All") {
+                  setSelectedGroupId("All");
+                  setShowGroupDropdown(false);
+                } else {
+                  setShowGroupDropdown(!showGroupDropdown);
+                  setShowDjDropdown(false);
+                  setShowFilterDropdown(false);
+                }
+              }}
+              className={`flex items-center gap-1 bg-white border rounded-full px-3 py-1.5 text-[10.5px] font-black shadow-sm transition-all active:scale-95 cursor-pointer ${
+                selectedGroupId !== "All"
+                  ? "text-[#007AFF] border-[#007AFF]/20 bg-[#007AFF]/5"
+                  : "text-slate-600 border-slate-200 hover:bg-slate-50"
+              }`}
+            >
+              <span className="material-symbols-outlined !text-[14px]">home</span>
+              <span className="max-w-[80px] truncate">
+                {selectedGroupId !== "All" ? selectedGroupDisplay : (language === "KR" ? "그룹" : "Group")}
+              </span>
+              <span className={`material-symbols-outlined !text-[14px] transition-transform duration-200 ${showGroupDropdown ? "rotate-180" : ""}`}>
+                expand_more
+              </span>
+            </button>
+
+            {/* 그룹 드롭다운 팝오버 */}
+            {showGroupDropdown && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setShowGroupDropdown(false)} />
+                <div className="absolute top-full left-0 z-50 mt-1.5 w-[280px] bg-white shadow-2xl border border-slate-100/80 rounded-2xl p-4 animate-in fade-in slide-in-from-top-2 duration-200 max-h-[320px] overflow-y-auto no-scrollbar">
+                  <div className="flex items-center justify-between px-1 mb-2">
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                      {language === "KR" ? "그룹 목록" : "Groups"}
+                    </span>
+                    <div className="flex items-center gap-0.5 bg-slate-100 p-0.5 rounded-lg text-[9px] font-black">
+                      <button
+                        onClick={() => setGroupSortType("count")}
+                        className={`px-1.5 py-0.5 rounded transition-all cursor-pointer ${
+                          groupSortType === "count" ? "bg-white text-slate-800 shadow-sm" : "text-slate-400 hover:text-slate-600"
+                        }`}
+                      >
+                        {t("today.sort_by_count")}
+                      </button>
+                      <button
+                        onClick={() => setGroupSortType("name")}
+                        className={`px-1.5 py-0.5 rounded transition-all cursor-pointer ${
+                          groupSortType === "name" ? "bg-white text-slate-800 shadow-sm" : "text-slate-400 hover:text-slate-600"
+                        }`}
+                      >
+                        {t("today.sort_by_name")}
+                      </button>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 max-h-[240px] overflow-y-auto no-scrollbar">
+                    <button
+                      onClick={() => {
+                        setSelectedGroupId("All");
+                        setShowGroupDropdown(false);
+                      }}
+                      className={`px-3 py-2 rounded-xl text-[10.5px] font-bold text-left transition-all border cursor-pointer ${
+                        selectedGroupId === "All"
+                          ? "bg-[#1e293b] text-white border-[#1e293b] shadow-sm"
+                          : "bg-slate-50 text-slate-600 border-transparent hover:bg-slate-100"
+                      }`}
+                    >
+                      {t("today.all_groups")}
+                    </button>
+                    {sortedActiveGroups.map(grp => {
+                      const isSelected = selectedGroupId === grp.id;
+                      const displayName = language === "KR" ? (grp.nativeName || grp.name) : grp.name;
+                      const count = groupWeeklyCounts[grp.id] || 0;
+                      return (
+                        <button
+                          key={grp.id}
+                          onClick={() => {
+                            setSelectedGroupId(grp.id);
+                            setSelectedDjName("All");
+                            setShowGroupDropdown(false);
+                          }}
+                          className={`px-3 py-2 rounded-xl text-[10.5px] font-bold text-left transition-all border cursor-pointer ${
+                            isSelected
+                              ? "bg-[#1e293b] text-white border-[#1e293b] shadow-sm"
+                              : "bg-slate-50 text-slate-600 border-transparent hover:bg-slate-100"
+                          }`}
+                        >
+                          <span className="truncate pr-1">{displayName} ({count})</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* DJ 선택 드롭다운 */}
+          <div className="relative">
+            <button
+              onClick={() => {
+                if (selectedDjName !== "All") {
+                  setSelectedDjName("All");
+                  setShowDjDropdown(false);
+                } else {
+                  setShowDjDropdown(!showDjDropdown);
+                  setShowGroupDropdown(false);
+                  setShowFilterDropdown(false);
+                }
+              }}
+              className={`flex items-center gap-1 bg-white border rounded-full px-3 py-1.5 text-[10.5px] font-black shadow-sm transition-all active:scale-95 cursor-pointer ${
+                selectedDjName !== "All"
+                  ? "text-[#007AFF] border-[#007AFF]/20 bg-[#007AFF]/5"
+                  : "text-slate-600 border-slate-200 hover:bg-slate-50"
+              }`}
+            >
+              <span className="material-symbols-outlined !text-[14px]">headphones</span>
+              <span className="max-w-[80px] truncate">
+                {selectedDjName !== "All" ? `${formatDjFilterName(selectedDjName, language)}` : "DJ"}
+              </span>
+              <span className={`material-symbols-outlined !text-[14px] transition-transform duration-200 ${showDjDropdown ? "rotate-180" : ""}`}>
+                expand_more
+              </span>
+            </button>
+
+            {/* DJ 드롭다운 팝오버 */}
+            {showDjDropdown && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setShowDjDropdown(false)} />
+                <div className="absolute top-full left-0 z-50 mt-1.5 w-[280px] bg-white shadow-2xl border border-slate-100/80 rounded-2xl p-4 animate-in fade-in slide-in-from-top-2 duration-200 max-h-[320px] overflow-y-auto no-scrollbar">
+                  <div className="flex items-center justify-between px-1 mb-2">
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                      DJs
+                    </span>
+                    <div className="flex items-center gap-0.5 bg-slate-100 p-0.5 rounded-lg text-[9px] font-black">
+                      <button
+                        onClick={() => setDjSortType("count")}
+                        className={`px-1.5 py-0.5 rounded transition-all cursor-pointer ${
+                          djSortType === "count" ? "bg-white text-slate-800 shadow-sm" : "text-slate-400 hover:text-slate-600"
+                        }`}
+                      >
+                        {t("today.sort_by_count")}
+                      </button>
+                      <button
+                        onClick={() => setDjSortType("name")}
+                        className={`px-1.5 py-0.5 rounded transition-all cursor-pointer ${
+                          djSortType === "name" ? "bg-white text-slate-800 shadow-sm" : "text-slate-400 hover:text-slate-600"
+                        }`}
+                      >
+                        {t("today.sort_by_name")}
+                      </button>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 max-h-[240px] overflow-y-auto no-scrollbar">
+                    <button
+                      onClick={() => {
+                        setSelectedDjName("All");
+                        setShowDjDropdown(false);
+                      }}
+                      className={`px-3 py-2 rounded-xl text-[10.5px] font-bold text-left transition-all border cursor-pointer ${
+                        selectedDjName === "All"
+                          ? "bg-[#1e293b] text-white border-[#1e293b] shadow-sm"
+                          : "bg-slate-50 text-slate-600 border-transparent hover:bg-slate-100"
+                      }`}
+                    >
+                      {t("today.all_djs")}
+                    </button>
+                    {activeDjs.map(dj => {
+                      const isSelected = selectedDjName === dj;
+                      const count = djWeeklyCounts[dj] || 0;
+                      return (
+                        <button
+                          key={dj}
+                          onClick={() => {
+                            setSelectedDjName(dj);
+                            setSelectedGroupId("All");
+                            setShowDjDropdown(false);
+                          }}
+                          className={`px-3 py-2 rounded-xl text-[10.5px] font-bold text-left transition-all border cursor-pointer ${
+                            isSelected
+                              ? "bg-[#1e293b] text-white border-[#1e293b] shadow-sm"
+                              : "bg-slate-50 text-slate-600 border-transparent hover:bg-slate-100"
+                          }`}
+                        >
+                          <span className="truncate pr-1">{formatDjFilterName(dj, language)} ({count})</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* 카드 / 시간 / 주간 뷰방식 토글 */}
+        <div className="flex items-center bg-slate-100 p-0.5 rounded-xl border border-slate-200/50 shadow-inner">
           <button
-            onClick={() => handleWeekNav(-1)}
-            className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-xl text-slate-400 hover:bg-slate-100 active:scale-90 transition-all"
+            onClick={() => setTodayViewMode("list")}
+            className={`px-3.5 py-1.5 flex items-center justify-center rounded-lg text-[12px] font-black transition-all cursor-pointer ${
+              todayViewMode === "list"
+                ? "bg-indigo-600 text-white shadow-sm"
+                : "text-slate-500 hover:text-slate-800"
+            }`}
           >
-            <span className="material-symbols-outlined !text-[20px]">chevron_left</span>
+            {language === "KR" ? "카드" : "Card"}
           </button>
-
-          {weekDates.map((d, idx) => {
-            const isToday = d.toDateString() === today.toDateString();
-            const isSelected = d.toDateString() === selectedDate.toDateString();
-            const isSat = (d.getDay() + 6) % 7 === 5;
-            const isSun = (d.getDay() + 6) % 7 === 6;
-            return (
-              <button
-                key={idx}
-                onClick={() => setSelectedDate(d)}
-                className={`flex-1 flex flex-col items-center justify-center py-1.5 rounded-xl transition-all duration-200 ${
-                  isSelected ? "bg-[#1e293b] shadow-md" : "hover:bg-slate-100/80"
-                }`}
-              >
-                <span className={`text-[10px] font-bold tracking-wide uppercase w-full text-center block ${
-                  isSelected ? "text-white/70" : isSat ? "text-blue-500" : isSun ? "text-red-500" : "text-slate-400"
-                }`}>
-                  {getDayLabel(language, d)}
-                </span>
-                <span className={`text-[17px] font-black leading-tight mt-0.5 w-full text-center block ${
-                  isSelected ? "text-white" : isToday ? "text-[#007AFF]" : isSat ? "text-blue-500" : isSun ? "text-red-500" : "text-[#1e293b]"
-                }`}>
-                  {d.getDate()}
-                </span>
-                {isToday && !isSelected && <span className="w-1 h-1 rounded-full bg-[#007AFF] mt-0.5" />}
-              </button>
-            );
-          })}
-
           <button
-            onClick={() => handleWeekNav(1)}
-            className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-xl text-slate-400 hover:bg-slate-100 active:scale-90 transition-all"
+            onClick={() => setTodayViewMode("timeline")}
+            className={`px-3.5 py-1.5 flex items-center justify-center rounded-lg text-[12px] font-black transition-all cursor-pointer ${
+              todayViewMode === "timeline"
+                ? "bg-indigo-600 text-white shadow-sm"
+                : "text-slate-500 hover:text-slate-800"
+            }`}
           >
-            <span className="material-symbols-outlined !text-[20px]">chevron_right</span>
+            {language === "KR" ? "목록" : "List"}
+          </button>
+          <button
+            onClick={() => setTodayViewMode("calendar")}
+            className={`px-3.5 py-1.5 flex items-center justify-center rounded-lg text-[12px] font-black transition-all cursor-pointer ${
+              todayViewMode === "calendar"
+                ? "bg-indigo-600 text-white shadow-sm"
+                : "text-slate-500 hover:text-slate-800"
+            }`}
+          >
+            {language === "KR" ? "주간" : "Weekly"}
           </button>
         </div>
       </div>
 
-      {/* ── 통합 필터 바 ── */}
-      <div className="relative z-30 px-4 py-2.5 flex items-center justify-between bg-white border-b border-slate-100/80">
-        <div className="flex items-center gap-2">
-          {/* 1. 분류 필터 드롭다운 */}
-          <div className="relative">
+      {/* ── 라인2: 카드/시간 모드 → 날짜 선택 바 | 주간 모드 → 주차 탭바 ── */}
+      <div className="bg-white border-b border-slate-100/80 px-1 py-2">
+        {todayViewMode === "calendar" ? (
+          /* 주간 모드: 주차 탭바 */
+          <div className="flex items-center gap-1.5 px-3">
+            {monthlyEventsByWeek.map((w, idx) => {
+              const isActive = selectedWeekTab === idx;
+              return (
+                <button
+                  key={w.id}
+                  onClick={() => setSelectedWeekTab(idx)}
+                  className={`flex-1 py-2 rounded-lg text-[11px] font-black transition-all cursor-pointer ${
+                    isActive
+                      ? "bg-indigo-600 text-white shadow-sm"
+                      : "text-slate-500 hover:bg-slate-100 hover:text-slate-800"
+                  }`}
+                >
+                  {language === "KR" ? `${idx + 1}주차` : `Wk ${idx + 1}`}
+                </button>
+              );
+            })}
+          </div>
+        ) : (
+          /* 카드/시간 모드: 날짜 선택 바 */
+          <div className="flex items-center gap-0.5">
             <button
-              onClick={() => {
-                if (todayTypeFilter !== "all") {
-                  setTodayTypeFilter("all");
-                  setShowTypeDropdown(false);
-                } else {
-                  setShowTypeDropdown(!showTypeDropdown);
-                  setShowFilterDropdown(false);
-                }
-              }}
-              className={`flex items-center gap-1 bg-white border rounded-full px-3.5 py-1.5 text-[10.5px] font-black shadow-sm transition-all active:scale-95 cursor-pointer ${
-                todayTypeFilter !== "all"
-                  ? "text-[#007AFF] border-[#007AFF]/20 bg-[#007AFF]/5"
-                  : "text-slate-600 border-slate-200 hover:bg-slate-50"
-              }`}
+              onClick={() => handleWeekNav(-1)}
+              className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-xl text-slate-400 hover:bg-slate-100 active:scale-90 transition-all"
             >
-              <span>
-                {todayTypeFilter === "all"
-                  ? (language === "KR" ? "모두" : "All")
-                  : todayTypeFilter === "social"
-                  ? (language === "KR" ? "소셜" : "Social")
-                  : todayTypeFilter === "practice"
-                  ? (language === "KR" ? "쁘락띠까" : "Practica")
-                  : todayTypeFilter === "class"
-                  ? (language === "KR" ? "클래스" : "Class")
-                  : (language === "KR" ? "이벤트" : "Event")}
-              </span>
-              <span className={`material-symbols-outlined !text-[14px] transition-transform duration-200 ${showTypeDropdown ? "rotate-180" : ""}`}>
-                expand_more
-              </span>
+              <span className="material-symbols-outlined !text-[20px]">chevron_left</span>
             </button>
 
-            {/* 분류 필터 팝오버 */}
-            {showTypeDropdown && (
-              <>
-                <div className="fixed inset-0 z-40" onClick={() => setShowTypeDropdown(false)} />
-                <div className="absolute top-full left-0 z-50 mt-1.5 w-[120px] bg-white shadow-2xl border border-slate-100 rounded-2xl p-1.5 animate-in fade-in slide-in-from-top-2 duration-200">
-                  {(["all", "social", "practice"] as const).map((type) => {
-                    const label = {
-                      all: language === "KR" ? "모두" : "All",
-                      social: language === "KR" ? "소셜" : "Social",
-                      practice: language === "KR" ? "쁘락띠까" : "Practica",
-                    }[type];
-                    const isSelected = todayTypeFilter === type;
-                    return (
-                      <button
-                        key={type}
-                        onClick={() => {
-                          setTodayTypeFilter(type);
-                          setShowTypeDropdown(false);
-                        }}
-                        className={`w-full text-left px-3 py-2 rounded-lg text-[10.5px] font-bold transition-all cursor-pointer ${
-                          isSelected
-                            ? "bg-[#1e293b] text-white font-black"
-                            : "text-slate-600 hover:bg-slate-50"
-                        }`}
-                      >
-                        {label}
-                      </button>
-                    );
-                  })}
-                </div>
-              </>
-            )}
-          </div>
+            {weekDates.map((d, idx) => {
+              const isToday = d.toDateString() === today.toDateString();
+              const isSelected = d.toDateString() === selectedDate.toDateString();
+              const isSat = (d.getDay() + 6) % 7 === 5;
+              const isSun = (d.getDay() + 6) % 7 === 6;
+              return (
+                <button
+                  key={idx}
+                  onClick={() => setSelectedDate(d)}
+                  className={`flex-1 flex flex-col items-center justify-center py-1.5 rounded-xl transition-all duration-200 ${
+                    isSelected ? "bg-[#1e293b] shadow-md" : "hover:bg-slate-100/80"
+                  }`}
+                >
+                  <span className={`text-[10px] font-bold tracking-wide uppercase w-full text-center block ${
+                    isSelected ? "text-white/70" : isSat ? "text-blue-500" : isSun ? "text-red-500" : "text-slate-400"
+                  }`}>
+                    {getDayLabel(language, d)}
+                  </span>
+                  <span className={`text-[17px] font-black leading-tight mt-0.5 w-full text-center block ${
+                    isSelected ? "text-white" : isToday ? "text-[#007AFF]" : isSat ? "text-blue-500" : isSun ? "text-red-500" : "text-[#1e293b]"
+                  }`}>
+                    {d.getDate()}
+                  </span>
+                  {isToday && !isSelected && <span className="w-1 h-1 rounded-full bg-[#007AFF] mt-0.5" />}
+                </button>
+              );
+            })}
 
-          {/* 2. 그룹/DJ 필터 드롭다운 */}
-          <div className="relative">
             <button
-              onClick={() => {
-                if (selectedGroupId !== "All" || selectedDjName !== "All") {
-                  setSelectedGroupId("All");
-                  setSelectedDjName("All");
-                  setShowFilterDropdown(false);
-                } else {
-                  setShowFilterDropdown(!showFilterDropdown);
-                  setShowTypeDropdown(false);
-                }
-              }}
-              className={`flex items-center gap-1 bg-white border rounded-full px-3.5 py-1.5 text-[10.5px] font-black shadow-sm transition-all active:scale-95 cursor-pointer ${
-                selectedGroupId !== "All" || selectedDjName !== "All"
-                  ? "text-[#007AFF] border-[#007AFF]/20 bg-[#007AFF]/5"
-                  : "text-slate-600 border-slate-200 hover:bg-slate-50"
-              }`}
+              onClick={() => handleWeekNav(1)}
+              className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-xl text-slate-400 hover:bg-slate-100 active:scale-90 transition-all"
             >
-              <span>
-                {selectedGroupId !== "All"
-                  ? selectedGroupDisplay
-                  : selectedDjName !== "All"
-                  ? `DJ ${formatDjFilterName(selectedDjName, language)}`
-                  : (language === "KR" ? "그룹/DJ" : "Group/DJ")}
-              </span>
-              <span className={`material-symbols-outlined !text-[14px] transition-transform duration-200 ${showFilterDropdown ? "rotate-180" : ""}`}>
-                expand_more
-              </span>
+              <span className="material-symbols-outlined !text-[20px]">chevron_right</span>
             </button>
-
-            {/* 그룹/DJ 필터 팝오버 (상단 탭, 하단 넓은 2열 그리드 리스트) */}
-            {showFilterDropdown && (
-              <>
-                <div className="fixed inset-0 z-40" onClick={() => setShowFilterDropdown(false)} />
-                <div className="absolute top-full left-0 z-50 mt-1.5 w-[320px] bg-white shadow-2xl border border-slate-100/80 rounded-2xl p-4 animate-in fade-in slide-in-from-top-2 duration-200 max-h-[360px] overflow-y-auto no-scrollbar">
-                  {/* 상단 세그먼트 탭 */}
-                  <div className="flex bg-slate-100 p-0.5 rounded-xl mb-3">
-                    <button
-                      onClick={() => setFilterTab("group")}
-                      className={`flex-1 text-center py-1.5 rounded-lg text-[10.5px] font-black transition-all cursor-pointer ${
-                        filterTab === "group"
-                          ? "bg-white text-[#1e293b] shadow-sm"
-                          : "text-slate-400 hover:text-slate-600"
-                      }`}
-                    >
-                      {language === "KR" ? "그룹 필터" : "Group Filter"}
-                    </button>
-                    <button
-                      onClick={() => setFilterTab("dj")}
-                      className={`flex-1 text-center py-1.5 rounded-lg text-[10.5px] font-black transition-all cursor-pointer ${
-                        filterTab === "dj"
-                          ? "bg-white text-[#1e293b] shadow-sm"
-                          : "text-slate-400 hover:text-slate-600"
-                      }`}
-                    >
-                      {language === "KR" ? "DJ 필터" : "DJ Filter"}
-                    </button>
-                  </div>
-
-                  {/* 탭 내용 분기 */}
-                  {filterTab === "group" ? (
-                    <div className="space-y-3">
-                      {/* 정렬 및 전체 버튼 */}
-                      <div className="flex items-center justify-between px-1">
-                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                          {language === "KR" ? "그룹 목록" : "Groups"}
-                        </span>
-                        <div className="flex items-center gap-0.5 bg-slate-100 p-0.5 rounded-lg text-[9px] font-black">
-                          <button
-                            onClick={() => setGroupSortType("count")}
-                            className={`px-1.5 py-0.5 rounded transition-all cursor-pointer ${
-                              groupSortType === "count" ? "bg-white text-slate-800 shadow-sm" : "text-slate-400 hover:text-slate-600"
-                            }`}
-                          >
-                            {t("today.sort_by_count")}
-                          </button>
-                          <button
-                            onClick={() => setGroupSortType("name")}
-                            className={`px-1.5 py-0.5 rounded transition-all cursor-pointer ${
-                              groupSortType === "name" ? "bg-white text-slate-800 shadow-sm" : "text-slate-400 hover:text-slate-600"
-                            }`}
-                          >
-                            {t("today.sort_by_name")}
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* 2열 그리드 목록 */}
-                      <div className="grid grid-cols-2 gap-2 max-h-[200px] overflow-y-auto no-scrollbar">
-                        <button
-                          onClick={() => {
-                            setSelectedGroupId("All");
-                            setSelectedDjName("All");
-                            setShowFilterDropdown(false);
-                          }}
-                          className={`px-3 py-2 rounded-xl text-[10.5px] font-bold text-left transition-all border cursor-pointer ${
-                            selectedGroupId === "All"
-                              ? "bg-[#1e293b] text-white border-[#1e293b] shadow-sm"
-                              : "bg-slate-50 text-slate-600 border-transparent hover:bg-slate-100"
-                          }`}
-                        >
-                          {t("today.all_groups")}
-                        </button>
-
-                        {sortedActiveGroups.map(grp => {
-                          const isSelected = selectedGroupId === grp.id;
-                          const displayName = language === "KR" ? (grp.nativeName || grp.name) : grp.name;
-                          const count = groupWeeklyCounts[grp.id] || 0;
-                          return (
-                            <button
-                              key={grp.id}
-                              onClick={() => {
-                                setSelectedGroupId(grp.id);
-                                setSelectedDjName("All");
-                                setShowFilterDropdown(false);
-                              }}
-                              className={`px-3 py-2 rounded-xl text-[10.5px] font-bold text-left transition-all border cursor-pointer ${
-                                isSelected
-                                  ? "bg-[#1e293b] text-white border-[#1e293b] shadow-sm"
-                                  : "bg-slate-50 text-slate-600 border-transparent hover:bg-slate-100"
-                              }`}
-                            >
-                              <span className="truncate pr-1">{displayName} ({count})</span>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      {/* 정렬 및 전체 버튼 */}
-                      <div className="flex items-center justify-between px-1">
-                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                          DJs
-                        </span>
-                        <div className="flex items-center gap-0.5 bg-slate-100 p-0.5 rounded-lg text-[9px] font-black">
-                          <button
-                            onClick={() => setDjSortType("count")}
-                            className={`px-1.5 py-0.5 rounded transition-all cursor-pointer ${
-                              djSortType === "count" ? "bg-white text-slate-800 shadow-sm" : "text-slate-400 hover:text-slate-600"
-                            }`}
-                          >
-                            {t("today.sort_by_count")}
-                          </button>
-                          <button
-                            onClick={() => setDjSortType("name")}
-                            className={`px-1.5 py-0.5 rounded transition-all cursor-pointer ${
-                              djSortType === "name" ? "bg-white text-slate-800 shadow-sm" : "text-slate-400 hover:text-slate-600"
-                            }`}
-                          >
-                            {t("today.sort_by_name")}
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* 2열 그리드 목록 */}
-                      <div className="grid grid-cols-2 gap-2 max-h-[200px] overflow-y-auto no-scrollbar">
-                        <button
-                          onClick={() => {
-                            setSelectedDjName("All");
-                            setSelectedGroupId("All");
-                            setShowFilterDropdown(false);
-                          }}
-                          className={`px-3 py-2 rounded-xl text-[10.5px] font-bold text-left transition-all border cursor-pointer ${
-                            selectedDjName === "All"
-                              ? "bg-[#1e293b] text-white border-[#1e293b] shadow-sm"
-                              : "bg-slate-50 text-slate-600 border-transparent hover:bg-slate-100"
-                          }`}
-                        >
-                          {t("today.all_djs")}
-                        </button>
-
-                        {activeDjs.map(dj => {
-                          const isSelected = selectedDjName === dj;
-                          const count = djWeeklyCounts[dj] || 0;
-                          return (
-                            <button
-                              key={dj}
-                              onClick={() => {
-                                setSelectedDjName(dj);
-                                setSelectedGroupId("All");
-                                setShowFilterDropdown(false);
-                              }}
-                              className={`px-3 py-2 rounded-xl text-[10.5px] font-bold text-left transition-all border cursor-pointer ${
-                                isSelected
-                                  ? "bg-[#1e293b] text-white border-[#1e293b] shadow-sm"
-                                  : "bg-slate-50 text-slate-600 border-transparent hover:bg-slate-100"
-                              }`}
-                            >
-                              <span className="truncate pr-1">{formatDjFilterName(dj, language)} ({count})</span>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </>
-            )}
           </div>
-        </div>
-
-        {/* 목록 / 타임라인 뷰방식 토글 */}
-        <div className="flex items-center bg-slate-100 p-0.5 rounded-xl shadow-inner">
-          <button
-            onClick={() => setTodayViewMode("list")}
-            className={`w-7 h-7 flex items-center justify-center rounded-lg transition-all cursor-pointer ${
-              todayViewMode === "list"
-                ? "bg-white text-[#1e293b] shadow-sm"
-                : "text-slate-400 hover:text-slate-600"
-            }`}
-            title={t("today.view_mode_list")}
-          >
-            <span className="material-symbols-outlined !text-[16px]">format_list_bulleted</span>
-          </button>
-          <button
-            onClick={() => setTodayViewMode("timeline")}
-            className={`w-7 h-7 flex items-center justify-center rounded-lg transition-all cursor-pointer ${
-              todayViewMode === "timeline"
-                ? "bg-white text-[#1e293b] shadow-sm"
-                : "text-slate-400 hover:text-slate-600"
-            }`}
-            title={t("today.view_mode_timeline")}
-          >
-            <span className="material-symbols-outlined !text-[16px]">schedule</span>
-          </button>
-        </div>
+        )}
       </div>
 
       {/* ── Content ── */}
       <div className="px-4 pt-5 pb-6">
-        {selectedGroupId === "All" && selectedDjName === "All" ? (
+        {todayViewMode === "calendar" ? (
+          /* 달력 방식 주차별 모두보기 뷰 */
+          <div className="space-y-4 animate-in fade-in duration-300 text-left">
+            {renderWeeklyCalendarView()}
+          </div>
+        ) : selectedGroupId === "All" && selectedDjName === "All" ? (
           todayViewMode === "timeline" ? (
             /* 타임라인 방식 뷰 (이미지 배제한 텍스트 중심) */
             <div className="space-y-6 animate-in fade-in duration-300">
@@ -2217,6 +2813,7 @@ export default function TodayPageContent() {
             </div>
 
             {/* 주차별 다른 일정 탭 섹션 */}
+            {false && (
             <div className="pt-2">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
@@ -2249,25 +2846,6 @@ export default function TodayPageContent() {
                 )}
               </div>
 
-              {/* 주차 탭바 */}
-              <div className="flex items-center gap-1.5 bg-slate-100/60 p-1 rounded-xl mb-4">
-                {[1, 2, 3, 4, 5].map((wk) => {
-                  const isActive = selectedWeekTab === wk - 1;
-                  return (
-                    <button
-                      key={wk}
-                      onClick={() => setSelectedWeekTab(wk - 1)}
-                      className={`flex-1 py-2 rounded-lg text-[11px] font-black transition-all cursor-pointer ${
-                        isActive
-                          ? "bg-white text-indigo-600 shadow-sm"
-                          : "text-slate-500 hover:text-slate-800"
-                      }`}
-                    >
-                      {language === "KR" ? `${wk}주차` : `Wk ${wk}`}
-                    </button>
-                  );
-                })}
-              </div>
 
               {/* 타일 뷰 커스터마이징 제어판 (배경색 및 무늬 패턴) */}
               {weeklyViewMode === "tile" && weekEventsByDate.length > 0 && (
@@ -2370,12 +2948,6 @@ export default function TodayPageContent() {
                     className="space-y-4 p-2 rounded-2xl transition-all duration-300"
                     style={{ backgroundColor: weeklyBgColor, ...getPatternStyle(weeklyPattern, weeklyBgColor) }}
                   >
-                    {/* 캡처용 타이틀 헤더 */}
-                    <div className={`w-full text-center py-4 px-6 border-b font-black text-[16px] md:text-[18px] tracking-tight transition-all duration-300 rounded-t-2xl ${
-                      isDark(weeklyBgColor) ? "text-white/90 border-white/10" : "text-slate-800 border-slate-200/60"
-                    }`}>
-                      {weeklyHeaderTitle}
-                    </div>
 
                     {weekEventsByDate.map(({ date, ymd, events }) => {
                       const formattedDate = language === "KR"
@@ -2383,10 +2955,8 @@ export default function TodayPageContent() {
                         : date.toLocaleDateString("en-US", { month: "short", day: "numeric", weekday: "short" });
 
                       const dayOfWeek = date.getDay();
-                      const headerStyle = dayOfWeek === 0 
+                      const headerStyle = (dayOfWeek === 0 || dayOfWeek === 6)
                         ? { bg: "bg-rose-50/40 border-b border-rose-100/50", text: "text-rose-600/90", badge: "bg-rose-100/50 text-rose-600" }
-                        : dayOfWeek === 6 
-                        ? { bg: "bg-blue-50/30 border-b border-blue-100/40", text: "text-blue-600/90", badge: "bg-blue-100/50 text-blue-600" }
                         : { bg: "bg-slate-50/80 border-b border-slate-100", text: "text-slate-700", badge: "bg-slate-200/60 text-slate-600" };
 
                       return (
@@ -2481,7 +3051,7 @@ export default function TodayPageContent() {
                                     </div>
 
                                     <div className="space-y-0.5">
-                                      <h4 className="text-[12.5px] font-black text-slate-800 leading-tight">
+                                      <h4 className="text-[12.5px] font-black text-slate-800 leading-tight line-clamp-2">
                                         {ev.title}
                                         {ev.subtitle && (
                                           <span className="text-[10.5px] font-semibold text-slate-400 ml-1.5">
@@ -2532,12 +3102,6 @@ export default function TodayPageContent() {
                     className="grid grid-cols-3 sm:grid-cols-4 gap-0 p-0 border-t border-l border-slate-200 overflow-hidden transition-all duration-300"
                     style={{ backgroundColor: weeklyBgColor, ...getPatternStyle(weeklyPattern, weeklyBgColor) }}
                   >
-                    {/* 캡처용 타이틀 헤더 */}
-                    <div className={`col-span-3 sm:col-span-4 w-full text-center py-4 px-6 border-b font-black text-[16px] md:text-[18px] tracking-tight transition-all duration-300 ${
-                      isDark(weeklyBgColor) ? "text-white/90 border-white/10" : "text-slate-800 border-slate-200/60"
-                    }`}>
-                      {weeklyHeaderTitle}
-                    </div>
 
                     {weekEventsFlat.map(({ ev, date, ymd }, idx) => {
                       const yoil = getDayLabel("KR", date);
@@ -2618,6 +3182,7 @@ export default function TodayPageContent() {
               )}
 
             </div>
+            )}
           </div>
         )}
       </div>
@@ -2807,12 +3372,16 @@ function getEventTheme(title: string, index: number) {
 
 // 날짜 기준 월 주차 계산 함수
 function getWeekOfMonth(date: Date): number {
+  const year = date.getFullYear();
+  const month = date.getMonth();
   const day = date.getDate();
-  if (day >= 1 && day <= 7) return 1;
-  if (day >= 8 && day <= 14) return 2;
-  if (day >= 15 && day <= 21) return 3;
-  if (day >= 22 && day <= 28) return 4;
-  return 5;
+  
+  const firstDay = new Date(year, month, 1);
+  const firstDayOfWeek = (firstDay.getDay() + 6) % 7; // 0=Mon ... 6=Sun
+  const firstWeekEnd = firstDayOfWeek === 6 ? 1 : (7 - firstDayOfWeek);
+  
+  if (day <= firstWeekEnd) return 1;
+  return Math.ceil((day - firstWeekEnd) / 7) + 1;
 }
 
 // 소셜 양방향 다국어 타이틀 표기 함수 (KR: 월나다 Wol Nada / EN: Wol Nada 월나다)

@@ -123,7 +123,7 @@ export function useAuthFlow() {
                 localStorage.removeItem('woc_context');
                 window.location.replace(lastContext);
               } else {
-                window.location.replace('/today');
+                window.location.replace('/social');
               }
             }, 50);
           } else {
@@ -153,7 +153,7 @@ export function useAuthFlow() {
           localStorage.removeItem('woc_context');
           window.location.replace(lastContext);
         } else {
-          window.location.replace('/today');
+          window.location.replace('/social');
         }
       }, 50);
     }
@@ -282,7 +282,7 @@ export function useAuthFlow() {
             localStorage.removeItem('woc_context');
             window.location.replace(lastContext);
           } else {
-            window.location.replace('/today');
+            window.location.replace('/social');
           }
         }, 50);
       } else {
@@ -302,7 +302,7 @@ export function useAuthFlow() {
                 localStorage.removeItem('woc_context');
                 window.location.replace(lastContext);
               } else {
-                window.location.replace('/today');
+                window.location.replace('/social');
               }
             }, 50);
           } else {
@@ -331,10 +331,12 @@ export function useAuthFlow() {
     setAuthMethod('Google');
     try {
       const provider = new GoogleAuthProvider();
-      const isStandalone = typeof window !== 'undefined' && (
+      let isNativeApp = false;
+      try { const { Capacitor } = require('@capacitor/core'); isNativeApp = Capacitor.isNativePlatform(); } catch {}
+      const isStandalone = isNativeApp || (typeof window !== 'undefined' && (
         (window.navigator as any).standalone || 
         window.matchMedia('(display-mode: standalone)').matches
-      );
+      ));
       const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
       if (isStandalone || isMobile) {
@@ -369,10 +371,12 @@ export function useAuthFlow() {
     setAuthMethod('Facebook');
     try {
       const provider = new FacebookAuthProvider();
-      const isStandalone = typeof window !== 'undefined' && (
+      let isNativeApp = false;
+      try { const { Capacitor } = require('@capacitor/core'); isNativeApp = Capacitor.isNativePlatform(); } catch {}
+      const isStandalone = isNativeApp || (typeof window !== 'undefined' && (
         (window.navigator as any).standalone || 
         window.matchMedia('(display-mode: standalone)').matches
-      );
+      ));
       const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
       if (isStandalone || isMobile) {
@@ -515,7 +519,7 @@ export function useAuthFlow() {
         setConfirmationResult(null);
         handleClose();
         setTimeout(() => {
-          window.location.replace('/today');
+          window.location.replace('/social');
         }, 50);
       } else {
         setVerificationCode('');
@@ -570,7 +574,7 @@ export function useAuthFlow() {
           localStorage.removeItem('woc_context');
           window.location.replace(lastContext);
         } else {
-          window.location.replace('/today');
+          window.location.replace('/social');
         }
       }, 50);
     } catch (err: any) {

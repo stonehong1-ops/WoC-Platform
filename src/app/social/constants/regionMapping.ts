@@ -5,18 +5,18 @@ export function getCityGroup(city?: string): LocationGroup {
   if (!city) return 'SEOUL';
   const c = city.trim().toUpperCase();
   
-  // 서울 그룹: 서울, 인천, 경기, 강원 (춘천, 강릉, 일산 등 포함)
-  if (['SEOUL', 'INCHEON', 'GYEONGGI', 'GANGWON', '인천', '경기', '강원', '서울', '춘천', 'CHUNCHEON', '강릉', 'GANGNEUNG', '일산', 'ILSAN'].some(x => c.includes(x.toUpperCase()))) {
+  // 서울 그룹: 서울, 인천, 경기, 강원 (춘천, 강릉, 일산, 수원, 성남, 고양, 용인, 화성, 파주 등 포함)
+  if (['SEOUL', 'INCHEON', 'GYEONGGI', 'GANGWON', '인천', '경기', '강원', '서울', '춘천', 'CHUNCHEON', '강릉', 'GANGNEUNG', '일산', 'ILSAN', '수원', 'SUWON', '성남', 'SEONGNAM', '고양', 'GOYANG', '용인', 'YONGIN', '화성', 'HWASEONG', '파주', 'PAJU', '분당', 'BUNDANG', '안양', 'ANYANG', '부천', 'BUCHEON', '의정부', 'UIJEONGBU', '원주', 'WONJU', '속초', 'SOKCHO'].some(x => c.includes(x.toUpperCase()))) {
     return 'SEOUL';
   }
   
-  // 부산 그룹: 부산, 대구, 울산, 경상, 영남, 경북, 경남, 창원, 진주
-  if (['BUSAN', 'DAEGU', 'ULSAN', 'GYEONGSANG', 'YEONGNAM', 'GYEONGBUK', 'GYEONGNAM', 'CHANGWON', '부산', '대구', '울산', '경상', '영남', '경북', '경남', '창원', '진주', 'JINJU', '창원케렌시아', 'JINJU TANGO'].some(x => c.includes(x.toUpperCase()))) {
+  // 부산 그룹: 부산, 대구, 울산, 경상, 영남, 경북, 경남, 창원, 진주, 포항, 김해, 구미, 안동, 경주
+  if (['BUSAN', 'DAEGU', 'ULSAN', 'GYEONGSANG', 'YEONGNAM', 'GYEONGBUK', 'GYEONGNAM', 'CHANGWON', '부산', '대구', '울산', '경상', '영남', '경북', '경남', '창원', '진주', 'JINJU', '창원케렌시아', 'JINJU TANGO', 'POHANG', '포항', 'GIMHAE', '김해', 'GUMI', '구미', 'ANDONG', '안동', 'GYEONGJU', '경주'].some(x => c.includes(x.toUpperCase()))) {
     return 'BUSAN';
   }
   
-  // 광주 그룹: 광주, 전북, 전남, 호남, 제주 (순천, 군산 등 호남/제주 전역 포함)
-  if (['GWANGJU', 'JEONBUK', 'JEONNAM', 'HONAM', 'JEJU', '광주', '전북', '전남', '호남', '제주', '순천', 'SOONCHEON', '군산', 'GUNSAN'].some(x => c.includes(x.toUpperCase()))) {
+  // 광주 그룹: 광주, 전북, 전남, 호남, 제주 (순천, 군산, 전주, 목포, 여수, 나주 포함)
+  if (['GWANGJU', 'JEONBUK', 'JEONNAM', 'HONAM', 'JEJU', '광주', '전북', '전남', '호남', '제주', '순천', 'SUNCHEON', 'SOONCHEON', '군산', 'GUNSAN', 'JEONJU', '전주', 'MOKPO', '목포', 'YEOSU', '여수', 'NAJU', '나주'].some(x => c.includes(x.toUpperCase()))) {
     return 'GWANGJU';
   }
   

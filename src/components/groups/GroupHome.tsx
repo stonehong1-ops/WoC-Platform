@@ -12,6 +12,7 @@ import { useAuth } from "@/components/providers/AuthProvider";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useNavigation } from "@/components/providers/NavigationProvider";
 import { useModalNavigation } from "@/hooks/useModalNavigation";
+import { useBackButtonClose } from "@/hooks/useBackButtonClose";
 
 import ImageWithFallback from "@/components/common/ImageWithFallback";
 import GroupJoinModal from "./GroupJoinModal";
@@ -237,23 +238,35 @@ export default function GroupHome({ group: initialGroup, isModal, onClose }: { g
     // 클래스 상세 모달(classFlow)이 띄워져 있을 때는 뒤로가기 시 이탈 트랩이 작동해서 이전 메뉴로 강제 튕겨내는 오작동을 차단합니다.
     if (localClassFlow === 'apply' || searchParams.has('classFlow')) return;
 
-    if (!exitAttempted.current) {
-      exitAttempted.current = true;
-      router.push(pathname + '?modal=exit', { scroll: false });
+    if (activeTab !== 'home') {
+      // Dashboard가 아닌 탭에서 뒤로가기 시 -> Dashboard(home)로 복귀하고 트랩 복구
+      setActiveTab('home');
+      setVisitedTabs(prev => { const newSet = new Set(prev); newSet.add('home'); return newSet; });
+      const params = new URLSearchParams(searchParams.toString());
+      params.delete('tab');
+      params.set('active', 'true');
+      router.replace(pathname + '?' + params.toString(), { scroll: false });
+      exitAttempted.current = false;
     } else {
+      // 이미 Dashboard(home)에서 뒤로가기 시 -> Group 목록(/groups)으로 바로 이동 (확인 팝업 없이)
       if (onClose) {
         onClose();
       } else {
         router.replace('/groups');
       }
     }
-  }, [searchParams, localClassFlow]);
+  }, [searchParams, localClassFlow, activeTab, pathname, router, onClose]);
 
   // Stay: 트랩 복구 + 모달 닫기
   const handleStay = () => {
     exitAttempted.current = false;
     router.replace(pathname + '?active=true', { scroll: false });
   };
+
+  // 모달/팝업 뒤로가기 우선 닫기 처리
+  useBackButtonClose(!!selectedMember, () => setSelectedMember(null));
+  useBackButtonClose(showJoinPromptSheet, () => setShowJoinPromptSheet(false));
+  useBackButtonClose(isExitModalOpen, handleStay);
 
   // Leave: 그룹홈(/groups)으로 안전 이동
   const handleLeave = () => {

@@ -27,6 +27,7 @@ export default function MyGroupsTray({ groups, onGroupSelect }: MyGroupsTrayProp
     setTrayState(prev => prev === 'EXPANDED' ? 'COLLAPSED' : 'EXPANDED');
   };
 
+
   const handleGroupClick = (group: Group, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
     setTrayState('COLLAPSED');
@@ -48,6 +49,9 @@ export default function MyGroupsTray({ groups, onGroupSelect }: MyGroupsTrayProp
   };
 
   const isExpanded = trayState === 'EXPANDED';
+
+  const { useBackButtonClose } = require('@/hooks/useBackButtonClose');
+  useBackButtonClose(isExpanded, () => setTrayState('COLLAPSED'));
 
   // Hide tray when no groups
   if (groups.length === 0) return null;

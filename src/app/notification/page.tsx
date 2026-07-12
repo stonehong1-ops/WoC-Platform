@@ -350,7 +350,7 @@ export default function NotificationPage() {
 
   return (
     <>
-      <main className="max-w-2xl mx-auto h-[calc(100vh-124px)] flex flex-col overflow-hidden bg-[#FAF8FF]">
+      <main className="max-w-2xl mx-auto h-[calc(100dvh-60px-84px)] flex flex-col overflow-hidden bg-[#FAF8FF]">
 
       {/* Scrollable Content Area */}
       <div className="flex-1 overflow-y-auto px-4 py-2 no-scrollbar pb-20">

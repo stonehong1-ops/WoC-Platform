@@ -230,7 +230,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Push Notification Permission Prompt (Option 1)
   useEffect(() => {
     if (user && typeof window !== 'undefined' && 'Notification' in window) {
-      // PWA 앱(standalone) 환경에서만 알림 권한을 요청하여, 앱 미설치 상태의 설치 유도 화면에서 알림 팝업이 뜨지 않도록 방어
+      // 네이티브 앱에서는 웹 FCM 권한 요청 불필요 (Capacitor 푸시 플러그인이 별도 처리)
+      let isNativeApp = false;
+      try { const { Capacitor } = require('@capacitor/core'); isNativeApp = Capacitor.isNativePlatform(); } catch {}
+      if (isNativeApp) return;
+
+      // PWA 앱(standalone) 환경에서만 알림 권한을 요청
       const isStandalone =
         window.matchMedia('(display-mode: standalone)').matches ||
         (window.navigator as any).standalone === true;

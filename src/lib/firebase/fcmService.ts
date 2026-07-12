@@ -11,6 +11,12 @@ export const fcmService = {
         return null;
       }
 
+      // 네이티브 앱에서는 웹 FCM 불필요
+      try {
+        const { Capacitor } = require('@capacitor/core');
+        if (Capacitor.isNativePlatform()) return null;
+      } catch {}
+
       const permission = await Notification.requestPermission();
       if (permission !== 'granted') {
         return null;

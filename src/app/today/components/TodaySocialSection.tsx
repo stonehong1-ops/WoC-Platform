@@ -92,58 +92,80 @@ function SocialCard({ social, date, venuesMap, onPress }: {
   const displayImageUrl = hasPoster ? social.imageUrl : (social.posterExportUrl || social.imageUrl);
 
   return (
-    <button onClick={onPress} className="block w-full rounded-xl overflow-hidden relative shadow-sm text-left" style={{ aspectRatio: "3/4" }}>
-      <div className="absolute inset-0 bg-[#12121e]">
+    <button 
+      onClick={onPress} 
+      className="block w-full bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden text-left hover:shadow-md transition-shadow active:scale-98"
+    >
+      {/* 상단 썸네일 이미지 영역 */}
+      <div className="relative w-full aspect-square bg-[#12121e] overflow-hidden">
         <SocialCardImage imageUrl={displayImageUrl} title={social.title} />
         {hasMessage && (
           <div className="absolute inset-0 bg-black/60 flex items-center justify-center p-2 z-10">
-            <span className="bg-rose-500 text-white text-[11px] font-black px-2.5 py-1 rounded-lg shadow-lg text-center max-w-full truncate">
+            <span className="bg-rose-500 text-white text-[11px] font-black px-2.5 py-1 rounded-lg shadow-lg text-center max-w-[90%] truncate">
               {eventMessage}
             </span>
           </div>
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent pointer-events-none" />
-      </div>
-      <div className="absolute top-2 left-2 flex flex-col gap-1 items-start">
-        <span className="bg-black/60 backdrop-blur-sm text-white text-[9px] font-black px-1.5 py-0.5 rounded-full leading-none">
-          {social.startTime || "—"}
-        </span>
-        {social.type === "popup" && (
-          <span className="bg-rose-600 text-white text-[8px] font-black px-1.5 py-0.5 rounded-lg leading-none uppercase tracking-wide shadow-md">
-            POPUP
+        
+        {/* 시간 및 추가 속성 뱃지 */}
+        <div className="absolute top-2 left-2 flex flex-col gap-1 items-start z-10">
+          <span className="bg-black/60 backdrop-blur-sm text-white text-[9.5px] font-mono font-black px-2 py-1 rounded-md leading-none">
+            {social.startTime || "—"}
           </span>
+          {social.type === "popup" && (
+            <span className="bg-rose-600 text-white text-[8px] font-black px-1.5 py-0.5 rounded-md leading-none uppercase tracking-wide shadow-sm">
+              POPUP
+            </span>
+          )}
+          {social.type === "regular" && recurrenceText && (
+            <span className="bg-indigo-600 text-white text-[8px] font-black px-1.5 py-0.5 rounded-md leading-none uppercase tracking-wide shadow-sm">
+              {recurrenceText}
+            </span>
+          )}
+        </div>
+
+        {/* 카테고리 타입 뱃지 (우상단) - 쁘락띠까만 표시 */}
+        {social.subCategory === "practica" && (
+          <div className="absolute top-2 right-2 z-10">
+            <span className="bg-amber-500 text-white text-[9.5px] font-black px-2 py-0.5 rounded-md leading-none shadow-sm">
+              {language === "KR" ? "쁘락띠까" : "Practica"}
+            </span>
+          </div>
         )}
-        {social.type === "regular" && recurrenceText && (
-          <span className="bg-indigo-600 text-white text-[8px] font-black px-1.5 py-0.5 rounded-lg leading-none uppercase tracking-wide shadow-md">
-            {recurrenceText}
-          </span>
+
+        {/* 장소 오버레이 (이미지 하단) */}
+        {venue && (
+          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent px-2 pb-1.5 pt-3 z-10">
+            <div className="flex items-center gap-0.5 text-[9px] font-bold text-white/90">
+              <span className="material-symbols-outlined !text-[10px]">location_on</span>
+              <span className="truncate">{venue}</span>
+            </div>
+          </div>
         )}
       </div>
-      {shortVenue && (
-        <span className="absolute top-2 right-2 bg-black/60 backdrop-blur-sm text-white text-[8px] font-black px-1.5 py-0.5 rounded-full leading-none shadow-sm max-w-[90px] truncate flex items-center gap-0.5">
-          <span className="material-symbols-outlined !text-[8px]">location_on</span>{shortVenue}
-        </span>
-      )}
-      <div className="absolute bottom-0 left-0 right-0 p-2 space-y-0.5">
-        <p className="text-white font-black text-[13px] leading-tight line-clamp-2">
+
+      {/* 하단 텍스트 정보 영역 */}
+      <div className="p-3 space-y-0.5">
+        {/* 제목 */}
+        <h4 className="text-[13.5px] font-black text-slate-800 leading-tight line-clamp-2">
           {language === "KR" ? (social.titleNative || social.title) : (social.title || social.titleNative)}
-        </p>
-        {hasBoth ? (
-          <>
-            <p className="text-[10px] font-semibold truncate text-white/70">
-              org {orgFormatted}
-            </p>
-            <p className="text-[10px] font-semibold truncate text-white/70">
-              dj {djFormatted}
-            </p>
-          </>
-        ) : (
-          (orgFormatted || djFormatted) && (
-            <p className="text-[10px] font-semibold truncate text-white/70">
-              {orgFormatted ? `org ${orgFormatted}` : `dj ${djFormatted}`}
-            </p>
-          )
-        )}
+        </h4>
+
+        {/* DJ 또는 주최자 */}
+        <div className="text-[10px] font-bold mt-1 pt-1 border-t border-slate-50 flex flex-wrap items-center gap-x-2 gap-y-0.5 min-h-[16px] text-slate-400">
+          {djFormatted && (
+            <span className="flex items-center gap-0.5 text-indigo-600 truncate max-w-full">
+              <span className="material-symbols-outlined !text-[10px]">headphones</span>
+              {djFormatted}
+            </span>
+          )}
+          {orgFormatted && (
+            <span className="flex items-center gap-0.5 truncate max-w-full">
+              <span className="material-symbols-outlined !text-[10px]">person</span>
+              {orgFormatted}
+            </span>
+          )}
+        </div>
       </div>
     </button>
   );

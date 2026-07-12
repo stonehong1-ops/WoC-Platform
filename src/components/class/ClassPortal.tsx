@@ -1,7 +1,7 @@
 'use client';
 import { reportError } from '@/lib/utils/errorHandler';
 
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { groupService } from '@/lib/firebase/groupService';
 import { venueService } from '@/lib/firebase/venueService';
@@ -13,6 +13,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import ClassDetail from '@/components/class/ClassDetail';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { doc, updateDoc } from 'firebase/firestore';
+import { useLocation } from '@/components/providers/LocationProvider';
+import { matchLocationGroup } from '@/app/social/constants/regionMapping';
 import { db } from '@/lib/firebase/clientApp';
 import { useBookingEngine } from '@/hooks/useBookingEngine';
 import UnifiedCheckoutModal from '@/components/common/UnifiedCheckoutModal';
@@ -23,6 +25,7 @@ import BottomSheet from '@/components/common/BottomSheet';
 import { bookingService } from '@/lib/firebase/bookingService';
 import { BaseBooking } from '@/types/booking';
 import { chatService } from '@/lib/firebase/chatService';
+import { useBackButtonClose } from '@/hooks/useBackButtonClose';
 
 // 공통 UI 컴포넌트 임포트
 import SearchHeader from '@/components/common/SearchHeader';
@@ -33,6 +36,7 @@ import dynamic from 'next/dynamic';
 const ChatRoomComponent = dynamic(() => import('../chat/ChatRoom'));
 import UserBadge from '@/components/common/UserBadge';
 import { formatInstructorNames } from "@/app/social/constants/seoulRegions";
+import { toast } from 'sonner';
 
 
 export default function ClassPortal() {
@@ -41,7 +45,15 @@ export default function ClassPortal() {
   const { t, language } = useLanguage();
   const searchParams = useSearchParams();
   const viewParam = searchParams.get('view'); // 'today' | 'special' | 'monthly' | null
+  const { location } = useLocation();
   const [searchTerm, setSearchTerm] = useState('');
+
+  // 지역 필터링 판별 헬퍼 함수 (소셜/오늘 일정과 100% 동일한 매칭 로직 적용)
+  const isLocationMatch = React.useCallback((itemLoc: string | undefined, groupLoc: string | undefined) => {
+    if (!location || location.city === 'ALL') return true;
+    const hasMatch = matchLocationGroup(location.city, itemLoc) || matchLocationGroup(location.city, groupLoc);
+    return hasMatch;
+  }, [location]);
 
   const activeTab = useMemo<'TODAY' | 'WEEK' | 'MONTH' | 'SPECIAL'>(() => {
     if (viewParam === 'today') return 'TODAY';
@@ -76,8 +88,28 @@ export default function ClassPortal() {
   
   const { user, profile } = useAuth();
   
+  const isAdminOrOwner = useMemo(() => {
+    return !!user && (profile?.systemRole === 'admin' || profile?.isAdmin || groups.some(g => g.ownerId === user.uid));
+  }, [user, profile, groups]);
+  
   const [weekOffset, setWeekOffset] = useState(0);
   const [monthOffset, setMonthOffset] = useState(0);
+
+  const { monthLabel, targetMonthStr } = useMemo(() => {
+    const targetDate = new Date();
+    if (targetDate.getDate() >= 16) {
+      targetDate.setMonth(targetDate.getMonth() + 1);
+    }
+    targetDate.setMonth(targetDate.getMonth() + monthOffset);
+    const targetYear = targetDate.getFullYear();
+    const targetMonthNum = targetDate.getMonth();
+    const targetMonthStr = `${targetYear}-${String(targetMonthNum + 1).padStart(2, '0')}`;
+    const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    const label = language === 'KR'
+      ? `${targetYear}년 ${targetMonthNum + 1}월`
+      : `${monthNames[targetMonthNum]} ${targetYear}`;
+    return { monthLabel: label, targetMonthStr };
+  }, [monthOffset, language]);
 
   const [showOrganizerFilter, setShowOrganizerFilter] = useState(false);
   const [showClubFilter, setShowClubFilter] = useState(false);
@@ -107,6 +139,18 @@ export default function ClassPortal() {
   const [chatOverlayRoomId, setChatOverlayRoomId] = useState<string | null>(null);
   const [portalImageErrors, setPortalImageErrors] = useState<Record<string, boolean>>({});
 
+  const closeCapacityModal = useCallback(() => setCapacityModalOpen(false), []);
+  const closeCheckoutModal = useCallback(() => setCheckoutModalOpen(false), []);
+  const closeAddSpecialClass = useCallback(() => setIsAddingSpecialClass(false), []);
+  const closeGroupSelector = useCallback(() => setShowGroupSelector(false), []);
+  const closeChatOverlay = useCallback(() => setChatOverlayRoomId(null), []);
+
+  useBackButtonClose(capacityModalOpen, closeCapacityModal);
+  useBackButtonClose(checkoutModalOpen, closeCheckoutModal);
+  useBackButtonClose(isAddingSpecialClass, closeAddSpecialClass);
+  useBackButtonClose(showGroupSelector, closeGroupSelector);
+  useBackButtonClose(!!chatOverlayRoomId, closeChatOverlay);
+
   const [userBookings, setUserBookings] = useState<BaseBooking[]>(() => {
     if (typeof window !== 'undefined' && user) {
       const cached = sessionStorage.getItem(`woc_user_bookings_${user.uid}`);
@@ -131,6 +175,7 @@ export default function ClassPortal() {
     const list: (GroupClass & { group?: Group; scheduleEntry?: ClassScheduleEntry })[] = [];
     allClasses.forEach(cls => {
       const group = groups.find(g => g.id === cls.groupId);
+      if (!isLocationMatch(cls.location, group?.address || group?.name || group?.city)) return;
       
       if (searchTerm.trim()) {
         const term = searchTerm.toLowerCase();
@@ -197,11 +242,15 @@ export default function ClassPortal() {
       ];
     }
     return list as any[];
-  }, [allClasses, groups, searchTerm]);
+  }, [allClasses, groups, searchTerm, isLocationMatch]);
 
   // 2. 특강 데이터 가공 (목데이터 폴백 내장)
   const specialClassesData = useMemo(() => {
-    let list = specialClasses;
+    let list = specialClasses.filter(cls => {
+      const group = groups.find(g => g.id === cls.groupId);
+      return isLocationMatch(cls.location, group?.address || group?.name || group?.city);
+    });
+
     if (searchTerm.trim()) {
       const term = searchTerm.toLowerCase();
       list = list.filter(cls => {
@@ -213,7 +262,7 @@ export default function ClassPortal() {
       });
     }
 
-    if (list.length === 0) {
+    if (specialClasses.length === 0) {
       return [
         {
           id: 'mock-s1',
@@ -253,6 +302,11 @@ export default function ClassPortal() {
         } as any
       ];
     }
+
+    if (list.length === 0) {
+      return [];
+    }
+
     return list.map(c => {
       const group = groups.find(g => g.id === c.groupId);
       return {
@@ -264,15 +318,15 @@ export default function ClassPortal() {
         img: c.imageUrl || group?.coverImage || 'https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?q=80&w=350'
       };
     }) as any[];
-  }, [specialClasses, groups, searchTerm]);
+  }, [specialClasses, groups, searchTerm, isLocationMatch]);
 
-  // 3. 정규 수업 스튜디오 데이터 가공 (서울권 상위 6개 스튜디오)
+  // 3. 정규 수업 스튜디오 데이터 가공
   const monthlyStudiosData = useMemo(() => {
     const list = groups.filter(g => {
       const venue = venues.find(v => v.id === g.venueId);
-      const isSeoul = venue?.region?.toLowerCase() === 'seoul';
-      const isStudio = g.tags?.some(tag => tag.toLowerCase() === 'studio');
-      return isSeoul || isStudio;
+      const isStudio = g.tags?.some(tag => ['studio', 'class'].includes(tag.toLowerCase())) || g.activeServices?.class === true;
+      const match = isLocationMatch(venue?.address || g.address || venue?.name, g.name);
+      return isStudio && match;
     });
 
     let mapped = list.map(g => {
@@ -292,7 +346,7 @@ export default function ClassPortal() {
 
     mapped.sort((a, b) => b.classCount - a.classCount);
 
-    if (mapped.length === 0) {
+    if (groups.length === 0) {
       return [
         { id: 'mock-g1', name: 'Freestyle Tango', nativeName: '프리스타일 탱고', classCount: 8 },
         { id: 'mock-g2', name: 'En Paz Studio', nativeName: '엔파스', classCount: 16 },
@@ -302,8 +356,13 @@ export default function ClassPortal() {
         { id: 'mock-g6', name: 'Abrazo Studio', nativeName: '아브라조 스튜디오', classCount: 9 }
       ];
     }
+
+    if (mapped.length === 0) {
+      return [];
+    }
+
     return mapped.slice(0, 6) as any[];
-  }, [groups, venues, allClasses, searchTerm]);
+  }, [groups, venues, allClasses, searchTerm, isLocationMatch]);
 
   const [checkoutInitialStep, setCheckoutInitialStep] = useState<'summary' | 'payment' | 'complete' | undefined>(undefined);
   const [checkoutInitialBookingId, setCheckoutInitialBookingId] = useState<string | undefined>(undefined);
@@ -390,16 +449,29 @@ export default function ClassPortal() {
     return Array.from(instSet).sort();
   }, [allClasses]);
 
-  // 각 그룹별 전체 클래스 개수(allClasses 기준)
+  // 클래스가 특정 년-월에 속하는지 여부 검증 헬퍼
+  const isClassInTargetMonth = useCallback((cls: GroupClass, monthStr: string) => {
+    if (cls.targetMonth) return cls.targetMonth === monthStr;
+    if (cls.schedule && Array.isArray(cls.schedule)) {
+      return cls.schedule.some((s) => {
+        if (!s.date || typeof s.date !== 'string') return false;
+        const normalized = s.date.replace(/[\.\/ ]/g, '-');
+        return normalized.startsWith(monthStr);
+      });
+    }
+    return false;
+  }, []);
+
+  // 각 그룹별 이번 달 클래스 개수(targetMonthStr 기준)
   const groupCounts = useMemo(() => {
     const counts: Record<string, number> = {};
     allClasses.forEach(cls => {
-      if (cls.groupId) {
+      if (cls.groupId && isClassInTargetMonth(cls, targetMonthStr)) {
         counts[cls.groupId] = (counts[cls.groupId] || 0) + 1;
       }
     });
     return counts;
-  }, [allClasses]);
+  }, [allClasses, targetMonthStr, isClassInTargetMonth]);
 
   // 카운트가 있는 그룹들만 필터 목록에 노출하고, 카운트 순으로 정렬
   const filteredFilterGroups = useMemo(() => {
@@ -414,6 +486,36 @@ export default function ClassPortal() {
       return nameA.localeCompare(nameB, language === 'KR' ? 'ko' : 'en');
     });
   }, [groups, groupCounts, language]);
+
+  // 각 강사별 이번 달 클래스 개수(targetMonthStr 기준)
+  const instructorCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    allClasses.forEach(cls => {
+      const group = groups.find(g => g.id === cls.groupId);
+      if (!isLocationMatch(cls.location, group?.address || group?.name || group?.city)) return;
+      if (!isClassInTargetMonth(cls, targetMonthStr)) return;
+
+      if (cls.instructors && Array.isArray(cls.instructors)) {
+        cls.instructors.forEach((inst) => {
+          if (inst.name) {
+            const name = inst.name.trim();
+            counts[name] = (counts[name] || 0) + 1;
+          }
+        });
+      }
+    });
+    return counts;
+  }, [allClasses, groups, isLocationMatch, targetMonthStr, isClassInTargetMonth]);
+
+  // 카운트 순으로 강사 정렬
+  const sortedInstructors = useMemo(() => {
+    return [...organizers].sort((a, b) => {
+      const countA = instructorCounts[a] || 0;
+      const countB = instructorCounts[b] || 0;
+      if (countB !== countA) return countB - countA;
+      return a.localeCompare(b, language === 'KR' ? 'ko' : 'en');
+    });
+  }, [organizers, instructorCounts, language]);
 
   const weekTimeline = useMemo(() => {
     if (activeTab !== 'WEEK') return [];
@@ -445,6 +547,7 @@ export default function ClassPortal() {
 
     allClasses.forEach(cls => {
       const group = groups.find(g => g.id === cls.groupId);
+      if (!isLocationMatch(cls.location, group?.address || group?.name || group?.city)) return;
       
       if (selectedGroupId !== 'All' && cls.groupId !== selectedGroupId) return;
       if (selectedOrganizer !== 'All') {
@@ -494,23 +597,13 @@ export default function ClassPortal() {
       });
     });
     return result;
-  }, [activeTab, allClasses, groups, weekOffset, selectedOrganizer, selectedGroupId]);
+  }, [activeTab, allClasses, groups, weekOffset, selectedOrganizer, selectedGroupId, isLocationMatch]);
 
-  // Sub Header Tab Navigation
   useEffect(() => {
     if (!viewParam) {
-      const searchBar = (
-        <div className="w-full bg-white px-4 py-2.5 z-30 border-b border-slate-100/50">
-          <SearchHeader 
-            value={searchTerm}
-            onChange={setSearchTerm}
-            placeholder="클래스, 강사, 스튜디오 검색"
-            showFilter={true}
-          />
-        </div>
-      );
-      setSubHeader(searchBar, 54);
-      return () => setSubHeader(null);
+      setSubHeader(null);
+      router.replace('/class?view=today');
+      return;
     }
 
     const filterBar = (
@@ -541,80 +634,182 @@ export default function ClassPortal() {
           ))}
         </div>
 
-        {(activeTab === 'WEEK' || activeTab === 'TODAY') && (
+        {(activeTab === 'WEEK' || activeTab === 'TODAY' || activeTab === 'MONTH') && (
           <>
-            <div className="w-full h-11 px-4 flex items-center justify-end gap-4">
-              <button
-                onClick={() => { setShowOrganizerFilter(!showOrganizerFilter); if (!showOrganizerFilter) setShowClubFilter(false); }}
-                className={`flex items-center gap-0.5 text-[12px] font-bold transition-all ${selectedOrganizer !== 'All' ? 'text-blue-600' : 'text-slate-600 hover:text-slate-800'}`}
-              >
-                {selectedOrganizer === 'All' ? t('class.filter_instructor') : selectedOrganizer}
-                <span className={`material-symbols-outlined text-[16px] transition-transform ${showOrganizerFilter ? 'rotate-180' : ''}`}>expand_more</span>
-              </button>
-              <button
-                onClick={() => { setShowClubFilter(!showClubFilter); if (!showClubFilter) setShowOrganizerFilter(false); }}
-                className={`flex items-center gap-0.5 text-[12px] font-bold transition-all ${selectedGroupId !== 'All' ? 'text-blue-600' : 'text-slate-600 hover:text-slate-800'}`}
-              >
-                {selectedGroupId === 'All' ? t('class.filter_club') : (
-                  (() => {
-                    const grp = groups.find(g => g.id === selectedGroupId);
-                    return grp ? (language === 'KR' ? (grp.nativeName || grp.name) : grp.name) : '';
-                  })()
-                )}
-                <span className={`material-symbols-outlined text-[16px] transition-transform ${showClubFilter ? 'rotate-180' : ''}`}>expand_more</span>
-              </button>
-            </div>
-            {showOrganizerFilter && (
-              <div className="absolute top-full left-0 right-0 z-40 bg-white shadow-2xl border-t border-slate-100 p-4 max-h-[280px] overflow-y-auto animate-in fade-in slide-in-from-top-2 duration-300">
-                <div className="flex items-center justify-between mb-4 px-1">
-                  <span className="text-[14px] font-black text-slate-800 uppercase tracking-tight">{t('class.filter_by_instructor')}</span>
-                  <button onClick={() => setShowOrganizerFilter(false)} className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-50 text-slate-400 hover:text-slate-600 active:scale-90 transition-all">
-                    <span className="material-symbols-outlined text-[18px]">close</span>
+            <div className="w-full h-11 px-4 flex items-center justify-between gap-4">
+              {activeTab === 'WEEK' ? (
+                <div className="flex items-center gap-2 bg-slate-50 px-2.5 py-1 rounded-full border border-slate-100">
+                  <button onClick={() => setWeekOffset(prev => prev - 1)} className="w-5 h-5 flex items-center justify-center rounded-full hover:bg-slate-200 active:scale-90 transition-all text-slate-500">
+                    <span className="material-symbols-outlined text-[15px]">chevron_left</span>
+                  </button>
+                  <span className="text-[10px] font-black text-slate-700 uppercase tracking-wider min-w-[50px] text-center">
+                    {weekOffset === 0 ? t('class.this_week') : weekOffset === 1 ? t('class.next_week') : weekOffset === -1 ? t('class.last_week') : `${weekOffset > 0 ? '+' : ''}${weekOffset}W`}
+                  </span>
+                  <button onClick={() => setWeekOffset(prev => prev + 1)} className="w-5 h-5 flex items-center justify-center rounded-full hover:bg-slate-200 active:scale-90 transition-all text-slate-500">
+                    <span className="material-symbols-outlined text-[15px]">chevron_right</span>
                   </button>
                 </div>
-                <div className="grid grid-cols-2 gap-2">
-                  {['All', ...organizers].map(org => (
-                    <button key={org} onClick={() => { setSelectedOrganizer(org); setShowOrganizerFilter(false); }}
-                      className={`px-4 py-3 rounded-2xl text-[12px] font-bold text-left transition-all border ${selectedOrganizer === org ? 'bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-100' : 'bg-slate-50/50 text-slate-600 border-transparent hover:bg-slate-100/80'}`}>
-                      <div className="flex items-center justify-between"><span className="truncate pr-2">{org}</span>{selectedOrganizer === org && <span className="material-symbols-outlined text-[14px]">check_circle</span>}</div>
+              ) : activeTab === 'MONTH' ? (
+                <div className="flex items-center gap-2 bg-slate-50 px-2.5 py-1 rounded-full border border-slate-100">
+                  <button onClick={() => setMonthOffset(prev => prev - 1)} className="w-5 h-5 flex items-center justify-center rounded-full hover:bg-slate-200 active:scale-90 transition-all text-slate-500">
+                    <span className="material-symbols-outlined text-[15px]">chevron_left</span>
+                  </button>
+                  <span className="text-[10px] font-black text-slate-700 uppercase tracking-wider min-w-[70px] text-center">
+                    {monthLabel}
+                  </span>
+                  <button onClick={() => setMonthOffset(prev => prev + 1)} className="w-5 h-5 flex items-center justify-center rounded-full hover:bg-slate-200 active:scale-90 transition-all text-slate-500">
+                    <span className="material-symbols-outlined text-[15px]">chevron_right</span>
+                  </button>
+                </div>
+              ) : <div />}
+
+              {activeTab !== 'MONTH' ? (
+                <div className="flex items-center gap-2">
+                  {/* 강사 필터 */}
+                  <div className="relative">
+                    <button
+                      onClick={() => {
+                        if (selectedOrganizer !== 'All') {
+                          setSelectedOrganizer('All');
+                          setShowOrganizerFilter(false);
+                        } else {
+                          setShowOrganizerFilter(!showOrganizerFilter);
+                          setShowClubFilter(false);
+                        }
+                      }}
+                      className={`flex items-center gap-1 bg-white border rounded-full px-3 py-1.5 text-[10.5px] font-black shadow-sm transition-all active:scale-95 cursor-pointer ${
+                        selectedOrganizer !== 'All'
+                          ? "text-[#007AFF] border-[#007AFF]/20 bg-[#007AFF]/5"
+                          : "text-slate-600 border-slate-200 hover:bg-slate-50"
+                      }`}
+                    >
+                      <span className="material-symbols-outlined !text-[14px]">school</span>
+                      <span className="max-w-[85px] truncate">
+                        {selectedOrganizer !== 'All' ? formatInstructorNames(selectedOrganizer, language) : (language === "KR" ? "강사" : "Instructor")}
+                      </span>
+                      <span className={`material-symbols-outlined !text-[14px] transition-transform duration-200 ${showOrganizerFilter ? 'rotate-180' : ''}`}>
+                        expand_more
+                      </span>
                     </button>
-                  ))}
-                </div>
-              </div>
-            )}
-            {showClubFilter && (
-              <div className="absolute top-full left-0 right-0 z-40 bg-white shadow-2xl border-t border-slate-100 p-4 max-h-[280px] overflow-y-auto animate-in fade-in slide-in-from-top-2 duration-300">
-                <div className="flex items-center justify-between mb-4 px-1">
-                  <span className="text-[14px] font-black text-slate-800 uppercase tracking-tight">{t('class.filter_by_club')}</span>
-                  <button onClick={() => setShowClubFilter(false)} className="w-8 h-8 flex items-center justify-center rounded-full bg-slate-50 text-slate-400 hover:text-slate-600 active:scale-90 transition-all">
-                    <span className="material-symbols-outlined text-[18px]">close</span>
-                  </button>
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <button key="All" onClick={() => { setSelectedGroupId('All'); setShowClubFilter(false); }}
-                    className={`px-4 py-3 rounded-2xl text-[12px] font-bold text-left transition-all border ${selectedGroupId === 'All' ? 'bg-[#1e293b] text-white border-[#1e293b] shadow-md shadow-slate-100' : 'bg-slate-50/50 text-slate-600 border-transparent hover:bg-slate-100/80'}`}>
-                    <div className="flex items-center justify-between">
-                      <span className="truncate">{t('today.all_groups') || 'All Groups'}</span>
-                      {selectedGroupId === 'All' && <span className="material-symbols-outlined text-[14px]">check_circle</span>}
-                    </div>
-                  </button>
-                  {filteredFilterGroups.map(grp => {
-                    const count = groupCounts[grp.id] || 0;
-                    const isSelected = selectedGroupId === grp.id;
-                    const displayName = language === 'KR' ? (grp.nativeName || grp.name) : grp.name;
-                    return (
-                      <button key={grp.id} onClick={() => { setSelectedGroupId(grp.id); setShowClubFilter(false); }}
-                        className={`px-4 py-3 rounded-2xl text-[12px] font-bold text-left transition-all border ${isSelected ? 'bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-100' : 'bg-slate-50/50 text-slate-600 border-transparent hover:bg-slate-100/80'}`}>
-                        <div className="flex items-center justify-between">
-                          <span className="truncate pr-2">{displayName} ({count})</span>
-                          {isSelected && <span className="material-symbols-outlined text-[14px]">check_circle</span>}
+
+                    {/* 강사 드롭다운 팝오버 */}
+                    {showOrganizerFilter && (
+                      <>
+                        <div className="fixed inset-0 z-40" onClick={() => setShowOrganizerFilter(false)} />
+                        <div className="absolute top-full right-0 z-50 mt-1.5 w-[280px] bg-white shadow-2xl border border-slate-100/80 rounded-2xl p-4 animate-in fade-in slide-in-from-top-2 duration-200 max-h-[320px] overflow-y-auto no-scrollbar">
+                          <div className="flex items-center justify-between px-1 mb-2">
+                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                              {language === "KR" ? "강사 목록" : "Instructors"}
+                            </span>
+                          </div>
+                          <div className="grid grid-cols-2 gap-2 max-h-[240px] overflow-y-auto no-scrollbar">
+                            <button
+                              onClick={() => { setSelectedOrganizer('All'); setShowOrganizerFilter(false); }}
+                              className={`px-3 py-2 rounded-xl text-[10.5px] font-bold text-left transition-all border cursor-pointer ${
+                                selectedOrganizer === 'All'
+                                  ? "bg-[#1e293b] text-white border-[#1e293b] shadow-sm"
+                                  : "bg-slate-50 text-slate-600 border-transparent hover:bg-slate-100"
+                              }`}
+                            >
+                              {language === 'KR' ? '전체 강사' : 'All'}
+                            </button>
+                            {sortedInstructors.map(org => {
+                              const isSelected = selectedOrganizer === org;
+                              const count = instructorCounts[org] || 0;
+                              return (
+                                <button
+                                  key={org}
+                                  onClick={() => { setSelectedOrganizer(org); setShowOrganizerFilter(false); }}
+                                  className={`px-3 py-2 rounded-xl text-[10.5px] font-bold text-left transition-all border cursor-pointer ${
+                                    isSelected
+                                      ? "bg-[#1e293b] text-white border-[#1e293b] shadow-sm"
+                                      : "bg-slate-50 text-slate-600 border-transparent hover:bg-slate-100"
+                                  }`}
+                                >
+                                  <span className="truncate pr-1">{formatInstructorNames(org, language)} ({count})</span>
+                                </button>
+                              );
+                            })}
+                          </div>
                         </div>
-                      </button>
-                    );
-                  })}
+                      </>
+                    )}
+                  </div>
+
+                  {/* 그룹 필터 */}
+                  <div className="relative">
+                    <button
+                      onClick={() => {
+                        if (selectedGroupId !== 'All') {
+                          setSelectedGroupId('All');
+                           setShowClubFilter(false);
+                        } else {
+                          setShowClubFilter(!showClubFilter);
+                          setShowOrganizerFilter(false);
+                        }
+                      }}
+                      className={`flex items-center gap-1 bg-white border rounded-full px-3 py-1.5 text-[10.5px] font-black shadow-sm transition-all active:scale-95 cursor-pointer ${
+                        selectedGroupId !== 'All'
+                          ? "text-[#007AFF] border-[#007AFF]/20 bg-[#007AFF]/5"
+                          : "text-slate-600 border-slate-200 hover:bg-slate-50"
+                      }`}
+                    >
+                      <span className="material-symbols-outlined !text-[14px]">home</span>
+                      <span className="max-w-[85px] truncate">
+                        {selectedGroupId !== 'All' ? (groups.find(g => g.id === selectedGroupId)?.nativeName || groups.find(g => g.id === selectedGroupId)?.name || '') : (language === "KR" ? "그룹" : "Group")}
+                      </span>
+                      <span className={`material-symbols-outlined !text-[14px] transition-transform duration-200 ${showClubFilter ? 'rotate-180' : ''}`}>
+                        expand_more
+                      </span>
+                    </button>
+
+                    {/* 그룹 드롭다운 팝오버 */}
+                    {showClubFilter && (
+                       <>
+                         <div className="fixed inset-0 z-40" onClick={() => setShowClubFilter(false)} />
+                         <div className="absolute top-full right-0 z-50 mt-1.5 w-[280px] bg-white shadow-2xl border border-slate-100/80 rounded-2xl p-4 animate-in fade-in slide-in-from-top-2 duration-200 max-h-[320px] overflow-y-auto no-scrollbar">
+                           <div className="flex items-center justify-between px-1 mb-2">
+                             <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                               {language === "KR" ? "그룹 목록" : "Groups"}
+                             </span>
+                           </div>
+                           <div className="grid grid-cols-2 gap-2 max-h-[240px] overflow-y-auto no-scrollbar">
+                             <button
+                               onClick={() => { setSelectedGroupId('All'); setShowClubFilter(false); }}
+                               className={`px-3 py-2 rounded-xl text-[10.5px] font-bold text-left transition-all border cursor-pointer ${
+                                 selectedGroupId === 'All'
+                                   ? "bg-[#1e293b] text-white border-[#1e293b] shadow-sm"
+                                   : "bg-slate-50 text-slate-600 border-transparent hover:bg-slate-100"
+                               }`}
+                             >
+                               {language === 'KR' ? '전체 그룹' : 'All'}
+                             </button>
+                             {filteredFilterGroups.map(grp => {
+                               const isSelected = selectedGroupId === grp.id;
+                               const displayName = language === 'KR' ? (grp.nativeName || grp.name) : grp.name;
+                               const count = groupCounts[grp.id] || 0;
+                               return (
+                                 <button
+                                   key={grp.id}
+                                   onClick={() => { setSelectedGroupId(grp.id); setShowClubFilter(false); }}
+                                   className={`px-3 py-2 rounded-xl text-[10.5px] font-bold text-left transition-all border cursor-pointer ${
+                                     isSelected
+                                       ? "bg-[#1e293b] text-white border-[#1e293b] shadow-sm"
+                                       : "bg-slate-50 text-slate-600 border-transparent hover:bg-slate-100"
+                                   }`}
+                                 >
+                                   <span className="truncate pr-1">{displayName} ({count})</span>
+                                 </button>
+                               );
+                             })}
+                           </div>
+                         </div>
+                       </>
+                     )}
+                  </div>
                 </div>
-              </div>
-            )}
+              ) : <div />}
+            </div>
           </>
         )}
       </div>
@@ -642,6 +837,8 @@ export default function ClassPortal() {
     const classes: (GroupClass & { group?: Group; scheduleEntry?: ClassScheduleEntry })[] = [];
     allClasses.forEach(cls => {
       const group = groups.find(g => g.id === cls.groupId);
+      if (!isLocationMatch(cls.location, group?.address || group?.name || group?.city)) return;
+      
       if (selectedGroupId !== 'All' && cls.groupId !== selectedGroupId) return;
       if (selectedOrganizer !== 'All') {
         const hasInstructor = cls.instructors?.some((i) => i.name === selectedOrganizer);
@@ -695,10 +892,10 @@ export default function ClassPortal() {
 
     classes.forEach(cls => {
       const startTimeStr = (cls.scheduleEntry?.timeSlot?.split(/[-~]/)[0] || cls.startTime || '00:00').trim();
-      const hr = parseInt(startTimeStr.split(':')[0] || '0', 10);
-      if (hr >= 6 && hr < 12) blocks[0].classes.push(cls);
-      else if (hr >= 12 && hr < 18) blocks[1].classes.push(cls);
-      else if (hr >= 18 && hr < 21) blocks[2].classes.push(cls);
+      const hour = parseInt(startTimeStr.split(':')[0]) || 0;
+      if (hour >= 6 && hour < 12) blocks[0].classes.push(cls);
+      else if (hour >= 12 && hour < 18) blocks[1].classes.push(cls);
+      else if (hour >= 18 && hour < 21) blocks[2].classes.push(cls);
       else blocks[3].classes.push(cls);
     });
 
@@ -735,9 +932,23 @@ export default function ClassPortal() {
       alert("You don't have permission to add special events.");
       return;
     }
-    // No group selection needed for special classes
-    setIsAddingSpecialClass(true);
+    setShowGroupSelector(true);
   };
+
+  const createSpecialParam = searchParams.get('createSpecial');
+
+  useEffect(() => {
+    if (createSpecialParam === 'true' && user) {
+      if (isAdminOrOwner) {
+        handleAddSpecialClick();
+      } else {
+        toast.error(t('create_btn.group_instructor_only', '그룹에서 오너 또는 강사만 등록 가능합니다'));
+      }
+      const params = new URLSearchParams(window.location.search);
+      params.delete('createSpecial');
+      router.replace(`/class?${params.toString()}`);
+    }
+  }, [createSpecialParam, user, isAdminOrOwner, router, t]);
 
   const handleCheckoutClick = (cls: GroupClass & { group?: Group }, isSpecial: boolean = false) => {
     let group = cls.group;
@@ -920,6 +1131,125 @@ export default function ClassPortal() {
     }
   };
 
+  // 강사별 데이터 가공 (이번달 만날 수 있는 강사)
+  const todaysTeachersData = useMemo(() => {
+    const instructorMap = new Map<string, {
+      name: string;
+      avatar: string;
+      classCountThisMonth: number;
+      isTeachingToday: boolean;
+      representativeLocation: string;
+      userId?: string;
+    }>();
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayStr = today.toDateString();
+
+    const curYear = today.getFullYear();
+    const curMonth = today.getMonth();
+
+    allClasses.forEach(cls => {
+      const group = groups.find(g => g.id === cls.groupId);
+      if (!isLocationMatch(cls.location, group?.address || group?.name || group?.city)) return;
+
+      let hasClassThisMonth = false;
+      let hasClassToday = false;
+
+      cls.schedule?.forEach(s => {
+        if (!s.date) return;
+        const dObj = safeDate(s.date);
+        if (!dObj) return;
+        
+        if (dObj.getFullYear() === curYear && dObj.getMonth() === curMonth) {
+          hasClassThisMonth = true;
+        }
+        if (dObj.toDateString() === todayStr) {
+          hasClassToday = true;
+        }
+      });
+
+      if (!cls.schedule || cls.schedule.length === 0) {
+        hasClassThisMonth = true;
+      }
+
+      if (cls.instructors && Array.isArray(cls.instructors)) {
+        cls.instructors.forEach(inst => {
+          if (!inst.name) return;
+          const key = inst.name.trim();
+          const existing = instructorMap.get(key);
+          const avatarUrl = inst.avatar || '';
+          const locationName = cls.location || group?.name || '';
+
+          if (existing) {
+            if (hasClassThisMonth) {
+              existing.classCountThisMonth += 1;
+            }
+            if (hasClassToday) {
+              existing.isTeachingToday = true;
+            }
+            if (!existing.representativeLocation && locationName) {
+              existing.representativeLocation = locationName;
+            }
+            if (avatarUrl && !existing.avatar) {
+              existing.avatar = avatarUrl;
+            }
+          } else {
+            instructorMap.set(key, {
+              name: key,
+              avatar: avatarUrl,
+              classCountThisMonth: hasClassThisMonth ? 1 : 0,
+              isTeachingToday: hasClassToday,
+              representativeLocation: locationName,
+              userId: inst.userId || ''
+            });
+          }
+        });
+      }
+    });
+
+    const teachersList = Array.from(instructorMap.values());
+    
+    if (teachersList.length === 0) {
+      return [
+        {
+          name: 'Okiz Baek 오키즈',
+          avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=80',
+          classCountThisMonth: 6,
+          isTeachingToday: true,
+          representativeLocation: 'Tango Brujo'
+        },
+        {
+          name: 'Amy 셸로즈',
+          avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=80',
+          classCountThisMonth: 8,
+          isTeachingToday: true,
+          representativeLocation: 'Freestyle Tango'
+        },
+        {
+          name: 'Lucia 루시아',
+          avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=80',
+          classCountThisMonth: 4,
+          isTeachingToday: false,
+          representativeLocation: 'En Paz Studio'
+        }
+      ];
+    }
+
+    teachersList.sort((a, b) => {
+      if (a.isTeachingToday && !b.isTeachingToday) return -1;
+      if (!a.isTeachingToday && b.isTeachingToday) return 1;
+      return b.classCountThisMonth - a.classCountThisMonth;
+    });
+
+    return teachersList;
+  }, [allClasses, groups, isLocationMatch]);
+
+  // 하루짜리 특강 데이터 가공 (최대 4개 노출)
+  const oneDaySpecialsData = useMemo(() => {
+    return specialClassesData.slice(0, 4);
+  }, [specialClassesData]);
+
   const renderTodayTab = () => (
     <section className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 text-left pb-10">
       <div className="flex items-center justify-between px-1 mb-2">
@@ -1037,42 +1367,123 @@ export default function ClassPortal() {
           ))}
         </div>
       )}
+
+      {/* 강사별 섹션 */}
+      {todaysTeachersData.length > 0 && (
+        <div className="space-y-3 pt-2">
+          <h3 className="text-[15px] font-black text-slate-800 px-1">
+            {language === 'KR' ? '이번달 만날 수 있는 강사' : "Today's Teachers"}
+          </h3>
+          <HorizontalScroller>
+            {todaysTeachersData.map((teacher, idx) => (
+              <div 
+                key={idx}
+                onClick={() => {
+                  setSelectedOrganizer(teacher.name);
+                  router.push('/class?view=week');
+                }}
+                className="w-[140px] bg-white border border-slate-100 rounded-2xl p-3.5 shadow-sm shadow-slate-100/50 flex-shrink-0 flex flex-col items-center text-center select-none cursor-pointer hover:border-slate-200 transition-colors"
+              >
+                <div className="w-12 h-12 rounded-full overflow-hidden bg-slate-100 border border-slate-100/50 mb-2">
+                  <img 
+                    src={teacher.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=80'} 
+                    alt={teacher.name} 
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <h4 className="text-[13px] font-black text-slate-800 truncate w-full mb-0.5">
+                  {formatInstructorNames(teacher.name, language)}
+                </h4>
+                {teacher.representativeLocation && (
+                  <p className="text-[10.5px] font-bold text-slate-400 truncate w-full mb-2">
+                    {teacher.representativeLocation}
+                  </p>
+                )}
+                <div className="mt-auto w-full space-y-1">
+                  {teacher.isTeachingToday ? (
+                    <span className="inline-block bg-blue-50 text-blue-600 text-[9px] font-black px-1.5 py-0.5 rounded leading-none">
+                      {language === 'KR' ? '오늘 수업' : 'Teaching Today'}
+                    </span>
+                  ) : (
+                    <span className="inline-block bg-slate-50 text-slate-400 text-[9px] font-black px-1.5 py-0.5 rounded leading-none">
+                      {language === 'KR' ? '수업 대기' : 'Active'}
+                    </span>
+                  )}
+                  <p className="text-[9.5px] font-black text-slate-500 leading-none pt-0.5">
+                    {language === 'KR' ? `이번달 ${teacher.classCountThisMonth}개` : `${teacher.classCountThisMonth} classes`}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </HorizontalScroller>
+        </div>
+      )}
+
+      {/* 특강 섹션 */}
+      {oneDaySpecialsData.length > 0 && (
+        <div className="space-y-4 pt-2">
+          <h3 className="text-[15px] font-black text-slate-800 px-1">
+            {language === 'KR' ? '다가오는 특강' : 'One-Day Special Classes'}
+          </h3>
+          <div className="space-y-3">
+            {oneDaySpecialsData.map((cls) => {
+              const group = groups.find(g => g.id === cls.groupId);
+              const displaySrc = cls.img || cls.imageUrl || group?.coverImage || group?.logo || 'https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?q=80&w=350';
+              const instructorsLabel = cls.instructors && cls.instructors.length > 0 
+                ? cls.instructors.map((i: any) => formatInstructorNames(i.name || '', language)).join(', ')
+                : '';
+
+              return (
+                <div 
+                  key={cls.id}
+                  onClick={() => !cls.id.startsWith('mock') && handleClassClick(cls)}
+                  className="bg-white border border-slate-100 rounded-2xl p-3 shadow-sm shadow-slate-100/50 hover:shadow-md transition-all active:scale-[0.99] cursor-pointer flex gap-3 text-left"
+                >
+                  <div className="shrink-0 w-20 h-20 rounded-xl overflow-hidden bg-slate-50 border border-slate-100/50">
+                    <img 
+                      src={displaySrc} 
+                      alt={cls.title} 
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  
+                  <div className="flex-1 min-w-0 flex flex-col justify-between py-0.5">
+                    <div>
+                      <div className="flex items-center gap-1.5 mb-1">
+                        <span className="bg-amber-50 border border-amber-100 text-amber-700 text-[9px] font-black px-1.5 py-0.5 rounded leading-none">
+                          {language === 'KR' ? '특강' : 'Special'}
+                        </span>
+                        {cls.badge && cls.badge !== '특강' && (
+                          <span className="text-[9px] font-bold text-slate-400 truncate max-w-[120px]">
+                            {cls.badge}
+                          </span>
+                        )}
+                      </div>
+                      <h4 className="text-[14px] font-black text-slate-800 leading-tight mb-1 truncate">
+                        {cls.title}
+                      </h4>
+                    </div>
+                    
+                    <div className="space-y-0.5">
+                      <p className="text-[11px] font-medium text-slate-500 truncate">
+                        <span className="font-bold text-slate-600">{cls.dateLabel}</span> · {cls.timeSlot}
+                      </p>
+                      <p className="text-[10.5px] font-semibold text-slate-400 truncate">
+                        {instructorsLabel ? `${instructorsLabel} · ` : ''}{cls.location}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </section>
   );
 
   const renderWeekTab = () => (
     <section className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 text-left pb-10">
-      <div className="flex items-center justify-between px-1 mb-2">
-        <div className="flex items-center gap-2">
-          {(selectedOrganizer !== 'All' || selectedGroupId !== 'All') && (
-            <>
-              <span className="material-symbols-outlined text-[14px] text-blue-600">filter_alt</span>
-              <span className="text-[11px] font-bold text-blue-600 uppercase tracking-wider">
-                {selectedOrganizer !== 'All' ? selectedOrganizer : ''}
-                {selectedOrganizer !== 'All' && selectedGroupId !== 'All' ? ' · ' : ''}
-                {selectedGroupId !== 'All' ? (
-                  (() => {
-                    const grp = groups.find(g => g.id === selectedGroupId);
-                    return grp ? (language === 'KR' ? (grp.nativeName || grp.name) : grp.name) : '';
-                  })()
-                ) : ''}
-              </span>
-            </>
-          )}
-        </div>
-        
-        <div className="flex items-center gap-3 bg-slate-50 px-3 py-1.5 rounded-full border border-slate-100 ml-auto">
-          <button onClick={() => setWeekOffset(prev => prev - 1)} className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-slate-200 active:scale-90 transition-all text-slate-500">
-            <span className="material-symbols-outlined text-[18px]">chevron_left</span>
-          </button>
-          <span className="text-[11px] font-black text-slate-700 uppercase tracking-widest min-w-[60px] text-center">
-            {weekOffset === 0 ? t('class.this_week') : weekOffset === 1 ? t('class.next_week') : weekOffset === -1 ? t('class.last_week') : `${weekOffset > 0 ? '+' : ''}${weekOffset} ${t('class.weeks')}`}
-          </span>
-          <button onClick={() => setWeekOffset(prev => prev + 1)} className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-slate-200 active:scale-90 transition-all text-slate-500">
-            <span className="material-symbols-outlined text-[18px]">chevron_right</span>
-          </button>
-        </div>
-      </div>
 
       {weekTimeline.length === 0 || weekTimeline.every(g => g.classes.length === 0) ? (
         <div className="flex flex-col items-center justify-center py-20 text-slate-400">
@@ -1215,14 +1626,13 @@ export default function ClassPortal() {
   const filteredGroups = useMemo(() => {
     return groups
       .filter(group => {
-        // Find associated venue to check region
         const venue = venues.find(v => v.id === group.venueId);
-        const isSeoul = venue?.region?.toLowerCase() === 'seoul';
-        const isStudio = group.tags?.some(tag => tag.toLowerCase() === 'studio');
-        return isSeoul && isStudio;
+        const isStudio = group.tags?.some(tag => ['studio', 'class'].includes(tag.toLowerCase())) || group.activeServices?.class === true;
+        const match = isLocationMatch(venue?.address || group.address || venue?.name || venue?.city || (group as any).city, group.name);
+        return isStudio && match;
       })
       .sort((a, b) => (b.classes?.length || 0) - (a.classes?.length || 0));
-  }, [groups, venues]);
+  }, [groups, venues, isLocationMatch]);
 
   const renderMonthTab = () => {
     const targetDate = new Date();
@@ -1237,6 +1647,10 @@ export default function ClassPortal() {
     const monthLabel = language === 'KR'
       ? `${targetYear}년 ${targetMonthNum + 1}월`
       : `${monthNames[targetMonthNum]} ${targetYear}`;
+
+    const locationLabel = language === 'KR'
+      ? `${location?.city === 'ALL' ? '전체' : (location?.city === 'SEOUL' ? '서울' : (location?.city === 'BUSAN' ? '부산' : (location?.city === 'JEJU' ? '제주' : location?.city)))} 스튜디오`
+      : `${location?.city || 'Seoul'} Studios`;
 
     const getGroupClassCount = (groupId: string) => {
       return allClasses.filter(cls => {
@@ -1262,18 +1676,7 @@ export default function ClassPortal() {
     return (
     <div className="flex flex-col gap-4 animate-in fade-in slide-in-from-bottom-2 duration-500 pb-10">
       <div className="flex items-center justify-between px-1 mb-2">
-        <h3 className="text-[10px] font-black text-[#596061] uppercase tracking-[0.2em]">{t('class.studios_in_seoul')}</h3>
-        <div className="flex items-center gap-3 bg-slate-50 px-3 py-1.5 rounded-full border border-slate-100">
-          <button onClick={() => setMonthOffset(prev => prev - 1)} className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-slate-200 active:scale-90 transition-all text-slate-500">
-            <span className="material-symbols-outlined text-[18px]">chevron_left</span>
-          </button>
-          <span className="text-[11px] font-black text-slate-700 tracking-widest min-w-[100px] text-center">
-            {monthLabel}
-          </span>
-          <button onClick={() => setMonthOffset(prev => prev + 1)} className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-slate-200 active:scale-90 transition-all text-slate-500">
-            <span className="material-symbols-outlined text-[18px]">chevron_right</span>
-          </button>
-        </div>
+        <h3 className="text-[10px] font-black text-[#596061] uppercase tracking-[0.2em]">{locationLabel}</h3>
       </div>
       <div className="grid grid-cols-1 gap-4">
         {[...filteredGroups].sort((a, b) => getGroupClassCount(b.id) - getGroupClassCount(a.id)).map((group) => (
@@ -1346,27 +1749,10 @@ export default function ClassPortal() {
   };
 
   const renderSpecialTab = () => {
-    const isAdminOrOwner = user && (profile?.systemRole === 'admin' || profile?.isAdmin || groups.some(g => g.ownerId === user.uid));
-    
     return (
     <div className="flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
-      {isAdminOrOwner && (
-        <div className="px-5 py-3 flex items-center justify-between bg-white rounded-xl border border-slate-100 shadow-sm">
-          <p className="text-[12px] font-bold text-slate-400 uppercase tracking-tight">
-            {t('class.have_special_events')}
-          </p>
-          <button 
-            onClick={handleAddSpecialClick}
-            className="flex items-center gap-1.5 text-blue-600 hover:text-blue-700 transition-colors py-2"
-          >
-            <span className="text-[13px] font-bold">{t('class.register_event')}</span>
-            <span className="material-symbols-outlined text-[18px]">add_circle</span>
-          </button>
-        </div>
-      )}
-
-      {specialClasses.length > 0 ? (
-        specialClasses.map((cls: GroupClass) => {
+      {specialClassesData.length > 0 ? (
+        specialClassesData.map((cls: any) => {
           const group = groups.find(g => g.id === cls.groupId);
           return (
             <div 
@@ -1407,10 +1793,19 @@ export default function ClassPortal() {
                   <span className="material-symbols-outlined text-sm">stars</span>
                   <span className="text-[10px] font-black tracking-widest uppercase">{t('class.special_event_label')}</span>
                 </div>
-                <h3 className="text-2xl font-black mb-4 leading-tight">{cls.title}</h3>
-                <div className="flex items-center gap-2 mb-6">
-                  <div className="w-6 h-6 rounded-full overflow-hidden border border-white/20">
-                    <img src={group?.logo || group?.coverImage || ''} alt="" className="w-full h-full object-cover" />
+                <h3 className="text-xl font-black tracking-tight leading-tight mb-2 max-w-[280px]">
+                  {cls.title}
+                </h3>
+                <p className="text-white/60 text-xs font-bold leading-relaxed mb-6 max-w-[240px]">
+                  {cls.dateLabel} · {cls.timeSlot} · {cls.location}
+                </p>
+                <div className="flex items-center gap-2.5 mb-8">
+                  <div className="w-8 h-8 rounded-full overflow-hidden bg-white/10 flex-shrink-0 flex items-center justify-center">
+                    {group?.logo || group?.coverImage ? (
+                      <img src={group.logo || group.coverImage} alt={group.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="material-symbols-outlined text-white/50 text-sm">storefront</span>
+                    )}
                   </div>
                   <span className="text-xs font-bold text-white/80">{group?.name}</span>
                 </div>
@@ -1869,7 +2264,7 @@ export default function ClassPortal() {
         <Portal>
           <div className="fixed inset-0 z-[1000] bg-white overflow-y-auto">
             <GroupClassAddEditor 
-              group={null}
+              group={selectedGroupForAdd}
               isSpecial={true}
               onClose={() => setIsAddingSpecialClass(false)}
               onSave={async () => {

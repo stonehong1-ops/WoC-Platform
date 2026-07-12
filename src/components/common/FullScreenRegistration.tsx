@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useNavigation } from '@/components/providers/NavigationProvider';
+import { useBackButtonClose } from '@/hooks/useBackButtonClose';
 
 interface FullScreenRegistrationProps {
   id: string; // Unique ID for event triggers
@@ -47,7 +48,10 @@ export default function FullScreenRegistration({
     }
   };
 
-  const handleClose = () => setIsOpen(false); // Replaced useHistoryBack
+  const handleClose = useCallback(() => setIsOpen(false), []);
+
+  // 뒤로가기 버튼으로 풀스크린 닫기
+  useBackButtonClose(isOpen, handleClose);
 
   useEffect(() => {
     setMounted(true);

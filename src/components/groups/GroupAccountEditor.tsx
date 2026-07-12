@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { Group } from "@/types/group";
 import { groupService } from "@/lib/firebase/groupService";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useBackButtonClose } from '@/hooks/useBackButtonClose';
 
 interface GroupAccountEditorProps {
   group: Group;
@@ -22,6 +23,8 @@ export default function GroupAccountEditor({ group, onClose }: GroupAccountEdito
   });
 
   const [isSaving, setIsSaving] = useState(false);
+
+  useBackButtonClose(true, onClose);
 
   const handleSave = async () => {
     setIsSaving(true);

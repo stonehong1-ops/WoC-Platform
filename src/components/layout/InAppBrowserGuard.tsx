@@ -18,7 +18,13 @@ export default function InAppBrowserGuard() {
   useEffect(() => {
     if (typeof window === 'undefined' || typeof navigator === 'undefined') return;
 
-    // PWA standalone 또는 모바일 앱 환경 시 가드 간섭 완전 제거
+    // 네이티브 앱(Capacitor) 환경이면 가드 완전 비활성화
+    try {
+      const { Capacitor } = require('@capacitor/core');
+      if (Capacitor.isNativePlatform()) return;
+    } catch {}
+
+    // PWA standalone 환경 시 가드 간섭 완전 제거
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone;
     if (isStandalone) return;
 

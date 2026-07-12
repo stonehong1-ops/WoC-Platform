@@ -7,6 +7,7 @@ import {
   getDoc,
   getDocs,
   query,
+  where,
   orderBy,
   onSnapshot,
   serverTimestamp,
@@ -82,6 +83,45 @@ export const peopleService = {
   /** 삭제 */
   async delete(id: string) {
     await deleteDoc(doc(db, COLLECTION, id));
+  },
+
+  /** userId로 people 프로필 실시간 구독 */
+  subscribeByUserId(userId: string, cb: (item: Person | null) => void) {
+    const q = query(collection(db, COLLECTION), where('userId', '==', userId));
+    return onSnapshot(q, (snap) => {
+      if (snap.empty) { cb(null); return; }
+      const d = snap.docs[0];
+      const data = d.data();
+      cb({
+        ...data,
+        id: d.id,
+        createdAt: data.createdAt instanceof Timestamp
+          ? data.createdAt.toDate().toISOString()
+          : data.createdAt,
+        updatedAt: data.updatedAt instanceof Timestamp
+          ? data.updatedAt.toDate().toISOString()
+          : data.updatedAt,
+      } as Person);
+    });
+  },
+
+  /** userId로 people 프로필 단건 조회 (비동기) */
+  async getByUserId(userId: string): Promise<Person | null> {
+    const q = query(collection(db, COLLECTION), where('userId', '==', userId));
+    const snap = await getDocs(q);
+    if (snap.empty) return null;
+    const d = snap.docs[0];
+    const data = d.data();
+    return {
+      ...data,
+      id: d.id,
+      createdAt: data.createdAt instanceof Timestamp
+        ? data.createdAt.toDate().toISOString()
+        : data.createdAt,
+      updatedAt: data.updatedAt instanceof Timestamp
+        ? data.updatedAt.toDate().toISOString()
+        : data.updatedAt,
+    } as Person;
   },
 };
 
@@ -166,6 +206,7 @@ export const SAMPLE_PEOPLE: Omit<Person, 'id'>[] = [
       classReach: 'Teaching dancers across 30+ countries since 2011',
       appearances: '60+ festival appearances worldwide',
     },
+    userId: 'seed',
     authorId: 'seed',
     authorName: 'Admin',
     createdAt: new Date().toISOString(),

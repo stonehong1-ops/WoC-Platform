@@ -2,9 +2,10 @@
 
 // 클래스, 월간 패스, 패키지 할인의 상세 정보를 단일 조회하여 보여주는 초경량 정보 모달 컴포넌트
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import Portal from '@/components/common/Portal';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useBackButtonClose } from '@/hooks/useBackButtonClose';
 import UserProfileClickable from '@/components/common/UserProfileClickable';
 import UserBadge from '@/components/common/UserBadge';
 import { formatInstructorNames } from "@/app/social/constants/seoulRegions";
@@ -43,6 +44,9 @@ export default function ClassDetail({ groupId, onClose, isOpen, itemId, itemDeta
   const [hasMapCache, setHasMapCache] = useState<boolean>(false);
   const [cachedMapBrand, setCachedMapBrand] = useState<string>('');
   const scrollRef = React.useRef<HTMLDivElement>(null);
+
+  const handleClose = useCallback(() => onClose?.(), [onClose]);
+  useBackButtonClose(isOpen, handleClose);
 
   // 관리 제어반용 추가 상태들
   const [groupDetails, setGroupDetails] = useState<any | null>(null);
@@ -254,9 +258,6 @@ export default function ClassDetail({ groupId, onClose, isOpen, itemId, itemDeta
     }
   };
 
-  const handleClose = () => {
-    if (onClose) onClose();
-  };
 
   const getItemTypeLabel = (type: string) => {
     if (language === 'KR') {

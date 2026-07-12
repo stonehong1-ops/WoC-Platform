@@ -9,7 +9,7 @@ import { peopleService } from '@/lib/firebase/peopleService';
 import { Person, PersonRole, ActivityEntry, TourStop } from '@/types/people';
 import { storageService } from '@/lib/firebase/storageService';
 
-const ROLE_OPTIONS: PersonRole[] = ['Instructor', 'Organizer', 'Couple', 'Touring', 'Dancer'];
+const ROLE_OPTIONS: PersonRole[] = ['Instructor', 'DJ', 'Organizer', 'Seller', 'Couple', 'Touring', 'Dancer'];
 
 function RegisterPageContent() {
   const { user } = useAuth();
@@ -27,7 +27,9 @@ function RegisterPageContent() {
   const getRoleLabel = (role: PersonRole) => {
     switch (role) {
       case 'Instructor': return t('people.filter_instructor');
+      case 'DJ': return t('people.filter_dj', 'DJ');
       case 'Organizer': return t('people.filter_organizer');
+      case 'Seller': return t('people.filter_seller', '판매자');
       case 'Couple': return t('people.filter_couples');
       case 'Touring': return t('people.filter_touring');
       case 'Dancer': return t('people.filter_dancer');
@@ -146,6 +148,7 @@ function RegisterPageContent() {
       }
 
       const payload: Omit<Person, 'id' | 'createdAt' | 'updatedAt'> = {
+        userId: user.uid,
         name,
         roles,
         title,

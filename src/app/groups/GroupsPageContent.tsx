@@ -2,6 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import ImageWithFallback from '@/components/common/ImageWithFallback';
 import MyGroupsTray from '@/components/groups/MyGroupsTray';
 import GroupDetail from '@/components/groups/GroupDetail';
@@ -11,6 +12,7 @@ import {
   discoveryCategories 
 } from './constants/groupConstants';
 import { Group } from '@/types/group';
+import { useBackButtonClose } from '@/hooks/useBackButtonClose';
 
 // 공통 UI 컴포넌트 임포트
 import SearchHeader from '@/components/common/SearchHeader';
@@ -19,6 +21,7 @@ import HorizontalScroller from '@/components/common/HorizontalScroller';
 import CategoryGrid from '@/components/common/CategoryGrid';
 
 export default function GroupsPageContent() {
+  const router = useRouter();
   const {
     groups,
     loading,
@@ -52,6 +55,11 @@ export default function GroupsPageContent() {
     handleCreateSubmit
   } = useGroupsData();
 
+  // 뒤로가기 버튼으로 모달/풀스크린 닫기
+  useBackButtonClose(!!selectedCategory, closeModals);
+  useBackButtonClose(isCreateOpen, handleCreateClose);
+  useBackButtonClose(!!selectedGroup, closeModals);
+
   // 8개 지정 카테고리 맵핑 데이터
   const portalCategories = React.useMemo(() => {
     const counts = categoryCounts as Record<string, number>;
@@ -82,11 +90,11 @@ export default function GroupsPageContent() {
   // Jump 소사이어티 목데이터
   const jumpSocieties = React.useMemo(() => {
     return [
-      { name: 'Tango Seoul', icon: 'domain', bgImg: 'https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?q=80&w=300', iconBg: 'bg-blue-600 text-white' },
-      { name: 'Salsa Seoul', icon: 'groups', bgImg: 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?q=80&w=300', iconBg: 'bg-red-500 text-white' },
-      { name: 'Bachata Seoul', icon: 'favorite', bgImg: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=300', iconBg: 'bg-sky-500 text-white' },
-      { name: 'Yoga Seoul', icon: 'self_care', bgImg: 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?q=80&w=300', iconBg: 'bg-emerald-500 text-white' },
-      { name: 'Running Seoul', icon: 'directions_run', bgImg: 'https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?q=80&w=300', iconBg: 'bg-orange-500 text-white' }
+      { name: 'Tango Seoul', icon: 'domain', bgImg: 'https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?q=80&w=300', iconBg: 'bg-blue-600 text-white', path: '/home?society=tango' },
+      { name: 'Salsa Seoul', icon: 'groups', bgImg: 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?q=80&w=300', iconBg: 'bg-red-500 text-white', path: '/home?society=salsa' },
+      { name: 'Bachata Seoul', icon: 'favorite', bgImg: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=300', iconBg: 'bg-sky-500 text-white', path: '/home?society=bachata' },
+      { name: 'Yoga Seoul', icon: 'self_care', bgImg: 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?q=80&w=300', iconBg: 'bg-emerald-500 text-white', path: '/home?society=yoga' },
+      { name: 'Running Seoul', icon: 'directions_run', bgImg: 'https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?q=80&w=300', iconBg: 'bg-orange-500 text-white', path: '/home?society=running' }
     ];
   }, []);
 
@@ -114,20 +122,10 @@ export default function GroupsPageContent() {
     <div className="bg-white min-h-screen pb-32 relative font-body">
       <main className="max-w-4xl mx-auto px-5 py-6 space-y-7">
         
-        {/* 1. 공통 SearchHeader 적용 */}
-        <SearchHeader 
-          value={venueSearch}
-          onChange={setVenueSearch}
-          placeholder="모임, 그룹, 장소 검색"
-          showFilter={true}
-        />
-
         {/* 2. 새로운 모임 */}
         <section className="space-y-4 text-left">
           <SectionHeader 
             title="새로운 모임"
-            actionLabel="전체 보기"
-            href="/groups?view=all"
           />
 
           <HorizontalScroller>
@@ -204,6 +202,7 @@ export default function GroupsPageContent() {
             {jumpSocieties.map((society, idx) => (
               <div 
                 key={idx}
+                onClick={() => router.push(society.path)}
                 className="flex-shrink-0 w-[120px] bg-white border border-slate-100 rounded-3xl overflow-hidden shadow-sm cursor-pointer hover:shadow-md transition-all active:scale-[0.98]"
               >
                 <div className="relative aspect-[1/1] w-full bg-slate-100 overflow-hidden flex items-center justify-center">
