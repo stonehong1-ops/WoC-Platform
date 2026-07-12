@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 
 /**
  * 모달/풀스크린이 열릴 때 히스토리 항목을 추가하고,
@@ -10,6 +10,12 @@ import { useEffect } from 'react';
  * @param onClose - 닫기 콜백
  */
 export function useBackButtonClose(isOpen: boolean, onClose: () => void) {
+  const onCloseRef = useRef(onClose);
+
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
+
   useEffect(() => {
     if (!isOpen) return;
 
@@ -19,7 +25,7 @@ export function useBackButtonClose(isOpen: boolean, onClose: () => void) {
 
     const handlePopState = () => {
       // 뒤로가기 시 모달 닫기
-      onClose();
+      onCloseRef.current();
     };
 
     window.addEventListener('popstate', handlePopState);
@@ -31,5 +37,5 @@ export function useBackButtonClose(isOpen: boolean, onClose: () => void) {
         window.history.back();
       }
     };
-  }, [isOpen, onClose]);
+  }, [isOpen]);
 }
