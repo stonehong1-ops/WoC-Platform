@@ -66,27 +66,18 @@ workflows:
           set -euo pipefail
           
           echo "Checked-out commit:"
-          git rev-parse HEAD
+          git -C "$CM_BUILD_DIR" rev-parse HEAD
           
           echo "Current branch:"
-          git branch --show-current || true
-
-          LATEST_BUILD_NUMBER=$(
-            app-store-connect get-latest-app-store-build-number \
-              --bundle-id "com.woc.today" \
-              --all-versions
-          )
-
-          NEXT_BUILD_NUMBER=$((LATEST_BUILD_NUMBER + 1))
-
-          echo "Latest App Store build: $LATEST_BUILD_NUMBER"
-          echo "Next build number: $NEXT_BUILD_NUMBER"
+          git -C "$CM_BUILD_DIR" branch --show-current || true
 
           cd "$CM_BUILD_DIR/ios/App"
-          xcrun agvtool new-version -all "$NEXT_BUILD_NUMBER"
+
+          echo "Setting iOS build number to 5"
+          xcrun agvtool new-version -all 5
           
-          echo "Project versions after agvtool:"
-          grep -n "CURRENT_PROJECT_VERSION" "$CM_BUILD_DIR/ios/App/App.xcodeproj/project.pbxproj"
+          echo "Project build versions after agvtool:"
+          grep -n "CURRENT_PROJECT_VERSION" App.xcodeproj/project.pbxproj
       - name: Build Xcode Archive & Export IPA
         script: |
           xcode-project build-ipa \
