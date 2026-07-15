@@ -7,6 +7,8 @@ import { feedService } from '@/lib/firebase/feedService';
 
 import UserBadge from '../common/UserBadge';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useBlockedUsers } from '@/hooks/useBlockedUsers';
+import ReportModal from '../common/ReportModal';
 
 interface CommentBottomSheetProps {
   post: Post;
@@ -25,6 +27,8 @@ export default function CommentBottomSheet({ post, isOpen, onClose, currentUser,
   const [replyTo, setReplyTo] = useState<Comment | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const { t, language, formatRelativeTime } = useLanguage();
+  const { blockedUsers } = useBlockedUsers();
+  const [reportingComment, setReportingComment] = useState<Comment | null>(null);
 
   useEffect(() => {
     if (isOpen && post.id) {
@@ -95,7 +99,7 @@ export default function CommentBottomSheet({ post, isOpen, onClose, currentUser,
       : t('plaza.just_now');
 
     const isExpanded = expandedComments.has(comment.id);
-    const commentReplies = replies[comment.id] || [];
+    const commentReplies = (replies[comment.id] || []).filter(r => !blockedUsers.includes(r.userId));
 
     return (
       <div key={comment.id} className={`flex flex-col ${isReply ? 'ml-10 border-l-2 border-outline-variant/10 pl-4 mb-2' : 'border-b border-outline-variant/5 last:border-0 mb-4'}`}>
@@ -110,7 +114,18 @@ export default function CommentBottomSheet({ post, isOpen, onClose, currentUser,
               nameClassName={`font-bold text-sm ${comment.isOfficial ? 'text-primary' : 'text-on-surface'}`}
               nativeClassName="text-[11px] font-medium text-on-surface-variant leading-tight ml-1"
             />
-            <span className="text-[10px] text-on-surface-variant mt-1 shrink-0">{timeAgo}</span>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] text-on-surface-variant mt-1 shrink-0">{timeAgo}</span>
+              {currentUser && comment.userId !== currentUser.uid && !comment.isOfficial && (
+                <button
+                  type="button"
+                  onClick={() => setReportingComment(comment)}
+                  className="text-on-surface-variant/60 hover:text-red-500 transition-colors mt-1"
+                >
+                  <span className="material-symbols-outlined text-[16px]">flag</span>
+                </button>
+              )}
+            </div>
           </div>
           <div className="pl-10 pr-2">
             <p className="text-sm text-on-surface-variant mt-1 leading-relaxed">
@@ -187,24 +202,40 @@ export default function CommentBottomSheet({ post, isOpen, onClose, currentUser,
     </div>
   );
 
-  return (
-    <BottomSheet 
-      isOpen={isOpen} 
-      onClose={onClose} 
-      title={`${t('plaza.comments')} ${post.commentsCount || 0}`}
-      footer={footer}
-      height="70vh"
-    >
-      <div className="pb-4 px-1">
-        {comments.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 text-on-surface-variant/30">
-            <span className="material-symbols-outlined text-6xl mb-3 opacity-20">chat_bubble_outline</span>
-            <p className="text-sm font-medium">{t('plaza.first_comment')}</p>
+    const activeComments = comments.filter(c => !blockedUsers.includes(c.userId));
+
+    return (
+      <>
+        <BottomSheet 
+          isOpen={isOpen} 
+          onClose={onClose} 
+          title={`${t('plaza.comments')} ${post.commentsCount || 0}`}
+          footer={footer}
+          height="70vh"
+        >
+          <div className="pb-4 px-1">
+            {activeComments.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-20 text-on-surface-variant/30">
+                <span className="material-symbols-outlined text-6xl mb-3 opacity-20">chat_bubble_outline</span>
+                <p className="text-sm font-medium">{t('plaza.first_comment')}</p>
+              </div>
+            ) : (
+              activeComments.map(comment => renderCommentItem(comment))
+            )}
           </div>
-        ) : (
-          comments.map(comment => renderCommentItem(comment))
+        </BottomSheet>
+
+        {reportingComment && (
+          <ReportModal
+            isOpen={!!reportingComment}
+            onClose={() => setReportingComment(null)}
+            targetId={reportingComment.id}
+            targetType="comment"
+            targetOwnerUid={reportingComment.userId}
+            targetSnapshot={reportingComment.content}
+            targetTitle={post.content || "Comment"}
+          />
         )}
-      </div>
-    </BottomSheet>
-  );
-}
+      </>
+    );
+  }

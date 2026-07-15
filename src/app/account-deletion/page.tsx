@@ -9,7 +9,7 @@ import { toast } from 'sonner';
 
 export default function AccountDeletionPage() {
   const { t, language } = useLanguage();
-  const { user, profile } = useAuth();
+  const { user, profile, signOut } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
 
@@ -18,30 +18,39 @@ export default function AccountDeletionPage() {
     
     const confirmDelete = window.confirm(
       language === 'KR' 
-        ? '정말로 Tango World / WoC 계정 및 데이터를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.' 
-        : 'Are you sure you want to request deletion of your Tango World / WoC account and data? This action is irreversible.'
+        ? '정말로 Tango World / WoC 계정 및 모든 데이터를 완전히 삭제하시겠습니까? 이 작업은 즉시 실행되며 복구할 수 없습니다.' 
+        : 'Are you sure you want to completely delete your Tango World / WoC account and all data? This action is immediate and irreversible.'
     );
     if (!confirmDelete) return;
 
     setIsLoading(true);
     try {
-      await addDoc(collection(db, 'accountDeletionRequests'), {
-        uid: user.uid,
-        email: user.email || '',
-        phoneNumber: user.phoneNumber || '',
-        nickname: profile?.nickname || '',
-        requestedAt: serverTimestamp(),
-        status: 'pending',
+      const idToken = await user.getIdToken();
+      const res = await fetch('/api/user/delete', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${idToken}`
+        }
       });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Deletion failed');
+      }
+
+      await signOut();
       toast.success(
         language === 'KR' 
-          ? '계정 및 데이터 삭제 요청이 성공적으로 접수되었습니다. 처리 완료까지 최대 30일이 소요될 수 있습니다.' 
-          : 'Your deletion request has been submitted successfully. It may take up to 30 days.'
+          ? '계정과 데이터가 성공적으로 완전히 삭제되었습니다. 3초 후 메인 페이지로 이동합니다.' 
+          : 'Your account and data have been successfully deleted. Redirecting in 3 seconds.'
       );
       setIsSubmitted(true);
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 3000);
     } catch (err: any) {
       console.error(err);
-      toast.error(language === 'KR' ? '요청 제출 중 오류가 발생했습니다: ' + err.message : 'Failed to submit request: ' + err.message);
+      toast.error(language === 'KR' ? '탈퇴 처리 중 오류가 발생했습니다: ' + err.message : 'Failed to delete account: ' + err.message);
     } finally {
       setIsLoading(false);
     }

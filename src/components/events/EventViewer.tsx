@@ -16,6 +16,7 @@ import LiveFeed from "@/components/live/LiveFeed";
 import EditEvent from "./EditEvent";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useNavigation } from "@/components/providers/NavigationProvider";
+import ReportModal from "@/components/common/ReportModal";
 
 interface EventViewerProps {
   event: Event;
@@ -33,6 +34,7 @@ export default function EventViewer({ event: initialEvent, onClose }: EventViewe
   const [event, setEvent] = useState<Event>(initialEvent);
   const [activeTab, setActiveTab] = useState<TabId>("home");
   const [showEdit, setShowEdit] = useState(false);
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
 
   useBackButtonClose(true, onClose);
 
@@ -183,6 +185,10 @@ export default function EventViewer({ event: initialEvent, onClose }: EventViewe
               </button>
             </>
           )}
+          <button onClick={() => setIsReportModalOpen(true)}
+            className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${isScrolled ? "bg-slate-100" : "bg-black/20 backdrop-blur-sm"} active:scale-90`}>
+            <span className="text-base">🚨</span>
+          </button>
           <button onClick={() => navigator.share ? navigator.share({ title: event.title, url: window.location.href }).catch(console.error) : alert(t('event.share_not_supported'))}
             className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${isScrolled ? "bg-slate-100 text-[#2d3435]" : "bg-black/20 backdrop-blur-sm text-white"}`}>
             <span className="material-symbols-rounded text-xl">share</span>
@@ -288,6 +294,16 @@ export default function EventViewer({ event: initialEvent, onClose }: EventViewe
           <ChatRoom roomId={chatId} onBack={handleCloseChat} />
         </div>
       )}
+
+      <ReportModal
+        isOpen={isReportModalOpen}
+        onClose={() => setIsReportModalOpen(false)}
+        targetId={event.id}
+        targetType="event"
+        targetOwnerUid={event.hostId || ""}
+        targetSnapshot={`${event.title}\n${event.description || ""}`}
+        targetTitle={event.title}
+      />
     </div>
   );
 }

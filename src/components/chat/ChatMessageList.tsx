@@ -15,6 +15,8 @@ import UserName from '../common/UserName';
 import UserBadge from '../common/UserBadge';
 import VoiceBubble from './VoiceBubble';
 import MeetupCard from './MeetupCard';
+import { useBlockedUsers } from '@/hooks/useBlockedUsers';
+import ReportModal from '../common/ReportModal';
 import SettlementCard from './SettlementCard';
 import PollCard from './PollCard';
 
@@ -209,6 +211,8 @@ export default function ChatMessageList({
   cancelBooking
 }: ChatMessageListProps) {
   const REACTION_EMOJIS = ['👍', '❤️', '🥰', '😂', '😮', '😢', '😡'];
+  const { blockedUsers } = useBlockedUsers();
+  const [reportingMsg, setReportingMsg] = useState<ChatMessage | null>(null);
 
   const getSenderName = (senderId: string, fallbackName?: string) => {
     if (senderId === user?.uid) return user.displayName || user.nickname || '나';
@@ -682,10 +686,10 @@ export default function ChatMessageList({
           </div>
         )}
 
-        {displayMessages.map((msg, idx) => {
+        {displayMessages.filter(msg => !blockedUsers.includes(msg.senderId)).map((msg, idx, filteredArr) => {
           const isOwn = msg.senderId === user?.uid;
           const isSystem = msg.type === 'system';
-          const showAvatar = !isOwn && !isSystem && (idx === 0 || displayMessages[idx - 1].senderId !== msg.senderId || displayMessages[idx - 1].type === 'system');
+          const showAvatar = !isOwn && !isSystem && (idx === 0 || filteredArr[idx - 1].senderId !== msg.senderId || filteredArr[idx - 1].type === 'system');
 
           const isGroupChat = room?.participants && room.participants.length > 2;
           const readByCount = msg.readBy ? msg.readBy.length : 1;
@@ -928,6 +932,19 @@ export default function ChatMessageList({
                             <span>{t('chat.menu_copy', '복사')}</span>
                           </button>
 
+                          {!isOwn && (
+                            <button 
+                              onClick={() => {
+                                setReportingMsg(msg);
+                                setMenuMsgId(null);
+                              }}
+                              className="w-full px-4 py-3 rounded-2xl flex items-center gap-3 hover:bg-rose-50 hover:text-rose-600 text-[13.5px] font-bold text-rose-500 transition-colors"
+                            >
+                              <span className="material-symbols-outlined text-[18px]">flag</span>
+                              <span>{t('plaza.report') || '신고하기 / Report'}</span>
+                            </button>
+                          )}
+
                           {isOwn && (
                             <button 
                               onClick={() => handleMessageDelete(msg.id)}
@@ -947,6 +964,17 @@ export default function ChatMessageList({
           );
         })}
       </div>
+      {reportingMsg && (
+        <ReportModal
+          isOpen={!!reportingMsg}
+          onClose={() => setReportingMsg(null)}
+          targetId={reportingMsg.id}
+          targetType="chat"
+          targetOwnerUid={reportingMsg.senderId}
+          targetSnapshot={reportingMsg.text || "[Media/Attachment]"}
+          targetTitle="Chat Message"
+        />
+      )}
     </div>
   );
 }

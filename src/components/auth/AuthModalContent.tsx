@@ -100,60 +100,14 @@ export function AuthModalContent() {
         {step === 'SOCIAL' ? (
           /* Step 1: Select Auth Method */
           <div className="space-y-4 mb-10">
-
-            <div className="grid grid-cols-2 gap-3">
-              <button 
-                disabled={isLoading}
-                onClick={() => setStep('PHONE_INPUT')}
-                className={`flex flex-col items-center justify-center gap-1.5 h-20 bg-blue-50 border border-blue-100 rounded-xl hover:bg-blue-100 transition-all disabled:opacity-50 ${
-                  Capacitor.isNativePlatform() ? 'col-span-2' : ''
-                }`}
-              >
-                <span className="material-symbols-outlined text-[20px] text-blue-600">phone_iphone</span>
-                <span className="text-[11px] font-bold text-blue-900 uppercase">{t('auth.continue_phone', 'Phone')}</span>
-              </button>
-              
-              {!Capacitor.isNativePlatform() && (
-                <button 
-                  disabled={isLoading}
-                  onClick={handleGoogleLogin}
-                  className="flex flex-col items-center justify-center gap-1.5 h-20 bg-gray-50 border border-gray-200 rounded-xl hover:bg-gray-100 transition-all disabled:opacity-50"
-                >
-                  <img alt="Google" className="w-5 h-5" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCrULfO5Si59s3yrGL1htM77UognPjlHkqCzmmqrbzqnNtGF7WHN8-E46CnXyZo-7bHd1wL78yQ6vat7pfYchsCTUmOFLpR7ttH1sp-iSZcq6i-zaOW4aoPFNiRS7AnA9xcYBQG4FyplVXBuKqvIDCOv9Lty8noBe58-BBq95wecE5M7v07XJgmZQrlcz362rkU-rE04bG_vmQXErI9lSqoPnrclYJgdfnabauLle6HNzmsdCFQKlXsCPTWgBF01qCZCc94BYLbUGcU" />
-                  <span className="text-[11px] font-bold text-gray-700 uppercase">Google</span>
-                </button>
-              )}
-
-              <button 
-                disabled={isLoading}
-                onClick={() => alert(t('auth.soon', 'Coming soon'))}
-                className="flex flex-col items-center justify-center gap-1.5 h-20 bg-gray-50 border border-gray-100 rounded-xl relative overflow-hidden disabled:opacity-50 hover:bg-gray-100 transition-all"
-              >
-                <span className="material-symbols-outlined text-[20px] text-gray-400">facebook</span>
-                <span className="text-[11px] font-bold text-gray-400 uppercase">Facebook</span>
-                <span className="absolute top-1.5 right-2 text-[8px] font-black text-gray-300 uppercase tracking-wider">Soon</span>
-              </button>
-
-              <button 
-                disabled={isLoading}
-                onClick={() => alert(t('auth.soon', 'Coming soon'))}
-                className="flex flex-col items-center justify-center gap-1.5 h-20 bg-gray-50 border border-gray-100 rounded-xl relative overflow-hidden disabled:opacity-50 hover:bg-gray-100 transition-all"
-              >
-                <span className="material-symbols-outlined text-[20px] text-gray-400">mail</span>
-                <span className="text-[11px] font-bold text-gray-400 uppercase">Email</span>
-                <span className="absolute top-1.5 right-2 text-[8px] font-black text-gray-300 uppercase tracking-wider">Soon</span>
-              </button>
-
-              <button 
-                disabled={isLoading}
-                onClick={() => alert(t('auth.soon', 'Coming soon'))}
-                className="flex flex-col items-center justify-center gap-1.5 h-20 bg-gray-50 border border-gray-100 rounded-xl relative overflow-hidden col-span-2 disabled:opacity-50 hover:bg-gray-100 transition-all"
-              >
-                <span className="material-symbols-outlined text-[20px] text-gray-400">computer</span>
-                <span className="text-[11px] font-bold text-gray-400 uppercase">Apple</span>
-                <span className="absolute top-1.5 right-2 text-[8px] font-black text-gray-300 uppercase tracking-wider">Soon</span>
-              </button>
-            </div>
+            <button 
+              disabled={isLoading}
+              onClick={() => setStep('PHONE_INPUT')}
+              className="flex items-center justify-center gap-3 w-full h-14 bg-blue-50 border border-blue-100 rounded-2xl hover:bg-blue-100 active:scale-[0.98] transition-all disabled:opacity-50"
+            >
+              <span className="material-symbols-outlined text-[22px] text-blue-600">phone_iphone</span>
+              <span className="text-sm font-bold text-blue-900 uppercase tracking-wider">{t('auth.continue_phone', 'Continue with Phone')}</span>
+            </button>
           </div>
         ) : step === 'EMAIL_INPUT' ? (
           <div className="animate-in slide-in-from-bottom-4 duration-500 space-y-6">

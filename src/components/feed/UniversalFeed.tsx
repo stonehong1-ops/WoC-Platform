@@ -11,6 +11,7 @@ import { useLocation } from '@/components/providers/LocationProvider';
 import { COUNTRY_MAPPING } from '@/constants/locations';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { matchLocationGroup } from '@/app/social/constants/regionMapping';
+import { useBlockedUsers } from '@/hooks/useBlockedUsers';
 
 interface UniversalFeedProps {
   context: any;
@@ -40,8 +41,9 @@ export default function UniversalFeed({
 
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
-  const [localFilter, setLocalFilter] = useState('all');
+   const [localFilter, setLocalFilter] = useState('all');
   const { t } = useLanguage();
+  const { blockedUsers } = useBlockedUsers();
 
   const [visibleLimit, setVisibleLimit] = useState(15);
   const [hasMore, setHasMore] = useState(true);
@@ -104,7 +106,7 @@ export default function UniversalFeed({
 
   // Derive filtered posts based on activeFilter
   const filteredPosts = React.useMemo(() => {
-    let result = [...posts];
+    let result = posts.filter(p => !blockedUsers.includes(p.userId));
 
     // 1. Regional Filtering (Only for Plaza scope)
     if (context.scope === 'plaza' && location.country !== 'GLOBAL') {

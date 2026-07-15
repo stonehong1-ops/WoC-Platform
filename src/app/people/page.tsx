@@ -12,6 +12,7 @@ import { collection, onSnapshot, query } from 'firebase/firestore';
 import { db } from '@/lib/firebase/clientApp';
 import { PlatformUser } from '@/types/user';
 import { useBackButtonClose } from '@/hooks/useBackButtonClose';
+import { useBlockedUsers } from '@/hooks/useBlockedUsers';
 
 // 공통 UI 컴포넌트 임포트
 
@@ -38,15 +39,24 @@ export default function PeoplePage() {
   useBackButtonClose(!!sectionParam, closeSectionModal);
 
   // 상태 관리
-  const [people, setPeople] = useState<Person[]>([]);
-  const [users, setUsers] = useState<PlatformUser[]>([]);
+  const [rawPeople, setRawPeople] = useState<Person[]>([]);
+  const [rawUsers, setRawUsers] = useState<PlatformUser[]>([]);
 
   const [isGlobal, setIsGlobal] = useState(false); // false: 로컬, true: 글로벌
   const [likedIds, setLikedIds] = useState<string[]>([]);
+  const { blockedUsers } = useBlockedUsers();
+
+  const people = useMemo(() => {
+    return rawPeople.filter(p => !blockedUsers.includes(p.authorId));
+  }, [rawPeople, blockedUsers]);
+
+  const users = useMemo(() => {
+    return rawUsers.filter(u => !blockedUsers.includes(u.id));
+  }, [rawUsers, blockedUsers]);
 
   // Subscribe Firestore
   useEffect(() => {
-    const unsub = peopleService.subscribe(setPeople);
+    const unsub = peopleService.subscribe(setRawPeople);
     return () => unsub();
   }, []);
 
@@ -58,7 +68,7 @@ export default function PeoplePage() {
         id: d.id,
         ...d.data()
       }) as PlatformUser);
-      setUsers(items);
+      setRawUsers(items);
     });
     return () => unsub();
   }, []);

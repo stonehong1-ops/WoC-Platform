@@ -763,13 +763,20 @@ function MyInfoPageContent() {
             </div>
 
             {/* Action Buttons Section */}
-            <div className="mt-12 pt-8 flex justify-center pb-4">
+            <div className="mt-12 pt-8 flex flex-col sm:flex-row gap-4 justify-center items-center pb-4">
               <button 
                 onClick={handleLogout}
                 className="flex items-center gap-2 px-6 py-3 rounded-full text-error font-bold hover:bg-error/10 transition-colors border border-error/20"
               >
                 <span className="material-symbols-outlined">logout</span>
                 {t('my.logout')}
+              </button>
+              <button 
+                onClick={() => router.push('/account-deletion')}
+                className="flex items-center gap-2 px-6 py-3 rounded-full text-on-surface-variant font-bold hover:bg-surface-container transition-colors border border-outline-variant/30 text-xs"
+              >
+                <span className="material-symbols-outlined !text-[18px]">no_accounts</span>
+                {language === 'KR' ? '계정 및 데이터 탈퇴' : 'Delete Account & Data'}
               </button>
             </div>
 

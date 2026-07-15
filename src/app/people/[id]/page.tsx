@@ -9,8 +9,10 @@ import { PlatformUser } from '@/types/user';
 import { useNavigation } from '@/components/providers/NavigationProvider';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { doc, onSnapshot } from 'firebase/firestore';
+import { doc, onSnapshot, deleteDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase/clientApp';
+import ReportModal from '@/components/common/ReportModal';
+import { toast } from 'sonner';
 
 const ADMIN_UIDS = ['7iaZAmaYY9dNNEShmJmROI8XrtH2'];
 
@@ -21,14 +23,62 @@ export default function PeopleDetailPage() {
   const isPreview = searchParams.get('preview') === '1';
   const { user } = useAuth();
   const { setGlobalNavHidden } = useNavigation();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [person, setPerson] = useState<Person | null>(null);
   const [previewUser, setPreviewUser] = useState<PlatformUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [showMenu, setShowMenu] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [showTodo, setShowTodo] = useState(false);
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const [isBlocked, setIsBlocked] = useState(false);
+
+  // Subscribe to block status
+  useEffect(() => {
+    if (!user || !person?.authorId) {
+      setIsBlocked(false);
+      return;
+    }
+    const blockRef = doc(db, 'users', user.uid, 'blockedUsers', person.authorId);
+    const unsub = onSnapshot(blockRef, (snap) => {
+      setIsBlocked(snap.exists());
+    });
+    return () => unsub();
+  }, [user, person?.authorId]);
+
+  const handleBlockToggle = async () => {
+    if (!user || !person) {
+      toast.error(t('people.alert_login_req') || '로그인이 필요합니다.');
+      return;
+    }
+    if (user.uid === person?.authorId) {
+      toast.error('자기 자신은 차단할 수 없습니다.');
+      return;
+    }
+    const confirmMsg = isBlocked 
+      ? t('block.unblock_confirm') || '이 사용자의 차단을 해제하시겠습니까?' 
+      : t('block.confirm') || '이 사용자를 차단하시겠습니까?';
+      
+    if (!window.confirm(confirmMsg)) return;
+
+    const blockRef = doc(db, 'users', user.uid, 'blockedUsers', person.authorId);
+    try {
+      if (isBlocked) {
+        await deleteDoc(blockRef);
+        toast.success(t('block.unblock_success') || '차단을 해제했습니다.');
+      } else {
+        await setDoc(blockRef, {
+          blockedUid: person.authorId,
+          createdAt: serverTimestamp()
+        });
+        toast.success(t('block.success') || '해당 사용자를 차단했습니다.');
+      }
+    } catch (err: any) {
+      console.error("Failed to toggle block:", err);
+      toast.error(err.message);
+    }
+  };
 
   // Fullscreen: hide global nav
   useEffect(() => {
@@ -185,6 +235,53 @@ export default function PeopleDetailPage() {
     );
   }
 
+  if (isBlocked) {
+    return (
+      <main className="pt-0 pb-20 max-w-[480px] mx-auto bg-surface min-h-screen shadow-2xl relative flex flex-col items-center justify-center p-6 text-center">
+        <header className="fixed top-0 w-full z-50 bg-white shadow-md py-2 max-w-[480px]">
+          <div className="relative flex justify-between items-center px-6">
+            <button onClick={() => router.back()}
+              className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-slate-100 transition-colors">
+              <span className="material-symbols-outlined text-on-surface">arrow_back</span>
+            </button>
+            <h1 className="text-base font-black text-[#2d3435] truncate max-w-[200px]">
+              {person.name}
+            </h1>
+            <div className="relative" ref={menuRef}>
+              <button onClick={() => setShowMenu(!showMenu)} 
+                className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-slate-100 transition-colors">
+                <span className="material-symbols-outlined text-[#2d3435]">more_vert</span>
+              </button>
+              {showMenu && (
+                <div className="absolute right-0 top-12 bg-white rounded-xl shadow-2xl border border-outline/10 overflow-hidden min-w-[160px] z-[100] animate-in fade-in slide-in-from-top-2 duration-200">
+                  <button onClick={() => { setShowMenu(false); handleBlockToggle(); }}
+                    className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-500 hover:bg-red-50 transition-colors">
+                    <span className="material-symbols-outlined text-lg">check_circle</span> {t('block.unblock') || '차단 해제'}
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </header>
+        <div className="space-y-4 pt-20">
+          <span className="material-symbols-outlined text-6xl text-slate-350">block</span>
+          <h2 className="text-lg font-black text-slate-800">{language === 'KR' ? '차단된 사용자입니다' : 'Blocked User'}</h2>
+          <p className="text-xs text-slate-500 font-bold max-w-xs mx-auto leading-relaxed">
+            {language === 'KR' 
+              ? '내가 차단한 사용자의 정보는 표시되지 않습니다. 대화를 원하시면 차단을 해제해 주세요.' 
+              : 'Information is hidden because you blocked this user.'}
+          </p>
+          <button 
+            onClick={handleBlockToggle}
+            className="px-6 py-2.5 bg-red-500 text-white rounded-full text-xs font-black transition-all active:scale-95 hover:bg-red-600"
+          >
+            {t('block.unblock') || '차단 해제'}
+          </button>
+        </div>
+      </main>
+    );
+  }
+
   return (
     <main className="pt-0 pb-20 max-w-[480px] mx-auto bg-surface min-h-screen shadow-2xl relative">
       <style dangerouslySetInnerHTML={{ __html: `
@@ -244,6 +341,19 @@ export default function PeopleDetailPage() {
                   className="w-full flex items-center gap-3 px-4 py-3 text-sm text-on-surface hover:bg-surface-container transition-colors border-t border-outline/5">
                   <span className="material-symbols-outlined text-lg">share</span> {t('people.detail_share')}
                 </button>
+                {user && user.uid !== person.authorId && (
+                  <button onClick={() => { setShowMenu(false); handleBlockToggle(); }}
+                    className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-500 hover:bg-red-50 transition-colors border-t border-outline/5">
+                    <span className="material-symbols-outlined text-lg">{isBlocked ? 'check_circle' : 'block'}</span> 
+                    {isBlocked ? t('block.unblock') || '차단 해제' : t('block.button') || '차단하기'}
+                  </button>
+                )}
+                {user && user.uid !== person.authorId && (
+                  <button onClick={() => { setShowMenu(false); setIsReportModalOpen(true); }}
+                    className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-500 hover:bg-red-50 transition-colors border-t border-outline/5">
+                    <span className="text-base">🚨</span> {t('plaza.report') || '신고하기 / Report'}
+                  </button>
+                )}
               </div>
             )}
           </div>
@@ -542,6 +652,16 @@ export default function PeopleDetailPage() {
           </div>
         </div>
       )}
+
+      <ReportModal
+        isOpen={isReportModalOpen}
+        onClose={() => setIsReportModalOpen(false)}
+        targetId={person.id}
+        targetType="profile"
+        targetOwnerUid={person.authorId}
+        targetSnapshot={`${person.name}\n${person.bio || ''}`}
+        targetTitle={person.name}
+      />
     </main>
   );
 }

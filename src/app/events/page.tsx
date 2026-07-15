@@ -13,6 +13,7 @@ import { useLocation } from '@/components/providers/LocationProvider';
 import { useNavigation } from '@/components/providers/NavigationProvider';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useModalNavigation } from '@/hooks/useModalNavigation';
+import { useBlockedUsers } from '@/hooks/useBlockedUsers';
 
 // 공통 UI 컴포넌트 임포트
 import SectionHeader from '@/components/common/SectionHeader';
@@ -75,6 +76,7 @@ export default function EventsPage() {
   const [likedEventIds, setLikedEventIds] = useState<string[]>([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const { isOpen: isCreateOpenURL, openModal: openCreateURL, closeModal: closeCreateURL } = useModalNavigation('create');
+  const { blockedUsers } = useBlockedUsers();
 
   // 최초 진입 시 메인 홈을 다가오는 일정(view=list)으로 강제 리디렉션
   useEffect(() => {
@@ -259,10 +261,12 @@ export default function EventsPage() {
   }, [events, location, isWorldEvent]);
 
   const sortedEvents = useMemo(() => {
-    return [...filteredLocationEvents].sort((a, b) => 
-      getNormalizedDate(a.startDate).getTime() - getNormalizedDate(b.startDate).getTime()
-    );
-  }, [filteredLocationEvents]);
+    return [...filteredLocationEvents]
+      .filter(e => !blockedUsers.includes(e.hostId))
+      .sort((a, b) => 
+        getNormalizedDate(a.startDate).getTime() - getNormalizedDate(b.startDate).getTime()
+      );
+  }, [filteredLocationEvents, blockedUsers]);
 
   // Calendar Logic (Current Month)
   const calendarRange = useMemo(() => {

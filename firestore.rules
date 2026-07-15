@@ -1,6 +1,26 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    function isUserActive(uid) {
+      let userDoc = get(/databases/$(database)/documents/users/$(uid)).data;
+      return request.auth != null && 
+             (!('accountStatus' in userDoc) || userDoc.accountStatus == 'active');
+    }
+
+    function hasBlockBetween(uid1, uid2) {
+      return exists(/databases/$(database)/documents/users/$(uid1)/blockedUsers/$(uid2)) ||
+             exists(/databases/$(database)/documents/users/$(uid2)/blockedUsers/$(uid1));
+    }
+
+    function isNotBlocked(authorId) {
+      return request.auth == null || authorId == null || authorId == "" || 
+             (
+               !exists(/databases/$(database)/documents/users/$(request.auth.uid)/blockedUsers/$(authorId)) &&
+               !exists(/databases/$(database)/documents/users/$(authorId)/blockedUsers/$(request.auth.uid))
+             );
+    }
+
+
     match /users/{userId} {
       allow read: if true;
       allow write: if request.auth != null && (
@@ -42,189 +62,189 @@ service cloud.firestore {
     }
     match /chat_rooms/{roomId} {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow write: if isUserActive(request.auth.uid);
     }
     match /chat_messages/{messageId} {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow write: if isUserActive(request.auth.uid);
     }
     match /events/{eventId} {
       allow read: if true;
       allow write: if true;
       match /registrations/{regId} {
         allow read: if true;
-        allow write: if request.auth != null;
+        allow write: if isUserActive(request.auth.uid);
       }
     }
     match /{path=**}/classes/{classId} {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow write: if isUserActive(request.auth.uid);
     }
     match /{path=**}/monthlyPasses/{passId} {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow write: if isUserActive(request.auth.uid);
     }
     match /{path=**}/discounts/{discountId} {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow write: if isUserActive(request.auth.uid);
     }
     match /shops/{shopId} {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow write: if isUserActive(request.auth.uid);
     }
     match /stay/{stayId} {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow write: if isUserActive(request.auth.uid);
     }
     match /stays/{stayId} {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow write: if isUserActive(request.auth.uid);
     }
     match /stay_bookings/{bookingId} {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow write: if isUserActive(request.auth.uid);
     }
     match /bookings/{bookingId} {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow write: if isUserActive(request.auth.uid);
     }
     match /stay_likes/{likeId} {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow write: if isUserActive(request.auth.uid);
     }
     match /services/{serviceId} {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow write: if isUserActive(request.auth.uid);
     }
     match /resale/{resaleId} {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow write: if isUserActive(request.auth.uid);
     }
     match /resale_items/{itemId} {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow write: if isUserActive(request.auth.uid);
     }
     match /resale_likes/{likeId} {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow write: if isUserActive(request.auth.uid);
     }
     match /user_reputation/{userId} {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow write: if isUserActive(request.auth.uid);
     }
     match /lost/{lostId} {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow write: if isUserActive(request.auth.uid);
     }
     match /arcade/{arcadeId} {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow write: if isUserActive(request.auth.uid);
     }
     match /socials/{socialId} {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow write: if isUserActive(request.auth.uid);
       match /reservations/{resId} {
         allow read: if true;
-        allow write: if request.auth != null;
+        allow write: if isUserActive(request.auth.uid);
       }
     }
     match /social_likes/{likeId} {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow write: if isUserActive(request.auth.uid);
     }
     match /galleries/{postId} {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow write: if isUserActive(request.auth.uid);
     }
     match /gallery_comments/{commentId} {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow write: if isUserActive(request.auth.uid);
     }
     match /groups/{groupId} {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow write: if isUserActive(request.auth.uid);
       match /posts/{postId} {
         allow read: if true;
-        allow write: if request.auth != null;
+        allow write: if isUserActive(request.auth.uid);
         match /comments/{commentId} {
           allow read: if true;
-          allow write: if request.auth != null;
+          allow write: if isUserActive(request.auth.uid);
         }
       }
       match /members/{memberId} {
         allow read: if true;
-        allow write: if request.auth != null;
+        allow write: if isUserActive(request.auth.uid);
       }
       match /classes/{classId} {
         allow read: if true;
-        allow write: if request.auth != null;
+        allow write: if isUserActive(request.auth.uid);
       }
       match /class_registrations/{registrationId} {
         allow read: if true;
-        allow write: if request.auth != null;
+        allow write: if isUserActive(request.auth.uid);
       }
       match /monthlyPasses/{passId} {
         allow read: if true;
-        allow write: if request.auth != null;
+        allow write: if isUserActive(request.auth.uid);
       }
       match /discounts/{discountId} {
         allow read: if true;
-        allow write: if request.auth != null;
+        allow write: if isUserActive(request.auth.uid);
       }
 
       match /calendar_events/{eventId} {
         allow read: if true;
-        allow write: if request.auth != null;
+        allow write: if isUserActive(request.auth.uid);
       }
 
       match /polls/{pollId} {
         allow read: if true;
-        allow write: if request.auth != null;
+        allow write: if isUserActive(request.auth.uid);
       }
     }
     match /feeds/{postId} {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow write: if isUserActive(request.auth.uid);
       match /comments/{commentId} {
         allow read: if true;
-        allow write: if request.auth != null;
+        allow write: if isUserActive(request.auth.uid);
       }
       match /reactions/{reactionId} {
         allow read: if true;
-        allow write: if request.auth != null;
+        allow write: if isUserActive(request.auth.uid);
       }
     }
     match /class_registrations/{registrationId} {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow write: if isUserActive(request.auth.uid);
     }
     match /rental_spaces/{spaceId} {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow write: if isUserActive(request.auth.uid);
     }
     match /rental_likes/{likeId} {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow write: if isUserActive(request.auth.uid);
     }
     match /rental_requests/{requestId} {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow write: if isUserActive(request.auth.uid);
     }
     match /products/{productId} {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow write: if isUserActive(request.auth.uid);
     }
     match /shop_orders/{orderId} {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow write: if isUserActive(request.auth.uid);
     }
     match /product_likes/{likeId} {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow write: if isUserActive(request.auth.uid);
     }
     match /shop_banners/{bannerId} {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow write: if isUserActive(request.auth.uid);
     }
     match /cartoons/{cartoonId} {
       allow read: if true;
@@ -236,20 +256,20 @@ service cloud.firestore {
     }
     match /lost_found_items/{itemId} {
       allow read: if true;
-      allow create: if request.auth != null;
+      allow create: if isUserActive(request.auth.uid);
       allow update, delete: if request.auth != null && request.auth.uid == resource.data.authorId;
     }
     match /lost_found_likes/{likeId} {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow write: if isUserActive(request.auth.uid);
     }
     match /notifications/{notificationId} {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow write: if isUserActive(request.auth.uid);
     }
     match /social_weekly_states/{stateId} {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow write: if isUserActive(request.auth.uid);
     }
     match /i18n_entries/{entryId} {
       allow read: if true;
@@ -280,11 +300,11 @@ service cloud.firestore {
     }
     match /coupons/{couponId} {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow write: if isUserActive(request.auth.uid);
     }
     match /user_coupons/{userCouponId} {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow write: if isUserActive(request.auth.uid);
     }
     match /error_logs/{logId} {
       allow create: if true;

@@ -23,6 +23,7 @@ import SocialViewer from "@/components/social/SocialViewer";
 import ClassDetail from "@/components/class/ClassDetail";
 import EventViewer from "@/components/events/EventViewer";
 import { toast } from "sonner";
+import { useBlockedUsers } from "@/hooks/useBlockedUsers";
 
 // 분리된 하위 컴포넌트 임포트
 import TodayHeroSection from "./components/TodayHeroSection";
@@ -269,17 +270,30 @@ function TimelineEventItem({ ev, onClick, language }: { ev: any; onClick: () => 
 export default function TodayPageContent() {
   const { t, language } = useLanguage();
   const { location } = useLocation();
+  const { blockedUsers } = useBlockedUsers();
 
   const today = new Date();
   const [weekOffset, setWeekOffset] = useState(0);
   const [selectedDate, setSelectedDate] = useState<Date>(today);
   const weekDates = getWeekDates(today, weekOffset);
 
-  const [socials, setSocials] = useState<Social[]>([]);
+  const [rawSocials, setRawSocials] = useState<Social[]>([]);
+  const socials = useMemo(() => {
+    return rawSocials.filter(s => !blockedUsers.includes(s.organizerId));
+  }, [rawSocials, blockedUsers]);
+
   const [venuesMap, setVenuesMap] = useState<Record<string, any>>({});
   const [heroEvents, setHeroEvents] = useState<Event[]>([]);
   const [heroEvent, setHeroEvent] = useState<Event | null>(null);
-  const [allClasses, setAllClasses] = useState<{ cls: GroupClass }[]>([]);
+
+  const [rawAllClasses, setRawAllClasses] = useState<{ cls: GroupClass }[]>([]);
+  const allClasses = useMemo(() => {
+    return rawAllClasses.filter(c => {
+      const isBlockedInstructor = c.cls.instructors?.some(inst => inst.userId && blockedUsers.includes(inst.userId));
+      return !isBlockedInstructor;
+    });
+  }, [rawAllClasses, blockedUsers]);
+
   const [loadingSocials, setLoadingSocials] = useState(true);
   const [loadingEvents, setLoadingEvents] = useState(true);
   const [loadingClasses, setLoadingClasses] = useState(true);
@@ -296,7 +310,10 @@ export default function TodayPageContent() {
   const [groupEvents, setGroupEvents] = useState<any[]>([]);
   const { isOpen: showMonthCalendar, openModal: openMonthCalendar, closeModal: closeMonthCalendar } = useModalNavigation("viewMonth");
   const [selectedMonthTab, setSelectedMonthTab] = useState<number>(0);
-  const [allSocials, setAllSocials] = useState<Social[]>([]);
+  const [rawAllSocials, setRawAllSocials] = useState<Social[]>([]);
+  const allSocials = useMemo(() => {
+    return rawAllSocials.filter(s => !blockedUsers.includes(s.organizerId));
+  }, [rawAllSocials, blockedUsers]);
 
   // 오늘 일정 뷰 모드 상태 (list: 목록 방식, timeline: 시간대별 통합 방식)
   const [todayViewMode, setTodayViewMode] = useState<"list" | "timeline" | "calendar">("list");
@@ -383,7 +400,7 @@ export default function TodayPageContent() {
         getDoc(docRef).then(snap => {
           if (snap.exists()) {
             const fetched = { id: snap.id, ...snap.data() } as Social;
-            setAllSocials(prev => {
+            setRawAllSocials(prev => {
               if (prev.some(s => s.id === viewSocialId)) return prev;
               return [...prev, fetched];
             });
@@ -682,7 +699,7 @@ export default function TodayPageContent() {
   useEffect(() => {
     setLoadingSocials(true);
     socialService.getTodayActiveSocials(selectedDate.getDay(), selectedDate).then((data) => {
-      setSocials(data);
+      setRawSocials(data);
       setLoadingSocials(false);
     });
   }, [selectedDate]);
@@ -740,7 +757,7 @@ export default function TodayPageContent() {
     setLoadingClasses(true);
     groupService.getGlobalClassesAll()
       .then((data) => {
-        setAllClasses(data.map(cls => ({ cls })));
+        setRawAllClasses(data.map(cls => ({ cls })));
         setLoadingClasses(false);
       })
       .catch(() => setLoadingClasses(false));
@@ -751,7 +768,7 @@ export default function TodayPageContent() {
     const q = query(collection(db, "socials"), limit(200));
     getDocs(q).then(snap => {
       const list = snap.docs.map(d => ({ id: d.id, ...d.data() }) as Social);
-      setAllSocials(list);
+      setRawAllSocials(list);
     }).catch(console.error);
   }, []);
 

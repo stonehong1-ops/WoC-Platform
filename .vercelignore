@@ -1,0 +1,9 @@
+android/
+ios/
+.firebase/
+*.aab
+*.apk
+node_modules/
+.next/cache/
+temp_scenes/
+*.log

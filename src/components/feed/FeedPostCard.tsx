@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { Post, ReactionType } from '@/types/feed';
+import ReportModal from '@/components/common/ReportModal';
 
 import { motion, AnimatePresence } from 'framer-motion';
 import { feedService } from '@/lib/firebase/feedService';
@@ -37,6 +38,7 @@ function getYouTubeThumbnail(url: string): string | null {
 
 export default function FeedPostCard({ post, currentUser, profile, onEdit, onDelete, hideUserInfo, isGridView }: FeedPostCardProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const [isReactionSelectorOpen, setIsReactionSelectorOpen] = useState(false);
   const { t, language, formatRelativeTime, formatDate } = useLanguage();
@@ -340,7 +342,7 @@ export default function FeedPostCard({ post, currentUser, profile, onEdit, onDel
                 </>
               ) : (
                 <>
-                  <button onClick={() => setIsMenuOpen(false)} className="w-full px-4 py-2 text-left text-sm hover:bg-primary/10 flex items-center gap-3 text-on-surface">
+                  <button onClick={() => { setIsMenuOpen(false); setIsReportModalOpen(true); }} className="w-full px-4 py-2 text-left text-sm hover:bg-primary/10 flex items-center gap-3 text-on-surface">
                     <span className="material-symbols-outlined text-lg">report</span> {t('plaza.report')}
                   </button>
                 </>
@@ -851,6 +853,16 @@ export default function FeedPostCard({ post, currentUser, profile, onEdit, onDel
         onClose={closeMedia}
         media={normalizedMedia as any}
         initialIndex={initialMediaIndex}
+      />
+
+      <ReportModal
+        isOpen={isReportModalOpen}
+        onClose={() => setIsReportModalOpen(false)}
+        targetId={post.id}
+        targetType="post"
+        targetOwnerUid={post.userId}
+        targetSnapshot={post.content}
+        targetTitle={post.content}
       />
     </article>
   );

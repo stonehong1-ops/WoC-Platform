@@ -18,6 +18,7 @@ import { matchLocationGroup } from '@/app/social/constants/regionMapping';
 import { db } from '@/lib/firebase/clientApp';
 import { useBookingEngine } from '@/hooks/useBookingEngine';
 import UnifiedCheckoutModal from '@/components/common/UnifiedCheckoutModal';
+import { useBlockedUsers } from '@/hooks/useBlockedUsers';
 import Portal from '@/components/common/Portal';
 import GroupClassAddEditor from '@/components/groups/GroupClassAddEditor';
 import { safeDate } from '@/lib/utils/safeDate';
@@ -82,8 +83,25 @@ export default function ClassPortal() {
   const [loading, setLoading] = useState(cachedPortal ? false : true);
   const [groups, setGroups] = useState<Group[]>(cachedPortal?.groups || []);
   const [venues, setVenues] = useState<Venue[]>(cachedPortal?.venues || []);
-  const [allClasses, setAllClasses] = useState<GroupClass[]>(cachedPortal?.allClasses || []);
-  const [specialClasses, setSpecialClasses] = useState<GroupClass[]>(cachedPortal?.specialClasses || []);
+  
+  const { blockedUsers } = useBlockedUsers();
+
+  const [rawAllClasses, setRawAllClasses] = useState<GroupClass[]>(cachedPortal?.allClasses || []);
+  const allClasses = useMemo(() => {
+    return rawAllClasses.filter(c => {
+      const isBlockedInstructor = c.instructors?.some(inst => inst.userId && blockedUsers.includes(inst.userId));
+      return !isBlockedInstructor;
+    });
+  }, [rawAllClasses, blockedUsers]);
+
+  const [rawSpecialClasses, setRawSpecialClasses] = useState<GroupClass[]>(cachedPortal?.specialClasses || []);
+  const specialClasses = useMemo(() => {
+    return rawSpecialClasses.filter(c => {
+      const isBlockedInstructor = c.instructors?.some(inst => inst.userId && blockedUsers.includes(inst.userId));
+      return !isBlockedInstructor;
+    });
+  }, [rawSpecialClasses, blockedUsers]);
+
   const [allDiscountsGlobal, setAllDiscountsGlobal] = useState<ClassDiscount[]>(cachedPortal?.allDiscountsGlobal || []);
   
   const { user, profile } = useAuth();
@@ -413,8 +431,8 @@ export default function ClassPortal() {
         ]);
         
         setGroups(groupsData);
-        setAllClasses(allData);
-        setSpecialClasses(specialData);
+        setRawAllClasses(allData);
+        setRawSpecialClasses(specialData);
         setVenues(venuesData || []);
         setAllDiscountsGlobal(discountsData);
         setLoading(false);
@@ -912,7 +930,7 @@ export default function ClassPortal() {
         dailyClassPrice: tempDailyClassPrice || null
       });
       // update local state
-      setAllClasses(prev => prev.map(c => c.id === editingClass.id ? { 
+      setRawAllClasses(prev => prev.map(c => c.id === editingClass.id ? { 
         ...c, 
         isDailyBookingOpen: tempIsDailyBookingOpen,
         instructorComment: tempInstructorComment,
@@ -2275,8 +2293,8 @@ export default function ClassPortal() {
                     groupService.getGlobalClassesAll(),
                     groupService.getGlobalSpecialClasses()
                   ]);
-                  setAllClasses(allData);
-                  setSpecialClasses(specialData);
+                  setRawAllClasses(allData);
+                  setRawSpecialClasses(specialData);
                 } finally {
                   setLoading(false);
                 }
