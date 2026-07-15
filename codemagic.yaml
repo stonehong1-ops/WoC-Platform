@@ -71,13 +71,10 @@ workflows:
           echo "Current branch:"
           git branch --show-current || true
 
-          : "${APP_STORE_APPLE_ID:?APP_STORE_APPLE_ID is not configured}"
-
           LATEST_BUILD_NUMBER=$(
             app-store-connect get-latest-app-store-build-number \
-              "$APP_STORE_APPLE_ID" \
-              --app-store-version=1.0 \
-              --platform=IOS
+              --bundle-id "com.woc.today" \
+              --all-versions
           )
 
           NEXT_BUILD_NUMBER=$((LATEST_BUILD_NUMBER + 1))
