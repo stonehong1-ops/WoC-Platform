@@ -24,7 +24,7 @@ export default function PageWrapper({ children }: { children: React.ReactNode })
   const isExplore = pathname.startsWith('/explore');
   const isNation = pathname.startsWith('/class') || pathname.startsWith('/shop') || pathname.startsWith('/resale') || pathname.startsWith('/stay') || pathname.startsWith('/lost') || pathname.startsWith('/hub');
   
-  const isPublic = isLanding || isLogin || isApp || isLive || isVenues || isEvents || isSocial || isPlaza || isExplore || isNation || isHome || pathname.startsWith('/yedamche') || pathname.startsWith('/pt') || pathname.startsWith('/fys');
+  const isPublic = isLanding || isLogin || isApp || isLive || isVenues || isEvents || isSocial || isPlaza || isExplore || isNation || isHome || pathname.startsWith('/yedamche') || pathname.startsWith('/pt') || pathname.startsWith('/fys') || pathname.startsWith('/support') || pathname.startsWith('/privacy') || pathname.startsWith('/child-safety') || pathname.startsWith('/account-deletion');
 
   // Android 네이티브 하드웨어 백버튼 제어
   useEffect(() => {
