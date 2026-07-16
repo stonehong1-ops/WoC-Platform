@@ -30,6 +30,10 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
                     pathname.startsWith('/stay') ||
                     pathname.startsWith('/lost') ||
                     pathname.startsWith('/hub') ||
+                    pathname.startsWith('/support') ||
+                    pathname.startsWith('/privacy') ||
+                    pathname.startsWith('/child-safety') ||
+                    pathname.startsWith('/account-deletion') ||
                     pathname.startsWith('/fys');
 
     if (!loading && !isPublic && (!user || !profile?.isRegistered)) {
