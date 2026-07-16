@@ -27,7 +27,7 @@ export default function ChildSafetyPage() {
           Child Safety Policy & CSAE Prevention
         </h1>
         <p className="text-sm font-semibold text-gray-500 max-w-xl mx-auto">
-          World of Community strictly prohibits Child Sexual Abuse Material (CSAM) and Child Sexual Abuse and Exploitation (CSAE).
+          Tango World, operated by World of Community, strictly prohibits Child Sexual Abuse Material (CSAM) and Child Sexual Abuse and Exploitation (CSAE).
         </p>
       </div>
 
@@ -81,6 +81,10 @@ export default function ChildSafetyPage() {
             <br />
             Email: <a href="mailto:stonehong1@gmail.com" className="text-primary underline font-bold">stonehong1@gmail.com</a>
           </p>
+
+          <p className="text-xs text-on-surface/60 italic mt-4">
+            This policy applies to all users of Tango World across all supported platforms.
+          </p>
         </section>
 
         {/* Korean Section */}
@@ -131,6 +135,10 @@ export default function ChildSafetyPage() {
             아동 안전 담당 연락처 (Child Safety Contact)
             <br />
             이메일: <a href="mailto:stonehong1@gmail.com" className="text-primary underline font-bold">stonehong1@gmail.com</a>
+          </p>
+
+          <p className="text-xs text-on-surface/60 italic mt-4">
+            본 정책은 Tango World의 모든 플랫폼 사용자에게 적용됩니다.
           </p>
         </section>
       </div>
