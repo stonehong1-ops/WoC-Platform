@@ -13,6 +13,9 @@ import RentalDetail from '@/components/rental/RentalDetail';
 import CreateRentalSpace from '@/components/rental/CreateRentalSpace';
 import ImageWithFallback from '@/components/common/ImageWithFallback';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useBlockedUsers } from '@/hooks/useBlockedUsers';
+import { doc, setDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
+import { db } from '@/lib/firebase/clientApp';
 
 
 type SortOption = 'latest' | 'price_asc' | 'popular';
@@ -35,6 +38,7 @@ const RENTAL_SIZES = [
 function RentalPageContent() {
   const { user } = useAuth();
   const { t } = useLanguage();
+  const { blockedUsers } = useBlockedUsers();
   const { isOpen: isDetailOpen, value: itemId, openModal: openDetail, closeModal: closeDetail } = useModalNavigation('itemId');
   const { isOpen: isComposeOpen, openModal: openCompose, closeModal: closeCompose } = useModalNavigation('compose');
 
@@ -157,6 +161,9 @@ function RentalPageContent() {
   const filteredSpaces = useMemo(() => {
     let result = [...spaces];
 
+    // Apply Block Filter
+    result = result.filter(s => !blockedUsers.includes(s.hostId || ''));
+
     // Apply Studio Filter
     if (activeStudio !== 'All') {
       result = result.filter(s => (s.studioName || s.location || 'Unknown Studio') === activeStudio);
@@ -201,7 +208,7 @@ function RentalPageContent() {
         break;
     }
     return result;
-  }, [spaces, searchQuery, sortOption, activeSize, activeStudio]);
+  }, [spaces, searchQuery, sortOption, activeSize, activeStudio, blockedUsers]);
 
   const selectedSpace = useMemo(() => {
     if (!itemId) return null;

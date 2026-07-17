@@ -7,6 +7,8 @@ import ImageWithFallback from '@/components/common/ImageWithFallback';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { KIND_ICON, KIND_COLOR } from '@/constants/tags';
 import GroupBoardEditor from './GroupBoardEditor';
+import { useAuth } from '@/components/providers/AuthProvider';
+import { useBlockedUsers } from '@/hooks/useBlockedUsers';
 
 interface GroupBoardProps {
   group: Group;
@@ -15,6 +17,8 @@ interface GroupBoardProps {
 
 const GroupBoard = ({ group, isAdmin = false }: GroupBoardProps) => {
   const { t, formatDate } = useLanguage();
+  const { user } = useAuth();
+  const { blockedUsers } = useBlockedUsers();
   const [posts, setPosts] = useState<Post[]>(() => {
     if (typeof window !== 'undefined') {
       const cached = sessionStorage.getItem(`woc_board_posts_${group.id}`);
@@ -50,9 +54,10 @@ const GroupBoard = ({ group, isAdmin = false }: GroupBoardProps) => {
   const filteredPosts = useMemo(() => {
     return posts.filter(post => {
       const matchesCategory = selectedCategory === 'all' || post.category === selectedCategory;
-      return matchesCategory;
+      const matchesBlock = !blockedUsers.includes(post.author?.id || (post as any).authorId || '');
+      return matchesCategory && matchesBlock;
     });
-  }, [posts, selectedCategory]);
+  }, [posts, selectedCategory, blockedUsers]);
 
   const currentPosts = filteredPosts.slice(0, pageSize);
 

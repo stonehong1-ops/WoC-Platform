@@ -12,6 +12,10 @@ import { safeDate } from '@/lib/utils/safeDate';
 import ResaleWishlistTray from '@/components/resale/ResaleWishlistTray';
 import { useModalNavigation } from '@/hooks/useModalNavigation';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useBlockedUsers } from '@/hooks/useBlockedUsers';
+import ReportModal from '@/components/common/ReportModal';
+import { doc, setDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
+import { db } from '@/lib/firebase/clientApp';
 
 type SortOption = 'latest' | 'popular' | 'price_asc' | 'price_desc';
 
@@ -38,6 +42,38 @@ function ResalePageContent() {
   const { t } = useLanguage();
   const { value: itemId, openModal: openDetail, closeModal: closeDetail } = useModalNavigation('itemId');
   const { isOpen: showCreateModal, openModal: openCreate, closeModal: closeCreate } = useModalNavigation('create');
+
+  const { blockedUsers } = useBlockedUsers();
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+
+  const handleBlockToggle = async (targetAuthorId: string) => {
+    if (!user) {
+      setShowLogin(true);
+      return;
+    }
+    if (!targetAuthorId) return;
+    const isTargetBlocked = blockedUsers.includes(targetAuthorId);
+    const confirmMsg = isTargetBlocked 
+      ? t('block.unblock_confirm') || '이 사용자의 차단을 해제하시겠습니까?' 
+      : t('block.confirm') || '이 사용자를 차단하시겠습니까?';
+    if (!window.confirm(confirmMsg)) return;
+    
+    const blockRef = doc(db, 'users', user.uid, 'blockedUsers', targetAuthorId);
+    try {
+      if (isTargetBlocked) {
+        await deleteDoc(blockRef);
+        alert(t('block.unblock_success') || '차단을 해제했습니다.');
+      } else {
+        await setDoc(blockRef, {
+          blockedUid: targetAuthorId,
+          createdAt: serverTimestamp()
+        });
+        alert(t('block.success') || '해당 사용자를 차단했습니다.');
+      }
+    } catch (err) {
+      console.error("Failed to toggle block:", err);
+    }
+  };
 
   const [items, setItems] = useState<ResaleItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -138,7 +174,8 @@ function ResalePageContent() {
         s.location.toLowerCase().includes(searchQuery.toLowerCase());
       const matchType = activeFilter === 'All' || s.category === activeFilter;
       const matchPerson = activePerson === 'All' || s.sellerName === activePerson;
-      return matchSearch && matchType && matchPerson;
+      const matchBlock = !blockedUsers.includes(s.sellerId || '');
+      return matchSearch && matchType && matchPerson && matchBlock;
     });
 
     switch (sortOption) {
@@ -161,7 +198,7 @@ function ResalePageContent() {
         break;
     }
     return result;
-  }, [items, activeFilter, activePerson, searchQuery, sortOption]);
+  }, [items, activeFilter, activePerson, searchQuery, sortOption, blockedUsers]);
 
   const getRelativeTime = (timestamp: any) => {
     if (!timestamp) return t('resale.just_now', 'Just now');

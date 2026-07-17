@@ -5,10 +5,14 @@ import Image from 'next/image';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { picService } from '@/services/picService';
 import { Pic } from '@/types/pic';
-import { QueryDocumentSnapshot, DocumentData } from 'firebase/firestore';
+import { QueryDocumentSnapshot, DocumentData, doc, setDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
 import BottomSheet from '@/components/common/BottomSheet';
 import { useNavigation } from '@/components/providers/NavigationProvider';
 import { useModalNavigation } from '@/hooks/useModalNavigation';
+import { useAuth } from '@/components/providers/AuthProvider';
+import { useBlockedUsers } from '@/hooks/useBlockedUsers';
+import ReportModal from '@/components/common/ReportModal';
+import { db } from '@/lib/firebase/clientApp';
 
 const MOODS = ['All', 'Romantic', 'Vibrant', 'Chill', 'Energetic', 'Moody', 'Elegant', 'Warm', 'Calm'];
 const ACTIVITIES = ['All', 'Social', 'Dining', 'Explore', 'Relax', 'Party', 'Learn', 'Exercise'];
@@ -45,6 +49,8 @@ const AI_KEYWORDS: Record<string, string[]> = {
 export function PicsPageContent() {
   const { t } = useLanguage();
   const { setSubHeader } = useNavigation();
+  const { user } = useAuth();
+  const { blockedUsers } = useBlockedUsers();
   
   const [allPics, setAllPics] = useState<Pic[]>([]);
   const [filteredPics, setFilteredPics] = useState<Pic[]>([]);
@@ -56,6 +62,33 @@ export function PicsPageContent() {
   const [activeActivity, setActiveActivity] = useState('All');
   const [activeSeason, setActiveSeason] = useState('All');
   const [activeTime, setActiveTime] = useState('All');
+
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+
+  const handleBlockToggle = async (targetAuthorId: string) => {
+    if (!user) return alert(t('lost.login_required') || '로그인이 필요합니다.');
+    const isTargetBlocked = blockedUsers.includes(targetAuthorId);
+    const confirmMsg = isTargetBlocked 
+      ? t('block.unblock_confirm') || '이 사용자의 차단을 해제하시겠습니까?' 
+      : t('block.confirm') || '이 사용자를 차단하시겠습니까?';
+    if (!window.confirm(confirmMsg)) return;
+    
+    const blockRef = doc(db, 'users', user.uid, 'blockedUsers', targetAuthorId);
+    try {
+      if (isTargetBlocked) {
+        await deleteDoc(blockRef);
+        alert(t('block.unblock_success') || '차단을 해제했습니다.');
+      } else {
+        await setDoc(blockRef, {
+          blockedUid: targetAuthorId,
+          createdAt: serverTimestamp()
+        });
+        alert(t('block.success') || '해당 사용자를 차단했습니다.');
+      }
+    } catch (err) {
+      console.error("Failed to toggle block:", err);
+    }
+  };
 
   // BottomSheet States
   const [activeBottomSheet, setActiveBottomSheet] = useState<'mood' | 'activity' | 'season' | 'time' | 'more' | null>(null);
@@ -141,7 +174,7 @@ export function PicsPageContent() {
 
   // 3. 필터 변경 시 AI 큐레이팅 필터 적용 및 카운팅 (중복 이미지 원천 제거 - 2중 정규화 방어 적용)
   useEffect(() => {
-    const result = allPics.filter(isPicMatchedByAi);
+    const result = allPics.filter(pic => isPicMatchedByAi(pic) && !blockedUsers.includes((pic as any).authorId));
     
     // 이미지 파일 경로(쿼리 스트링 제외) 및 제목(title) 기준 2중 중복 제거 수행
     const uniquePics: Pic[] = [];
@@ -172,7 +205,7 @@ export function PicsPageContent() {
     setFilteredPics(uniquePics);
     setVisibleCount(20); // 무한스크롤 첫 페이지 초기화
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeMood, activeActivity, activeSeason, activeTime, allPics]);
+  }, [activeMood, activeActivity, activeSeason, activeTime, allPics, blockedUsers]);
 
   const picsToRender = filteredPics.slice(0, visibleCount);
   const hasMore = visibleCount < filteredPics.length;
@@ -795,7 +828,24 @@ export function PicsPageContent() {
                 </div>
               )}
 
-              <div className="mt-auto pt-6">
+              <div className="mt-auto pt-6 space-y-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <button 
+                    onClick={() => setIsReportModalOpen(true)}
+                    className="flex items-center justify-center gap-1.5 bg-red-50 hover:bg-red-100 text-red-600 py-3.5 rounded-[12px] transition-all font-bold text-xs border border-red-100"
+                  >
+                    <span className="material-symbols-outlined !text-[18px]">campaign</span>
+                    {t('plaza.report') || '신고'}
+                  </button>
+                  <button 
+                    onClick={() => handleBlockToggle((selectedPic as any).authorId || 'admin')}
+                    className="flex items-center justify-center gap-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 py-3.5 rounded-[12px] transition-all font-bold text-xs border border-slate-200"
+                  >
+                    <span className="material-symbols-outlined !text-[18px]">block</span>
+                    {blockedUsers.includes((selectedPic as any).authorId || 'admin') ? (t('block.unblock') || '해제') : (t('block.button') || '차단')}
+                  </button>
+                </div>
+
                 <button 
                   onClick={() => handleDownload(selectedPic.imageUrl, selectedPic.title || selectedPic.id)}
                   className="w-full flex items-center justify-center gap-2 bg-primary hover:bg-primary-dark active:scale-95 text-on-primary py-4 rounded-[16px] transition-all font-bold text-[16px] shadow-xl shadow-primary/20"
@@ -807,6 +857,18 @@ export function PicsPageContent() {
             </div>
           </div>
         </div>
+      )}
+
+      {selectedPic && (
+        <ReportModal
+          isOpen={isReportModalOpen}
+          onClose={() => setIsReportModalOpen(false)}
+          targetId={selectedPic.id}
+          targetType="post"
+          targetTitle={selectedPic.title}
+          targetOwnerUid={(selectedPic as any).authorId || 'admin'}
+          targetSnapshot={selectedPic.title || 'No snapshot'}
+        />
       )}
     </div>
   );

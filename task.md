@@ -11,6 +11,13 @@
   - [x] src/components/partner/AiPartnerMatch.tsx 신규 작성 (설정 입력 폼, 저장, 추천 목록 렌더링, 페이징, 1:1 채팅 연결 연동)
 - [x] 4. 추천 API 구현
   - [x] src/app/api/ai-partner-match/recommend/route.ts 신규 작성 (후보 유저 필터링, 유사도 Scoring, 커서 기반 페이징)
+- [x] 진단 로그 작성 및 세션 유지 결함 원인 분석
+- [x] 성별(Gender) Optional화 및 가입 폼 유효성 제거
+- [x] 로그인/가입 진입 전 EULA 필수 동의 체크박스 추가
+- [x] Groups/Chat 세션 로딩 타이밍 결함 근본 교정
+- [x] 기존 기능 검증 (UGC 필터링, 신고, 차단, 연락처, 계정 탈퇴)
+- [x] 로컬 빌드 및 다국어 검사 스캔
+- [x] 최종 배포 및 결과 보고
 - [x] 5. 무결성 검증 및 빌드
   - [x] node scripts/validate-i18n.mjs 실행
   - [x] npm run build 실행

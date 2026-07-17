@@ -30,6 +30,10 @@ import { safeDate } from '@/lib/utils/safeDate';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useNavigation } from '@/components/providers/NavigationProvider';
 import BottomSheet from '@/components/common/BottomSheet';
+import { useBlockedUsers } from '@/hooks/useBlockedUsers';
+import ReportModal from '@/components/common/ReportModal';
+import { doc, setDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
+import { db } from '@/lib/firebase/clientApp';
 
 interface LiveFilter {
   category: 'all' | 'social' | 'class' | 'event' | 'na';
@@ -59,6 +63,8 @@ export default function LiveFeed({ entityType, entityId, userId, viewMode, class
   const [mounted, setMounted] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const [isImmersive, setIsImmersive] = useState(false);
+
+  const { blockedUsers } = useBlockedUsers();
 
   const [showDashboardIntro, setShowDashboardIntro] = useState(false);
   
@@ -91,12 +97,14 @@ export default function LiveFeed({ entityType, entityId, userId, viewMode, class
 
   // 100% 무결한 시간순 내림차순(최신순) 강제 정렬 포스트 목록 생성
   const sortedPosts = React.useMemo(() => {
-    return [...posts].sort((a, b) => {
-      const timeA = safeDate(a.createdAt)?.getTime() || 0;
-      const timeB = safeDate(b.createdAt)?.getTime() || 0;
-      return timeB - timeA; // 최신이 위로!
-    });
-  }, [posts]);
+    return [...posts]
+      .filter(post => !blockedUsers.includes(post.authorId || ''))
+      .sort((a, b) => {
+        const timeA = safeDate(a.createdAt)?.getTime() || 0;
+        const timeB = safeDate(b.createdAt)?.getTime() || 0;
+        return timeB - timeA; // 최신이 위로!
+      });
+  }, [posts, blockedUsers]);
 
   // 최초 렌더링용 대표 영상 (가장 최신 라이브 피드 포스트 비디오) URL 정밀 추출
   const firstVideoUrl = React.useMemo(() => {
@@ -920,6 +928,35 @@ const GalleryCard = ({
   const [localLoadingPercent, setLocalLoadingPercent] = useState(0);
   const [showMenu, setShowMenu] = useState(false);
 
+  const { blockedUsers } = useBlockedUsers();
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+
+  const handleBlockToggle = async (targetAuthorId: string) => {
+    if (!user) return alert(t('lost.login_required') || '로그인이 필요합니다.');
+    if (!targetAuthorId) return;
+    const isTargetBlocked = blockedUsers.includes(targetAuthorId);
+    const confirmMsg = isTargetBlocked 
+      ? t('block.unblock_confirm') || '이 사용자의 차단을 해제하시겠습니까?' 
+      : t('block.confirm') || '이 사용자를 차단하시겠습니까?';
+    if (!window.confirm(confirmMsg)) return;
+    
+    const blockRef = doc(db, 'users', user.uid, 'blockedUsers', targetAuthorId);
+    try {
+      if (isTargetBlocked) {
+        await deleteDoc(blockRef);
+        alert(t('block.unblock_success') || '차단을 해제했습니다.');
+      } else {
+        await setDoc(blockRef, {
+          blockedUid: targetAuthorId,
+          createdAt: serverTimestamp()
+        });
+        alert(t('block.success') || '해당 사용자를 차단했습니다.');
+      }
+    } catch (err) {
+      console.error("Failed to toggle block:", err);
+    }
+  };
+
   const isAdmin = profile?.isAdmin === true || profile?.systemRole === 'admin';
   const isAuthor = !!(user?.uid && user.uid === post.authorId);
   const canManage = isAuthor || isAdmin;
@@ -1180,38 +1217,57 @@ const GalleryCard = ({
           </div>
 
           <div className="flex items-center gap-2 pointer-events-auto shrink-0">
-            {canManage && (
-              <div className="relative">
-                <button
-                  onClick={(e) => { e.stopPropagation(); setShowMenu(!showMenu); }}
-                  className="w-8 h-8 rounded-full bg-black/20 backdrop-blur-md flex items-center justify-center text-white hover:bg-white/20 transition-colors border border-white/10 shadow-sm"
-                >
-                  <MoreVertical size={16} />
-                </button>
-                {showMenu && (
-                  <>
-                    <div className="fixed inset-0 z-[29]" onClick={(e) => { e.stopPropagation(); setShowMenu(false); }} />
-                    <div className="absolute right-0 top-10 z-30 w-36 bg-black/80 backdrop-blur-xl rounded-2xl border border-white/15 shadow-2xl overflow-hidden">
-                      <Link
-                        href={`/live/create?edit=${post.id}&source=live`}
-                        className="flex items-center gap-2.5 px-4 py-3 text-white text-sm font-semibold hover:bg-white/10 transition-colors"
-                        onClick={(e) => { e.stopPropagation(); setShowMenu(false); }}
-                      >
-                        <Edit2 size={14} />
-                        <span>{t('gallery.edit') || '수정'}</span>
-                      </Link>
-                      <button
-                        className="flex items-center gap-2.5 px-4 py-3 text-red-400 text-sm font-semibold hover:bg-white/10 transition-colors w-full text-left"
-                        onClick={(e) => { e.stopPropagation(); setShowMenu(false); handleDelete(e); }}
-                      >
-                        <Trash2 size={14} />
-                        <span>{t('gallery.delete') || '삭제'}</span>
-                      </button>
-                    </div>
-                  </>
-                )}
-              </div>
-            )}
+            <div className="relative">
+              <button
+                onClick={(e) => { e.stopPropagation(); setShowMenu(!showMenu); }}
+                className="w-8 h-8 rounded-full bg-black/20 backdrop-blur-md flex items-center justify-center text-white hover:bg-white/20 transition-colors border border-white/10 shadow-sm"
+              >
+                <MoreVertical size={16} />
+              </button>
+              {showMenu && (
+                <>
+                  <div className="fixed inset-0 z-[29]" onClick={(e) => { e.stopPropagation(); setShowMenu(false); }} />
+                  <div className="absolute right-0 top-10 z-30 w-36 bg-black/90 backdrop-blur-xl rounded-2xl border border-white/15 shadow-2xl overflow-hidden">
+                    {canManage ? (
+                      <>
+                        <Link
+                          href={`/live/create?edit=${post.id}&source=live`}
+                          className="flex items-center gap-2.5 px-4 py-3 text-white text-sm font-semibold hover:bg-white/10 transition-colors"
+                          onClick={(e) => { e.stopPropagation(); setShowMenu(false); }}
+                        >
+                          <Edit2 size={14} />
+                          <span>{t('gallery.edit') || '수정'}</span>
+                        </Link>
+                        <button
+                          className="flex items-center gap-2.5 px-4 py-3 text-red-400 text-sm font-semibold hover:bg-white/10 transition-colors w-full text-left"
+                          onClick={(e) => { e.stopPropagation(); setShowMenu(false); handleDelete(e); }}
+                        >
+                          <Trash2 size={14} />
+                          <span>{t('gallery.delete') || '삭제'}</span>
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <button
+                          className="flex items-center gap-2.5 px-4 py-3 text-white text-sm font-semibold hover:bg-white/10 transition-colors w-full text-left"
+                          onClick={(e) => { e.stopPropagation(); setShowMenu(false); setIsReportModalOpen(true); }}
+                        >
+                          <AlertCircle size={14} className="text-red-400" />
+                          <span>{t('plaza.report') || '신고'}</span>
+                        </button>
+                        <button
+                          className="flex items-center gap-2.5 px-4 py-3 text-white text-sm font-semibold hover:bg-white/10 transition-colors w-full text-left"
+                          onClick={(e) => { e.stopPropagation(); setShowMenu(false); handleBlockToggle(post.authorId || ''); }}
+                        >
+                          <AlertCircle size={14} className="text-gray-400" />
+                          <span>{blockedUsers.includes(post.authorId || '') ? (t('block.unblock') || '해제') : (t('block.button') || '차단')}</span>
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
             {isImmersive && (
               <button
                 onClick={handleExitImmersive}
@@ -1373,6 +1429,18 @@ const GalleryCard = ({
           </button>
         </motion.div>
       </AnimatePresence>
+
+      {post && (
+        <ReportModal
+          isOpen={isReportModalOpen}
+          onClose={() => setIsReportModalOpen(false)}
+          targetId={post.id}
+          targetType="post"
+          targetTitle={post.authorName || ''}
+          targetOwnerUid={post.authorId || 'admin'}
+          targetSnapshot={post.caption || 'No snapshot'}
+        />
+      )}
     </div>
   );
 };

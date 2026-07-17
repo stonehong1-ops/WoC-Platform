@@ -14,6 +14,9 @@ const StayDetail = dynamic(() => import('@/components/stay/StayDetail'), { ssr: 
 import CreateStay from '@/components/stay/CreateStay';
 import { useLanguage } from '@/contexts/LanguageContext';
 import ImageWithFallback from '@/components/common/ImageWithFallback';
+import { useBlockedUsers } from '@/hooks/useBlockedUsers';
+import { doc, setDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
+import { db } from '@/lib/firebase/clientApp';
 
 
 type SortOption = 'latest' | 'popular' | 'price_asc' | 'price_desc';
@@ -39,6 +42,7 @@ const STAY_FILTER_KEYS = ['all', '1-Room', '2-Room', '3-Room', 'Dormitory', 'Cou
 
 function StayPageContent() {
   const { t, language } = useLanguage();
+  const { blockedUsers } = useBlockedUsers();
   const [stays, setStays] = useState<Stay[]>(() => {
     if (typeof window !== 'undefined') {
       const cached = sessionStorage.getItem('woc_stay_active_stays');
@@ -227,7 +231,8 @@ function StayPageContent() {
         s.location?.city?.toLowerCase().includes(searchQuery.toLowerCase());
       const matchType = activeFilter === 'all' || s.type === activeFilter || (activeFilter === 'Couchsurfing' && s.type === 'Couchsurfing');
       const matchCity = activeCity === 'All' || activeCity === t('stay.filter_all_full') || s.location?.city === activeCity;
-      return matchSearch && matchType && matchCity;
+      const matchBlock = !blockedUsers.includes(s.host?.userId || '');
+      return matchSearch && matchType && matchCity && matchBlock;
     });
 
     switch (sortOption) {
@@ -250,7 +255,7 @@ function StayPageContent() {
         break;
     }
     return result;
-  }, [stays, activeFilter, activeCity, searchQuery, sortOption]);
+  }, [stays, activeFilter, activeCity, searchQuery, sortOption, blockedUsers]);
 
   const formatPrice = (stay: Stay) => {
     const rate = stay.pricing?.baseRate !== undefined && stay.pricing?.baseRate !== null ? Number(stay.pricing.baseRate) : 0;

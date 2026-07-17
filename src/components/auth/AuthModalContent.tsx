@@ -42,6 +42,8 @@ export function AuthModalContent() {
     handleCompleteRegistration
   } = useAuthFlow();
 
+  const [eulaAgreed, setEulaAgreed] = React.useState(false);
+
   // 뒤로가기 버튼으로 인증 모달 닫기
   const handleBackClose = useCallback(() => handleClose(), [handleClose]);
   useBackButtonClose(showLogin, handleBackClose);
@@ -189,8 +191,31 @@ export function AuthModalContent() {
               </div>
             </div>
 
+            {/* EULA & Community Guidelines Checkbox (Before sending SMS code) */}
+            <div className="flex items-start gap-3 bg-gray-50 p-4 rounded-xl border border-gray-100 text-left">
+              <input 
+                type="checkbox"
+                id="eula-agree-checkbox"
+                checked={eulaAgreed}
+                onChange={(e) => setEulaAgreed(e.target.checked)}
+                className="mt-1 w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+              />
+              <label htmlFor="eula-agree-checkbox" className="text-xs text-gray-600 leading-relaxed cursor-pointer select-none">
+                <span className="font-bold text-gray-900 block mb-0.5">{t('auth.eula_agree')}</span>
+                <span className="text-gray-500 block mb-2">{t('auth.eula_desc')}</span>
+                <div className="flex gap-3 mt-1.5">
+                  <a href="/support" target="_blank" className="text-blue-600 underline font-bold hover:text-blue-800 transition-colors">
+                    {t('auth.terms')}
+                  </a>
+                  <a href="/privacy" target="_blank" className="text-blue-600 underline font-bold hover:text-blue-800 transition-colors">
+                    {t('auth.privacy')}
+                  </a>
+                </div>
+              </label>
+            </div>
+
             <button 
-              disabled={isLoading || cooldown}
+              disabled={isLoading || cooldown || !eulaAgreed}
               onClick={handleSendCode}
               className="w-full h-14 bg-blue-600 text-white rounded-full font-bold text-lg shadow-lg shadow-blue-600/20 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
             >
@@ -332,16 +357,17 @@ export function AuthModalContent() {
                 </div>
                 <div>
                   <label className="block text-sm font-bold text-gray-900 mb-2">
-                    {t('auth.gender')}
+                    {t('auth.gender_optional')}
                   </label>
                   <select 
                     value={details.gender}
                     onChange={(e) => setDetails({...details, gender: e.target.value})}
-                    className="w-full h-14 px-4 bg-gray-50 border border-gray-200 rounded-xl focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all"
+                    className="w-full h-14 px-4 bg-gray-50 border border-gray-200 rounded-xl focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all text-[15px]"
                   >
+                    <option value="">{t('auth.gender_select')}</option>
                     <option value="Male">{t('auth.gender_male')}</option>
                     <option value="Female">{t('auth.gender_female')}</option>
-                    <option value="Other">{t('auth.gender_other')}</option>
+                    <option value="Other">{t('auth.gender_prefer_not_to_say')}</option>
                   </select>
                 </div>
               </div>

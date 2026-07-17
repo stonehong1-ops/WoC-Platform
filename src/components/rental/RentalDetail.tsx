@@ -16,6 +16,10 @@ import CollapseSection from '@/components/ui/CollapseSection';
 import ChatRoom from '@/components/chat/ChatRoom';
 import RentalRequestFlow from './RentalRequestFlow';
 import ImageWithFallback from '@/components/common/ImageWithFallback';
+import { useBlockedUsers } from '@/hooks/useBlockedUsers';
+import ReportModal from '@/components/common/ReportModal';
+import { doc, setDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
+import { db } from '@/lib/firebase/clientApp';
 
 interface RentalDetailProps {
   space: RentalSpace;
@@ -44,6 +48,39 @@ export default function RentalDetail({ space, isLiked, onClose, onToggleLike }: 
   const [showRequestFlow, setShowRequestFlow] = useState(false);
   const [chatRoomId, setChatRoomId] = useState<string | null>(null);
   const [isChatLoading, setIsChatLoading] = useState(false);
+
+  const { blockedUsers } = useBlockedUsers();
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
+
+  const targetOwnerUid = space.hostId || 'admin';
+  const isBlocked = blockedUsers.includes(targetOwnerUid);
+
+  const handleBlockToggle = async () => {
+    if (!user) return alert(t('lost.login_required') || '로그인이 필요합니다.');
+    const confirmMsg = isBlocked 
+      ? t('block.unblock_confirm') || '이 사용자의 차단을 해제하시겠습니까?' 
+      : t('block.confirm') || '이 사용자를 차단하시겠습니까?';
+    if (!window.confirm(confirmMsg)) return;
+    
+    const blockRef = doc(db, 'users', user.uid, 'blockedUsers', targetOwnerUid);
+    try {
+      if (isBlocked) {
+        await deleteDoc(blockRef);
+        alert(t('block.unblock_success') || '차단을 해제했습니다.');
+        onClose();
+      } else {
+        await setDoc(blockRef, {
+          blockedUid: targetOwnerUid,
+          createdAt: serverTimestamp()
+        });
+        alert(t('block.success') || '해당 사용자를 차단했습니다.');
+        onClose();
+      }
+    } catch (err) {
+      console.error("Failed to toggle block:", err);
+    }
+  };
 
   // Image carousel
   const [currentImg, setCurrentImg] = useState(0);
@@ -222,6 +259,32 @@ export default function RentalDetail({ space, isLiked, onClose, onToggleLike }: 
             className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${isScrolled ? 'bg-slate-100 text-[#2d3435]' : 'bg-black/20 backdrop-blur-sm text-white'}`}>
             <span className="material-symbols-rounded text-xl">share</span>
           </button>
+          <div className="relative">
+            <button 
+              onClick={() => setShowDropdown(!showDropdown)}
+              className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${isScrolled ? 'bg-slate-100 text-[#2d3435]' : 'bg-black/20 backdrop-blur-sm text-white'}`}
+            >
+              <span className="material-symbols-rounded text-xl">more_vert</span>
+            </button>
+            {showDropdown && (
+              <div className="absolute right-0 mt-2 z-[120] bg-white border border-slate-100 shadow-xl rounded-2xl py-1 w-32 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                <button 
+                  onClick={() => { setShowDropdown(false); setIsReportModalOpen(true); }}
+                  className="w-full px-4 py-2.5 text-left text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors flex items-center gap-2"
+                >
+                  <span className="material-symbols-rounded text-base text-red-500">campaign</span>
+                  {t('plaza.report') || '신고하기'}
+                </button>
+                <button 
+                  onClick={() => { setShowDropdown(false); handleBlockToggle(); }}
+                  className="w-full px-4 py-2.5 text-left text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors flex items-center gap-2"
+                >
+                  <span className="material-symbols-rounded text-base text-slate-500">block</span>
+                  {isBlocked ? (t('block.unblock') || '차단 해제') : (t('block.button') || '차단하기')}
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -475,6 +538,17 @@ export default function RentalDetail({ space, isLiked, onClose, onToggleLike }: 
             onBack={handleCloseChat}
           />
         </div>
+      )}
+      {space && (
+        <ReportModal
+          isOpen={isReportModalOpen}
+          onClose={() => setIsReportModalOpen(false)}
+          targetId={space.id}
+          targetType="post"
+          targetTitle={space.title}
+          targetOwnerUid={targetOwnerUid}
+          targetSnapshot={space.description || space.title || 'No snapshot'}
+        />
       )}
     </div>
   );

@@ -8,9 +8,13 @@ import { chatService } from '@/lib/firebase/chatService';
 import { lostFoundService } from '@/lib/firebase/lostFoundService';
 import { LostFoundItem } from '@/types/lostFound';
 import { useLanguage } from '@/contexts/LanguageContext';
+import ReportModal from '@/components/common/ReportModal';
+import { useBlockedUsers } from '@/hooks/useBlockedUsers';
+import { doc, setDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
+import { db } from '@/lib/firebase/clientApp';
 
 export default function LostFoundDetailPage() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { user } = useAuth();
   const router = useRouter();
   const params = useParams();
@@ -34,6 +38,35 @@ export default function LostFoundDetailPage() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [showFullDesc, setShowFullDesc] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
+  const { blockedUsers } = useBlockedUsers();
+  const isBlocked = item ? blockedUsers.includes(item.authorId) : false;
+
+  const handleBlockToggle = async () => {
+    if (!user) return alert(t('lost.login_required') || '로그인이 필요합니다.');
+    const confirmMsg = isBlocked 
+      ? t('block.unblock_confirm') || '이 사용자의 차단을 해제하시겠습니까?' 
+      : t('block.confirm') || '이 사용자를 차단하시겠습니까?';
+    if (!window.confirm(confirmMsg)) return;
+    
+    const blockRef = doc(db, 'users', user.uid, 'blockedUsers', item!.authorId);
+    try {
+      if (isBlocked) {
+        await deleteDoc(blockRef);
+        alert(t('block.unblock_success') || '차단을 해제했습니다.');
+      } else {
+        await setDoc(blockRef, {
+          blockedUid: item!.authorId,
+          createdAt: serverTimestamp()
+        });
+        alert(t('block.success') || '해당 사용자를 차단했습니다.');
+      }
+    } catch (err) {
+      console.error("Failed to toggle block:", err);
+    }
+  };
 
   // Load item
   useEffect(() => {
@@ -123,6 +156,30 @@ export default function LostFoundDetailPage() {
     }
   };
 
+  if (item && isBlocked) {
+    return (
+      <div className="fixed inset-0 z-[100] bg-white flex flex-col items-center justify-center p-6 animate-in fade-in duration-300">
+        <header className="fixed top-0 left-0 right-0 flex items-center px-4 h-16 border-b border-gray-100 bg-white">
+          <button onClick={() => router.back()} className="w-10 h-10 rounded-full flex items-center justify-center bg-slate-100 text-[#2d3435]">
+            <span className="material-symbols-rounded text-xl">arrow_back</span>
+          </button>
+        </header>
+        <span className="material-symbols-outlined text-6xl text-slate-350 mb-3">block</span>
+        <h2 className="text-lg font-black text-slate-800 mb-2">
+          {language === 'KR' ? '차단된 사용자의 게시글입니다' : "Blocked User's Post"}
+        </h2>
+        <p className="text-xs text-slate-400 text-center mb-6 max-w-xs">
+          {language === 'KR' 
+            ? '차단한 사용자의 분실물 정보는 노출되지 않습니다.' 
+            : 'Information is hidden because you blocked this user.'}
+        </p>
+        <button onClick={handleBlockToggle} className="px-6 py-2.5 bg-gray-800 text-white font-bold rounded-xl text-xs hover:bg-gray-900 transition-colors">
+          {t('block.unblock') || '차단 해제'}
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="fixed inset-0 z-[100] bg-white flex flex-col animate-in slide-in-from-bottom duration-300">
       <style dangerouslySetInnerHTML={{ __html: `
@@ -136,12 +193,33 @@ export default function LostFoundDetailPage() {
           <span className="material-symbols-rounded text-xl">arrow_back</span>
         </button>
         <div className={`text-sm font-bold truncate max-w-[180px] transition-opacity ${isScrolled ? 'opacity-100 text-[#2d3435]' : 'opacity-0'}`}>{item.title}</div>
-        <div className="flex items-center gap-2">
-          {user?.uid === item.authorId && (
+        <div className="flex items-center gap-2 relative">
+          {user?.uid === item.authorId ? (
             <button onClick={() => router.push(`/lost-found/register?edit=${item.id}`)}
               className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${isScrolled ? 'bg-slate-100 text-[#2d3435]' : 'bg-black/20 backdrop-blur-sm text-white'}`}>
               <span className="material-symbols-rounded text-xl">edit</span>
             </button>
+          ) : (
+            <>
+              <button onClick={() => setShowMenu(!showMenu)}
+                className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${isScrolled ? 'bg-slate-100 text-[#2d3435]' : 'bg-black/20 backdrop-blur-sm text-white'}`}>
+                <span className="material-symbols-rounded text-xl">more_vert</span>
+              </button>
+              {showMenu && (
+                <div className="absolute right-0 top-12 w-40 bg-white border border-gray-100 rounded-xl shadow-lg py-1.5 z-[60] animate-in fade-in duration-200">
+                  <button onClick={() => { setShowMenu(false); setIsReportModalOpen(true); }}
+                    className="w-full px-4 py-2.5 text-left text-xs font-bold text-gray-700 hover:bg-gray-50 flex items-center gap-2">
+                    <span className="material-symbols-rounded text-base text-red-500">campaign</span>
+                    {t('plaza.report') || '신고하기'}
+                  </button>
+                  <button onClick={() => { setShowMenu(false); handleBlockToggle(); }}
+                    className="w-full px-4 py-2.5 text-left text-xs font-bold text-gray-700 hover:bg-gray-50 flex items-center gap-2">
+                    <span className="material-symbols-rounded text-base text-gray-500">block</span>
+                    {isBlocked ? (t('block.unblock') || '차단 해제') : (t('block.button') || '차단하기')}
+                  </button>
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>
@@ -288,6 +366,16 @@ export default function LostFoundDetailPage() {
           </button>
         )}
       </div>
+
+      <ReportModal
+        isOpen={isReportModalOpen}
+        onClose={() => setIsReportModalOpen(false)}
+        targetId={item.id}
+        targetType="post"
+        targetTitle={item.title}
+        targetOwnerUid={item.authorId}
+        targetSnapshot={item.description || item.title || 'No snapshot'}
+      />
     </div>
   );
 }

@@ -9,6 +9,10 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { KIND_ICON, KIND_COLOR } from '@/constants/tags';
 import UserProfileClickable from '@/components/common/UserProfileClickable';
 import UserBadge from '@/components/common/UserBadge';
+import { useBlockedUsers } from '@/hooks/useBlockedUsers';
+import ReportModal from '@/components/common/ReportModal';
+import { doc, setDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
+import { db } from '@/lib/firebase/clientApp';
 
 interface PostDetailModalProps {
   groupId: string;
@@ -29,6 +33,44 @@ export default function PostDetailModal({ groupId, post, isOpen, onClose, onEdit
   const [isScrolled, setIsScrolled] = useState(false);
   const [isLiked, setIsLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
+
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
+  const { blockedUsers } = useBlockedUsers();
+  const isBlocked = post ? blockedUsers.includes(post.author.id || '') : false;
+
+  const handleBlockToggle = async () => {
+    if (!user) {
+      setShowLogin(true);
+      return;
+    }
+    const targetAuthorId = post!.author.id || '';
+    if (!targetAuthorId) return;
+
+    const isTargetBlocked = blockedUsers.includes(targetAuthorId);
+    const confirmMsg = isTargetBlocked 
+      ? t('block.unblock_confirm') || '이 사용자의 차단을 해제하시겠습니까?' 
+      : t('block.confirm') || '이 사용자를 차단하시겠습니까?';
+    if (!window.confirm(confirmMsg)) return;
+    
+    const blockRef = doc(db, 'users', user.uid, 'blockedUsers', targetAuthorId);
+    try {
+      if (isTargetBlocked) {
+        await deleteDoc(blockRef);
+        alert(t('block.unblock_success') || '차단을 해제했습니다.');
+        onClose();
+      } else {
+        await setDoc(blockRef, {
+          blockedUid: targetAuthorId,
+          createdAt: serverTimestamp()
+        });
+        alert(t('block.success') || '해당 사용자를 차단했습니다.');
+        onClose();
+      }
+    } catch (err) {
+      console.error("Failed to toggle block:", err);
+    }
+  };
 
   // 1. 댓글 실시간 바인딩
   useEffect(() => {
@@ -346,8 +388,8 @@ export default function PostDetailModal({ groupId, post, isOpen, onClose, onEdit
               </div>
             )}
 
-            <div className="flex items-center gap-4">
-              {isAuthor && (
+            <div className="flex items-center gap-4 relative">
+              {isAuthor ? (
                 <>
                   <button 
                     onClick={() => onEdit(post)} 
@@ -367,6 +409,32 @@ export default function PostDetailModal({ groupId, post, isOpen, onClose, onEdit
                   >
                     <span className="material-symbols-outlined">delete</span>
                   </button>
+                </>
+              ) : (
+                <>
+                  <button 
+                    onClick={() => setShowMenu(!showMenu)}
+                    aria-label="More options" 
+                    className={`flex items-center justify-center p-2.5 rounded-full transition-colors active:scale-95 ${
+                      isScrolled ? 'hover:bg-surface-container-high text-on-surface-variant' : 'hover:bg-white/10 text-white'
+                    }`}
+                  >
+                    <span className="material-symbols-outlined">more_vert</span>
+                  </button>
+                  {showMenu && (
+                    <div className="absolute right-0 top-12 w-40 bg-white border border-gray-150 rounded-xl shadow-lg py-1.5 z-[130] text-gray-800 animate-in fade-in duration-200">
+                      <button onClick={() => { setShowMenu(false); setIsReportModalOpen(true); }}
+                        className="w-full px-4 py-2.5 text-left text-xs font-bold text-gray-700 hover:bg-gray-50 flex items-center gap-2">
+                        <span className="material-symbols-rounded text-base text-red-500">campaign</span>
+                        {t('plaza.report') || '신고하기'}
+                      </button>
+                      <button onClick={() => { setShowMenu(false); handleBlockToggle(); }}
+                        className="w-full px-4 py-2.5 text-left text-xs font-bold text-gray-700 hover:bg-gray-50 flex items-center gap-2">
+                        <span className="material-symbols-rounded text-base text-gray-500">block</span>
+                        {isBlocked ? (t('block.unblock') || '차단 해제') : (t('block.button') || '차단하기')}
+                      </button>
+                    </div>
+                  )}
                 </>
               )}
               <button 
@@ -624,6 +692,17 @@ export default function PostDetailModal({ groupId, post, isOpen, onClose, onEdit
             </button>
           </div>
           
+          {post && (
+            <ReportModal
+              isOpen={isReportModalOpen}
+              onClose={() => setIsReportModalOpen(false)}
+              targetId={post.id}
+              targetType="post"
+              targetTitle={post.title}
+              targetOwnerUid={post.author.id || 'admin'}
+              targetSnapshot={post.content || post.title || 'No snapshot'}
+            />
+          )}
         </motion.div>
       )}
     </AnimatePresence>

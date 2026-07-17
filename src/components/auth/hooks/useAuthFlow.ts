@@ -43,7 +43,7 @@ export function useAuthFlow() {
     nickname: '',
     nativeNickname: '',
     countryCode: '+82 (KR)',
-    gender: 'Other'
+    gender: ''
   });
 
   const handleClose = () => {
@@ -544,13 +544,14 @@ export function useAuthFlow() {
       setStep('SOCIAL');
       return;
     }
-    if (!details.nickname || !details.countryCode || !details.gender) {
+    if (!details.nickname || !details.countryCode) {
       alert(t('auth.alert_fill_fields'));
       return;
     }
 
     setIsLoading(true);
     try {
+      const effectiveGender = details.gender || 'Other';
       await setDoc(doc(db, 'users', user.uid), {
         uid: user.uid,
         email: user.email,
@@ -559,8 +560,8 @@ export function useAuthFlow() {
         nickname: details.nickname,
         nativeNickname: details.nativeNickname,
         countryCode: details.countryCode,
-        gender: details.gender,
-        role: details.gender.toLowerCase() === 'male' ? 'leader' : 'follower',
+        gender: effectiveGender,
+        role: effectiveGender.toLowerCase() === 'male' ? 'leader' : 'follower',
         photoURL: user.photoURL,
         isRegistered: true,
         createdAt: serverTimestamp(),
