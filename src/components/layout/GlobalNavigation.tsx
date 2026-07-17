@@ -410,8 +410,12 @@ export default function GlobalNavigation(props: { children: React.ReactNode }) {
           transition: 'transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.2s, visibility 0.2s'
         }}
       >
+        {/* 좌우 그라디언트 페이드 효과 (Fading Edge) */}
+        <div className="absolute left-0 top-0 bottom-2 w-8 bg-gradient-to-r from-white via-white/60 to-transparent pointer-events-none z-10" />
+        <div className="absolute right-0 top-0 bottom-2 w-8 bg-gradient-to-l from-white via-white/60 to-transparent pointer-events-none z-10" />
+
         <div 
-          className="w-full h-full overflow-x-auto no-scrollbar"
+          className="w-full h-full overflow-x-auto custom-horizontal-scrollbar pb-1"
           style={{
             WebkitOverflowScrolling: 'touch',
             touchAction: 'pan-x'

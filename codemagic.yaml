@@ -73,8 +73,8 @@ workflows:
 
           cd "$CM_BUILD_DIR/ios/App"
 
-          echo "Setting iOS build number to 8"
-          xcrun agvtool new-version -all 8
+          echo "Setting iOS build number to 9"
+          xcrun agvtool new-version -all 9
           
           echo "Project build versions after agvtool:"
           grep -n "CURRENT_PROJECT_VERSION" App.xcodeproj/project.pbxproj
@@ -98,7 +98,7 @@ workflows:
 
           echo "IPA CFBundleVersion: $IPA_VERSION"
 
-          if [ "$IPA_VERSION" -le 7 ]; then
+          if [ "$IPA_VERSION" -le 8 ]; then
             echo "Invalid IPA build number: $IPA_VERSION"
             exit 1
           fi

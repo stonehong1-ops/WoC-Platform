@@ -390,3 +390,18 @@ option {
 .sonner {
   color-scheme: light !important;
 }
+
+/* 하단 메뉴 가로 미니 스크롤바 스타일 */
+.custom-horizontal-scrollbar::-webkit-scrollbar {
+  height: 3px;
+}
+.custom-horizontal-scrollbar::-webkit-scrollbar-track {
+  background: rgba(81, 89, 129, 0.05);
+  margin-left: 20px;
+  margin-right: 20px;
+  border-radius: 9999px;
+}
+.custom-horizontal-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(0, 91, 192, 0.25);
+  border-radius: 9999px;
+}
