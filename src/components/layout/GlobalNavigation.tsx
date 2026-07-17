@@ -283,7 +283,10 @@ export default function GlobalNavigation(props: { children: React.ReactNode }) {
             ? 'shadow-[0_4px_24px_rgba(11,90,192,0.10)]' 
             : 'shadow-[0_2px_12px_rgba(11,90,192,0.05)] border-b border-slate-100/30'
         } ${effectiveIsGlobalNavHidden ? 'opacity-0 pointer-events-none invisible translate-y-[-100px]' : 'opacity-100 translate-y-0'}`}
-        style={{ transition: 'transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.2s, visibility 0.2s' }}
+        style={{ 
+          transition: 'transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.2s, visibility 0.2s',
+          paddingTop: 'env(safe-area-inset-top)'
+        }}
       >
         {/* Exact Image Replication: Header Top Row */}
           <div className="flex items-center justify-between pl-5 pr-4 h-[60px] border-b border-slate-100/50 bg-white">
@@ -407,7 +410,13 @@ export default function GlobalNavigation(props: { children: React.ReactNode }) {
           transition: 'transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.2s, visibility 0.2s'
         }}
       >
-        <div className="w-full h-full overflow-x-auto no-scrollbar">
+        <div 
+          className="w-full h-full overflow-x-auto no-scrollbar"
+          style={{
+            WebkitOverflowScrolling: 'touch',
+            touchAction: 'pan-x'
+          }}
+        >
           <div className="flex items-end h-full px-2 gap-0 min-w-max">
             {FOOTER_MENU.map((group, groupIdx) => {
               return (

@@ -7,6 +7,13 @@ const config: CapacitorConfig = {
   server: {
     url: 'https://www.woc.today',
     cleartext: false
+  },
+  plugins: {
+    Keyboard: {
+      resize: 'body',
+      style: 'dark',
+      resizeOnFullScreen: true
+    }
   }
 };
 

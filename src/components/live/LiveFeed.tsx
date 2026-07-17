@@ -1226,8 +1226,8 @@ const GalleryCard = ({
               </button>
               {showMenu && (
                 <>
-                  <div className="fixed inset-0 z-[29]" onClick={(e) => { e.stopPropagation(); setShowMenu(false); }} />
-                  <div className="absolute right-0 top-10 z-30 w-36 bg-black/90 backdrop-blur-xl rounded-2xl border border-white/15 shadow-2xl overflow-hidden">
+                  <div className="fixed inset-0 z-40" onClick={(e) => { e.stopPropagation(); setShowMenu(false); }} />
+                  <div className="absolute right-0 top-10 z-50 w-36 bg-black/90 backdrop-blur-xl rounded-2xl border border-white/15 shadow-2xl overflow-hidden" onClick={(e) => e.stopPropagation()}>
                     {canManage ? (
                       <>
                         <Link
@@ -1488,6 +1488,7 @@ const CommentBottomSheet = ({ postId, onClose }: { postId: string, onClose: () =
         exit={{ y: "100%" }}
         transition={{ type: "spring", damping: 25, stiffness: 200 }}
         className="relative w-full max-w-xl h-[70vh] bg-white rounded-t-[2rem] flex flex-col overflow-hidden shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
       >
         <div className="w-full flex justify-center pt-3 pb-2 shrink-0">
           <div className="w-12 h-1.5 bg-outline-variant rounded-full"></div>
