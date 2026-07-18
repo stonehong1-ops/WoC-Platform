@@ -64,6 +64,35 @@ export default function PostDetailModal({ groupId, post, isOpen, onClose, onEdit
           blockedUid: targetAuthorId,
           createdAt: serverTimestamp()
         });
+
+        // 관리자용 UGC 신고 자동 생성 (try-catch 안전 가드 적용)
+        try {
+          const autoReportId = `${user.uid}_block_${targetAuthorId}`;
+          const autoReportRef = doc(db, 'reports', autoReportId);
+          await setDoc(autoReportRef, {
+            id: autoReportId,
+            reporterUid: user.uid,
+            reporterEmail: user.email || "",
+            targetType: "profile",
+            targetId: targetAuthorId,
+            targetOwnerUid: targetAuthorId,
+            targetSnapshot: `Auto-reported due to user block action by ${user.uid}`,
+            targetTitle: "User Block (Auto-Report)",
+            reasonCode: "block",
+            reasonLabel: "Blocked User (Safety Compliance)",
+            details: "This profile was blocked by a user. Generated automatically for moderation review.",
+            childSafetyPriority: false,
+            status: "pending",
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+            reviewedAt: null,
+            reviewedBy: null,
+            actionTaken: ""
+          }, { merge: true });
+        } catch (reportErr) {
+          console.warn("Auto-report bypass (block preserved):", reportErr);
+        }
+
         alert(t('block.success') || '해당 사용자를 차단했습니다.');
         onClose();
       }

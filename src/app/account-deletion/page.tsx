@@ -1,17 +1,27 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { db } from '@/lib/firebase/clientApp';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { toast } from 'sonner';
+import { Capacitor } from '@capacitor/core';
 
 export default function AccountDeletionPage() {
   const { t, language } = useLanguage();
   const { user, profile, signOut } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [isIOS, setIsIOS] = useState(false);
+
+  useEffect(() => {
+    try {
+      setIsIOS(Capacitor.getPlatform() === 'ios');
+    } catch (e) {
+      console.warn("Failed to detect platform:", e);
+    }
+  }, []);
 
   const handleSubmitRequest = async () => {
     if (!user) return;
@@ -56,7 +66,6 @@ export default function AccountDeletionPage() {
     }
   };
 
-  // Google Play 필수 규격에 정렬된 mailto 양식
   const mailtoSubject = '[Tango World / WoC] Account or Data Deletion Request';
   const mailtoBody = `Hello, I request deletion for Tango World / WoC.
 
@@ -71,7 +80,7 @@ Additional details:`;
   const mailtoUrl = `mailto:stonehong1@gmail.com?subject=${encodeURIComponent(mailtoSubject)}&body=${encodeURIComponent(mailtoBody)}`;
 
   return (
-    <div className="max-w-4xl mx-auto px-6 py-16 text-on-surface min-h-[90vh] flex flex-col justify-center">
+    <div className={`${isIOS ? 'max-w-xl' : 'max-w-4xl'} mx-auto px-6 py-16 text-on-surface min-h-[90vh] flex flex-col justify-center`}>
       {/* 1. 메인 공통 타이틀 */}
       <div className="text-center mb-12">
         <h1 className="text-2xl md:text-3xl font-black mb-3 font-headline uppercase tracking-tight text-gray-950">
@@ -82,7 +91,7 @@ Additional details:`;
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+      <div className={isIOS ? 'space-y-8' : 'grid grid-cols-1 md:grid-cols-2 gap-8 items-start'}>
         {/* 왼쪽 섹션: 인앱 액션 및 신청 폼 */}
         <div className="space-y-6">
           {user ? (
@@ -115,7 +124,7 @@ Additional details:`;
               )}
             </div>
           ) : (
-            /* 비로그인 상태 (구글 리뷰어 등 로그인 없이 외부 접속 시 바로 보이는 폼) */
+            /* 비로그인 상태 */
             <div className="bg-gray-50 border border-gray-100 rounded-3xl p-6 shadow-sm">
               <h3 className="text-sm font-black text-gray-900 mb-3 flex items-center gap-2 font-headline uppercase tracking-wide">
                 <span className="material-symbols-outlined text-[18px] text-blue-600">mail</span>
@@ -146,53 +155,50 @@ Additional details:`;
           </div>
         </div>
 
-        {/* 오른쪽 섹션: 구글 플레이 심사 대응 필수 영문 정책 고정 노출 (Required English Copies) */}
-        <div className="bg-slate-900 text-slate-100 rounded-3xl p-6 shadow-md border border-slate-800">
-          <h3 className="text-xs font-black tracking-widest text-blue-400 uppercase mb-4 font-headline flex items-center gap-2">
-            <span className="material-symbols-outlined text-[16px] text-blue-400">security</span>
-            Google Play Data Safety Notice
-          </h3>
-          
-          <div className="space-y-4 text-xs font-medium leading-relaxed text-slate-300 font-body">
-            <p className="font-extrabold text-slate-100">
-              Tango World / WoC users can request deletion of their app account and associated user data.
-            </p>
-
-            <p className="p-3 bg-slate-850 rounded-xl border border-slate-800 text-blue-200 font-bold">
-              You can request deletion of your Tango World account or specific user data.
-            </p>
-
-            <div>
-              <p className="font-bold text-slate-200 mb-1">To request deletion, send an email to:</p>
-              <a href={mailtoUrl} className="text-blue-400 underline font-extrabold break-all">
-                stonehong1@gmail.com
-              </a>
+        {/* 오른쪽 섹션: 구글 플레이 심사 대응 필수 영문 정책 */}
+        {!isIOS && (
+          <div className="bg-slate-900 text-slate-100 rounded-3xl p-6 shadow-md border border-slate-800">
+            <h3 className="text-xs font-black tracking-widest text-blue-400 uppercase mb-4 font-headline flex items-center gap-2">
+              <span className="material-symbols-outlined text-[16px] text-blue-400">security</span>
+              Google Play Data Safety Notice
+            </h3>
+            
+            <div className="space-y-4 text-xs font-medium leading-relaxed text-slate-300 font-body">
+              <p className="font-extrabold text-slate-100">
+                Tango World / WoC users can request deletion of their app account and associated user data.
+              </p>
+              <p className="p-3 bg-slate-850 rounded-xl border border-slate-800 text-blue-200 font-bold">
+                You can request deletion of your Tango World account or specific user data.
+              </p>
+              <div>
+                <p className="font-bold text-slate-200 mb-1">To request deletion, send an email to:</p>
+                <a href={mailtoUrl} className="text-blue-400 underline font-extrabold break-all">
+                  stonehong1@gmail.com
+                </a>
+              </div>
+              <div>
+                <p className="font-bold text-slate-200 mb-1">Please include in your request:</p>
+                <ul className="list-disc pl-4 space-y-1 text-slate-400">
+                  <li>Phone number used for login</li>
+                  <li>Display name or profile name, if available</li>
+                  <li>Request type: Delete my account OR Delete specific user data</li>
+                </ul>
+              </div>
+              <div>
+                <p className="font-bold text-slate-200 mb-1">Data that may be deleted:</p>
+                <ul className="list-disc pl-4 space-y-1 text-slate-400">
+                  <li>Firebase Authentication account</li>
+                  <li>Phone login identifier</li>
+                  <li>User profile (Nickname, career, social links, gender)</li>
+                  <li>User-generated community/profile data where applicable</li>
+                </ul>
+              </div>
+              <p className="text-[11px] text-slate-500 font-medium">
+                * Some data may be retained if required for legal compliance, security, fraud prevention, abuse prevention, or necessary operational reasons. Deletion requests are processed within 30 days.
+              </p>
             </div>
-
-            <div>
-              <p className="font-bold text-slate-200 mb-1">Please include in your request:</p>
-              <ul className="list-disc pl-4 space-y-1 text-slate-400">
-                <li>Phone number used for login</li>
-                <li>Display name or profile name, if available</li>
-                <li>Request type: Delete my account OR Delete specific user data</li>
-              </ul>
-            </div>
-
-            <div>
-              <p className="font-bold text-slate-200 mb-1">Data that may be deleted:</p>
-              <ul className="list-disc pl-4 space-y-1 text-slate-400">
-                <li>Firebase Authentication account</li>
-                <li>Phone login identifier</li>
-                <li>User profile (Nickname, career, social links, gender)</li>
-                <li>User-generated community/profile data where applicable</li>
-              </ul>
-            </div>
-
-            <p className="text-[11px] text-slate-500 font-medium">
-              * Some data may be retained if required for legal compliance, security, fraud prevention, abuse prevention, or necessary operational reasons. Deletion requests are processed within 30 days.
-            </p>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

@@ -43,5 +43,11 @@
 	<true/>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
+	<key>NSCameraUsageDescription</key>
+	<string>Tango World requires camera access to take profile photos and attach images to messages.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Tango World requires photo library access to upload photos and save images.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Tango World requires photo library write access to save images.</string>
 </dict>
 </plist>
