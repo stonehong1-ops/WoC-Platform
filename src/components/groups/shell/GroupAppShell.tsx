@@ -2,6 +2,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
+import { Capacitor } from '@capacitor/core';
 import { Group, Member } from '@/types/group';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { usePalette } from './usePalette';
@@ -210,6 +211,8 @@ export default function GroupAppShell({
     onTabClick(tab);
   };
 
+  const isIos = typeof window !== 'undefined' ? Capacitor.getPlatform() === 'ios' : false;
+
   return (
     <div className="group-app-shell" style={paletteVars as React.CSSProperties}>
       <style jsx global>{`
@@ -236,7 +239,7 @@ export default function GroupAppShell({
 
         /* HEADER */
         .group-app-shell .header {
-          padding-top: calc(env(safe-area-inset-top) + 16px);
+          padding-top: ${isIos ? 'calc(env(safe-area-inset-top) + 16px)' : '16px'};
           padding-left: 36px;
           padding-right: 36px;
           padding-bottom: 12px;

@@ -26,6 +26,15 @@ export default function PageWrapper({ children }: { children: React.ReactNode })
   
   const isPublic = isLanding || isLogin || isApp || isLive || isVenues || isEvents || isSocial || isPlaza || isExplore || isNation || isHome || pathname.startsWith('/yedamche') || pathname.startsWith('/pt') || pathname.startsWith('/fys') || pathname.startsWith('/support') || pathname.startsWith('/privacy') || pathname.startsWith('/child-safety') || pathname.startsWith('/account-deletion');
 
+  // 플랫폼 클래스 주입 (iOS / Android / Web)
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    const root = document.documentElement;
+    root.classList.remove('device-ios', 'device-android', 'device-web');
+    const platform = Capacitor.getPlatform(); // 'ios', 'android', 'web'
+    root.classList.add(`device-${platform}`);
+  }, []);
+
   // Android 네이티브 하드웨어 백버튼 제어
   useEffect(() => {
     if (typeof window === 'undefined' || !Capacitor.isNativePlatform()) return;

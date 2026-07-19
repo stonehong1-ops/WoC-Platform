@@ -405,3 +405,25 @@ option {
   background: rgba(0, 91, 192, 0.25);
   border-radius: 9999px;
 }
+
+/* 6. 플랫폼별 Safe Area 격리 스타일 */
+.device-web .safe-top {
+  padding-top: 0px !important;
+}
+.device-web .safe-bottom {
+  padding-bottom: 0px !important;
+}
+
+.device-ios .safe-top {
+  padding-top: env(safe-area-inset-top) !important;
+}
+.device-ios .safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom) !important;
+}
+
+.device-android .safe-top {
+  padding-top: env(safe-area-inset-top) !important;
+}
+.device-android .safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom) !important;
+}

@@ -2,6 +2,7 @@
 // 그룹 홈 메인 오케스트레이터 컴포넌트 - 전체 레이아웃 구성 및 라우팅 상태를 관리함.
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
+import { Capacitor } from '@capacitor/core';
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import dynamic from "next/dynamic";
@@ -426,10 +427,9 @@ export default function GroupHome({ group: initialGroup, isModal, onClose }: { g
         <></>
       </GroupAppShell>
 
-      {/* Main Content */}
       <main 
         className="pb-12"
-        style={{ paddingTop: 'calc(env(safe-area-inset-top) + 120px)' }}
+        style={{ paddingTop: Capacitor.getPlatform() === 'ios' ? 'calc(env(safe-area-inset-top) + 120px)' : '120px' }}
       >
         <div className={`max-w-7xl mx-auto ${activeTab === 'feed' || activeTab === 'home' || activeTab === 'live' || activeTab === 'calendar' || activeTab === 'board' || activeTab === 'members' || activeTab === 'about' || activeTab === 'settings' || activeTab === 'brand' || activeTab === 'class' || activeTab === 'class-setting' || activeTab === 'shop-setting' || activeTab === 'stay-setting' || activeTab === 'rental-setting' ? 'px-0 md:px-0 mt-0 space-y-0 pb-0' : 'px-4 md:px-8 space-y-10 mt-6 pb-12'}`}>
           

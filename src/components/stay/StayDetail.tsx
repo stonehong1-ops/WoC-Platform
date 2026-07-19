@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { Capacitor } from '@capacitor/core';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { stayService } from '@/lib/firebase/stayService';
 import { stayBookingService } from '@/lib/firebase/stayBookingService';
@@ -676,7 +677,7 @@ export default function StayDetail({ stayId, onClose, isLiked, onToggleLike, isE
         {/* Header */}
         <div 
           className="fixed top-0 left-0 right-0 z-[130] pointer-events-auto flex items-center justify-between px-4 pb-3 bg-gradient-to-b from-black/30 to-transparent"
-          style={{ paddingTop: 'max(env(safe-area-inset-top), 24px)' }}
+          style={{ paddingTop: Capacitor.getPlatform() === 'ios' ? 'max(env(safe-area-inset-top), 24px)' : '24px' }}
         >
           <button onClick={() => {
             if (window.history.length > 1) {
@@ -731,7 +732,7 @@ export default function StayDetail({ stayId, onClose, isLiked, onToggleLike, isE
       {/* Header */}
       <div 
         className={`fixed top-0 left-0 right-0 z-[130] pointer-events-auto flex items-center justify-between px-4 pb-3 transition-all duration-300 ${isScrolled ? 'bg-white/95 backdrop-blur-md shadow-sm' : 'bg-gradient-to-b from-black/30 to-transparent'}`}
-        style={{ paddingTop: 'max(env(safe-area-inset-top), 24px)' }}
+        style={{ paddingTop: Capacitor.getPlatform() === 'ios' ? 'max(env(safe-area-inset-top), 24px)' : '24px' }}
       >
         <button onClick={() => {
           if (window.history.length > 1) {

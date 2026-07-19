@@ -3,6 +3,7 @@
 // 클래스, 월간 패스, 패키지 할인의 상세 정보를 단일 조회하여 보여주는 초경량 정보 모달 컴포넌트
 
 import React, { useEffect, useState, useCallback } from 'react';
+import { Capacitor } from '@capacitor/core';
 import Portal from '@/components/common/Portal';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useBackButtonClose } from '@/hooks/useBackButtonClose';
@@ -360,7 +361,7 @@ export default function ClassDetail({ groupId, onClose, isOpen, itemId, itemDeta
       {/* Header */}
       <header 
         className={`fixed top-0 left-0 right-0 z-[260] flex items-center justify-between px-4 pb-3 transition-all duration-300 ${isScrolled ? 'bg-white/95 backdrop-blur-md shadow-sm border-b border-[#f2f4f4]' : 'bg-gradient-to-b from-black/30 to-transparent'}`}
-        style={{ paddingTop: 'max(env(safe-area-inset-top), 12px)' }}
+        style={{ paddingTop: Capacitor.getPlatform() === 'ios' ? 'max(env(safe-area-inset-top), 12px)' : '12px' }}
       >
         <button 
           onClick={handleClose} 

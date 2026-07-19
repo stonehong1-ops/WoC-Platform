@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { Capacitor } from '@capacitor/core';
 import { useAuth } from "@/components/providers/AuthProvider";
 import { useNavigation } from "@/components/providers/NavigationProvider";
 import { useLocation } from "@/components/providers/LocationProvider";
@@ -285,7 +286,7 @@ export default function GlobalNavigation(props: { children: React.ReactNode }) {
         } ${effectiveIsGlobalNavHidden ? 'opacity-0 pointer-events-none invisible translate-y-[-100px]' : 'opacity-100 translate-y-0'}`}
         style={{ 
           transition: 'transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.2s, visibility 0.2s',
-          paddingTop: 'env(safe-area-inset-top)'
+          paddingTop: Capacitor.getPlatform() === 'ios' ? 'env(safe-area-inset-top)' : '0px'
         }}
       >
         {/* Exact Image Replication: Header Top Row */}
@@ -405,8 +406,8 @@ export default function GlobalNavigation(props: { children: React.ReactNode }) {
           effectiveIsGlobalNavHidden ? 'opacity-0 pointer-events-none invisible translate-y-[100px]' : 'opacity-100 translate-y-0'
         }`}
         style={{ 
-          height: 'calc(76px + max(env(safe-area-inset-bottom), 8px))',
-          paddingBottom: 'max(env(safe-area-inset-bottom), 8px)',
+          height: Capacitor.getPlatform() === 'ios' ? 'calc(76px + env(safe-area-inset-bottom))' : '76px',
+          paddingBottom: Capacitor.getPlatform() === 'ios' ? 'env(safe-area-inset-bottom)' : '0px',
           transition: 'transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.2s, visibility 0.2s'
         }}
       >

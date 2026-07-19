@@ -3,6 +3,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
+import { Capacitor } from '@capacitor/core';
 import { peopleService } from '@/lib/firebase/peopleService';
 import { Person } from '@/types/people';
 import { PlatformUser } from '@/types/user';
@@ -17,6 +18,7 @@ import { toast } from 'sonner';
 const ADMIN_UIDS = ['7iaZAmaYY9dNNEShmJmROI8XrtH2'];
 
 export default function PeopleDetailPage() {
+  const isIos = typeof window !== 'undefined' ? Capacitor.getPlatform() === 'ios' : false;
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -178,7 +180,7 @@ export default function PeopleDetailPage() {
         {/* Header */}
         <header 
           className="fixed top-0 w-full z-50 bg-white shadow-md pb-2 max-w-[480px]"
-          style={{ paddingTop: 'env(safe-area-inset-top)' }}
+          style={{ paddingTop: isIos ? 'env(safe-area-inset-top)' : '0px' }}
         >
           <div className="relative flex justify-between items-center px-6">
             <button onClick={() => router.back()}
@@ -193,7 +195,7 @@ export default function PeopleDetailPage() {
         </header>
 
         {/* Profile Card */}
-        <div className="pt-20 px-6" style={{ paddingTop: 'calc(env(safe-area-inset-top) + 80px)' }}>
+        <div className="pt-20 px-6" style={{ paddingTop: isIos ? 'calc(env(safe-area-inset-top) + 80px)' : '80px' }}>
           <div className="flex flex-col items-center text-center pt-8">
             <div className="w-28 h-28 rounded-full overflow-hidden bg-slate-100 border-4 border-white shadow-xl mb-4">
               {previewUser.photoURL ? (
@@ -272,7 +274,7 @@ export default function PeopleDetailPage() {
       <main className="pt-0 pb-20 max-w-[480px] mx-auto bg-surface min-h-screen shadow-2xl relative flex flex-col items-center justify-center p-6 text-center">
         <header 
           className="fixed top-0 w-full z-50 bg-white shadow-md pb-2 max-w-[480px]"
-          style={{ paddingTop: 'env(safe-area-inset-top)' }}
+          style={{ paddingTop: isIos ? 'env(safe-area-inset-top)' : '0px' }}
         >
           <div className="relative flex justify-between items-center px-6">
             <button onClick={() => router.back()}
@@ -298,7 +300,7 @@ export default function PeopleDetailPage() {
             </div>
           </div>
         </header>
-        <div className="space-y-4 pt-20" style={{ paddingTop: 'calc(env(safe-area-inset-top) + 80px)' }}>
+        <div className="space-y-4 pt-20" style={{ paddingTop: isIos ? 'calc(env(safe-area-inset-top) + 80px)' : '80px' }}>
           <span className="material-symbols-outlined text-6xl text-slate-350">block</span>
           <h2 className="text-lg font-black text-slate-800">{language === 'KR' ? '차단된 사용자입니다' : 'Blocked User'}</h2>
           <p className="text-xs text-slate-500 font-bold max-w-xs mx-auto leading-relaxed">
@@ -336,7 +338,7 @@ export default function PeopleDetailPage() {
         className={`fixed top-0 w-full z-50 transition-all duration-300 max-w-[480px] ${
           scrolled ? 'bg-white shadow-md pb-2' : 'bg-transparent pb-4'
         }`}
-        style={{ paddingTop: 'env(safe-area-inset-top)' }}
+        style={{ paddingTop: isIos ? 'env(safe-area-inset-top)' : '0px' }}
       >
         {!scrolled && <div className="absolute inset-0 bg-gradient-to-b from-black/60 to-transparent h-24" style={{ top: '-100px', bottom: 0 }} />}
         <div className="relative flex justify-between items-center px-6">
