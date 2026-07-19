@@ -12,6 +12,8 @@ import { COUNTRY_MAPPING } from '@/constants/locations';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { matchLocationGroup } from '@/app/social/constants/regionMapping';
 import { useBlockedUsers } from '@/hooks/useBlockedUsers';
+import { db } from '@/lib/firebase/clientApp';
+import { collection, query, where, onSnapshot } from 'firebase/firestore';
 
 interface UniversalFeedProps {
   context: any;
@@ -41,12 +43,36 @@ export default function UniversalFeed({
 
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
-   const [localFilter, setLocalFilter] = useState('all');
+  const [localFilter, setLocalFilter] = useState('all');
   const { t } = useLanguage();
   const { blockedUsers } = useBlockedUsers();
+  const [reportedTargetIds, setReportedTargetIds] = useState<Set<string>>(new Set());
 
   const [visibleLimit, setVisibleLimit] = useState(15);
   const [hasMore, setHasMore] = useState(true);
+
+  // Subscribe to own reported keys to instantly hide them
+  useEffect(() => {
+    if (!currentUser) {
+      setReportedTargetIds(new Set());
+      return;
+    }
+    const q = query(
+      collection(db, 'activeReportKeys'),
+      where('reporterUid', '==', currentUser.uid)
+    );
+    const unsub = onSnapshot(q, (snap) => {
+      const ids = new Set<string>();
+      snap.forEach(doc => {
+        const data = doc.data();
+        if (data.targetId) ids.add(data.targetId);
+      });
+      setReportedTargetIds(ids);
+    }, (err) => {
+      console.error("Failed to subscribe reported targets:", err);
+    });
+    return () => unsub();
+  }, [currentUser]);
 
   // 스크롤 감지를 통한 무한 스크롤 트리거
   useEffect(() => {
@@ -106,7 +132,7 @@ export default function UniversalFeed({
 
   // Derive filtered posts based on activeFilter
   const filteredPosts = React.useMemo(() => {
-    let result = posts.filter(p => !blockedUsers.includes(p.userId));
+    let result = posts.filter(p => !blockedUsers.includes(p.userId) && !reportedTargetIds.has(p.id));
 
     // 1. Regional Filtering (Only for Plaza scope)
     if (context.scope === 'plaza' && location.country !== 'GLOBAL') {
