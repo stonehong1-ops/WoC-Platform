@@ -23,6 +23,9 @@ interface UniversalFeedProps {
   activeFilter?: string;
   viewMode?: 'list' | 'grid';
   setViewMode?: (mode: 'list' | 'grid') => void;
+  createFlowValue?: string | null;
+  openCreate?: (value: string) => void;
+  closeCreate?: () => void;
 }
 
 export default function UniversalFeed({ 
@@ -31,41 +34,23 @@ export default function UniversalFeed({
   profile, 
   activeFilter: propFilter,
   viewMode: propViewMode,
-  setViewMode: propSetViewMode
+  setViewMode: propSetViewMode,
+  createFlowValue: propCreateFlowValue,
+  openCreate: propOpenCreate,
+  closeCreate: propCloseCreate
 }: UniversalFeedProps) {
-  const searchParams = useSearchParams();
-  const router = useRouter();
-  const pathname = usePathname();
-  const createFlowParam = searchParams.get('createFlow');
-
-  // 0ms의 즉각적인 체감 성능을 위해 무거운 URL 쿼리 대신 순수 로컬 상태로 모달을 초고속 제어합니다.
-  const [createFlowValue, setCreateFlowValue] = useState<string | null>(null);
+  // 0ms의 즉각적인 체감 성능을 위해 무거운 URL 쿼리 대신 Props 기반 제어 및 로컬 상태 폴백을 지원합니다.
+  const [localCreateFlowValue, setLocalCreateFlowValue] = useState<string | null>(null);
   
-  const openCreate = (value: string) => {
-    setCreateFlowValue(value);
-    const params = new URLSearchParams(searchParams.toString());
-    params.set('createFlow', value === 'new' ? 'true' : value);
-    router.push(`${pathname}?${params.toString()}`);
+  const createFlowValue = propCreateFlowValue !== undefined ? propCreateFlowValue : localCreateFlowValue;
+  
+  const openCreate = propOpenCreate !== undefined ? propOpenCreate : (value: string) => {
+    setLocalCreateFlowValue(value);
   };
 
-  const closeCreate = () => {
-    setCreateFlowValue(null);
-    const params = new URLSearchParams(searchParams.toString());
-    params.delete('createFlow');
-    const qs = params.toString();
-    router.replace(`${pathname}${qs ? `?${qs}` : ''}`);
+  const closeCreate = propCloseCreate !== undefined ? propCloseCreate : () => {
+    setLocalCreateFlowValue(null);
   };
-
-  // Synchronize URL changes with local createFlow state (e.g. on back button press)
-  useEffect(() => {
-    if (createFlowParam === 'true') {
-      setCreateFlowValue('new');
-    } else if (createFlowParam && createFlowParam !== 'false') {
-      setCreateFlowValue(createFlowParam);
-    } else {
-      setCreateFlowValue(null);
-    }
-  }, [createFlowParam]);
   
   const [localViewMode, setLocalViewMode] = useState<'list' | 'grid'>('list');
   const viewMode = propViewMode !== undefined ? propViewMode : localViewMode;

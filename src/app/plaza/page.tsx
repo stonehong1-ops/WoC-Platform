@@ -19,7 +19,7 @@ function PlazaPageContent() {
   const [activeFilter, setActiveFilter] = useState('all');
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
   const { openModal: openProfile, closeModal: closeProfile, value: selectedProfileId } = useModalNavigation('profileId');
-  const { openModal: openCreate } = useModalNavigation('createFlow');
+  const { openModal: openCreate, closeModal: closeCreate, value: createFlowValue } = useModalNavigation('createFlow');
   const { setSubHeader } = useNavigation();
   const { t } = useLanguage();
 
@@ -207,6 +207,9 @@ function PlazaPageContent() {
               activeFilter={activeFilter} 
               viewMode={viewMode}
               setViewMode={setViewMode}
+              createFlowValue={createFlowValue}
+              openCreate={openCreate}
+              closeCreate={closeCreate}
             />
           </div>
 
