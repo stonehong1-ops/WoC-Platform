@@ -140,6 +140,7 @@ export default function ReportModal({
 
       toast.success(t("report.success"));
       onClose();
+      window.location.reload();
     } catch (error: any) {
       if (error.message === "duplicate") {
         toast.error(t("report.duplicate"));
