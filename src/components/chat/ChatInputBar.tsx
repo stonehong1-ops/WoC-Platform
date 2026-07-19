@@ -583,8 +583,8 @@ export default function ChatInputBar({
                 {/* Feature 1: Image Album */}
                 <button 
                   onClick={() => {
-                    setIsFeatureDrawerOpen(false);
                     albumInputRef.current?.click();
+                    setIsFeatureDrawerOpen(false);
                   }}
                   className="group flex flex-col items-center justify-start gap-2 hover:scale-105 active:scale-95 transition-all w-full max-w-[80px] h-[76px]"
                 >
@@ -597,8 +597,8 @@ export default function ChatInputBar({
                 {/* Feature 2: Camera */}
                 <button 
                   onClick={() => {
-                    setIsFeatureDrawerOpen(false);
                     cameraInputRef.current?.click();
+                    setIsFeatureDrawerOpen(false);
                   }}
                   className="group flex flex-col items-center justify-start gap-2 hover:scale-105 active:scale-95 transition-all w-full max-w-[80px] h-[76px]"
                 >
@@ -611,8 +611,8 @@ export default function ChatInputBar({
                 {/* Feature 3: Video */}
                 <button 
                   onClick={() => {
-                    setIsFeatureDrawerOpen(false);
                     videoInputRef.current?.click();
+                    setIsFeatureDrawerOpen(false);
                   }}
                   className="group flex flex-col items-center justify-start gap-2 hover:scale-105 active:scale-95 transition-all w-full max-w-[80px] h-[76px]"
                 >
