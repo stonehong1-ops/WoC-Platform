@@ -73,8 +73,8 @@ workflows:
 
           cd "$CM_BUILD_DIR/ios/App"
 
-          echo "Setting iOS build number to 11"
-          xcrun agvtool new-version -all 11
+          echo "Setting iOS build number to $BUILD_NUMBER"
+          xcrun agvtool new-version -all $BUILD_NUMBER
           
           echo "Project build versions after agvtool:"
           grep -n "CURRENT_PROJECT_VERSION" App.xcodeproj/project.pbxproj
