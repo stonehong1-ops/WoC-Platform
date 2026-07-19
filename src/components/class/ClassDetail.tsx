@@ -361,7 +361,7 @@ export default function ClassDetail({ groupId, onClose, isOpen, itemId, itemDeta
       {/* Header */}
       <header 
         className={`fixed top-0 left-0 right-0 z-[260] flex items-center justify-between px-4 pb-3 transition-all duration-300 ${isScrolled ? 'bg-white/95 backdrop-blur-md shadow-sm border-b border-[#f2f4f4]' : 'bg-gradient-to-b from-black/30 to-transparent'}`}
-        style={{ paddingTop: Capacitor.getPlatform() === 'ios' ? 'max(env(safe-area-inset-top), 12px)' : '12px' }}
+        style={{ paddingTop: Capacitor.isNativePlatform() ? 'max(env(safe-area-inset-top), 12px)' : '12px' }}
       >
         <button 
           onClick={handleClose} 

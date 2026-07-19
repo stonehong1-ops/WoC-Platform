@@ -211,7 +211,7 @@ export default function GroupAppShell({
     onTabClick(tab);
   };
 
-  const isIos = typeof window !== 'undefined' ? Capacitor.getPlatform() === 'ios' : false;
+  const isNative = typeof window !== 'undefined' ? Capacitor.isNativePlatform() : false;
 
   return (
     <div className="group-app-shell" style={paletteVars as React.CSSProperties}>
@@ -239,7 +239,7 @@ export default function GroupAppShell({
 
         /* HEADER */
         .group-app-shell .header {
-          padding-top: ${isIos ? 'calc(env(safe-area-inset-top) + 16px)' : '16px'};
+          padding-top: ${isNative ? 'calc(env(safe-area-inset-top) + 16px)' : '16px'};
           padding-left: 36px;
           padding-right: 36px;
           padding-bottom: 12px;

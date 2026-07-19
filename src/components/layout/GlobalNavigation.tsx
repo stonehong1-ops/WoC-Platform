@@ -286,7 +286,7 @@ export default function GlobalNavigation(props: { children: React.ReactNode }) {
         } ${effectiveIsGlobalNavHidden ? 'opacity-0 pointer-events-none invisible translate-y-[-100px]' : 'opacity-100 translate-y-0'}`}
         style={{ 
           transition: 'transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.2s, visibility 0.2s',
-          paddingTop: Capacitor.getPlatform() === 'ios' ? 'env(safe-area-inset-top)' : '0px'
+          paddingTop: Capacitor.isNativePlatform() ? 'env(safe-area-inset-top)' : '0px'
         }}
       >
         {/* Exact Image Replication: Header Top Row */}
@@ -406,8 +406,8 @@ export default function GlobalNavigation(props: { children: React.ReactNode }) {
           effectiveIsGlobalNavHidden ? 'opacity-0 pointer-events-none invisible translate-y-[100px]' : 'opacity-100 translate-y-0'
         }`}
         style={{ 
-          height: Capacitor.getPlatform() === 'ios' ? 'calc(76px + env(safe-area-inset-bottom))' : '76px',
-          paddingBottom: Capacitor.getPlatform() === 'ios' ? 'env(safe-area-inset-bottom)' : '0px',
+          height: Capacitor.isNativePlatform() ? 'calc(76px + env(safe-area-inset-bottom))' : '76px',
+          paddingBottom: Capacitor.isNativePlatform() ? 'env(safe-area-inset-bottom)' : '0px',
           transition: 'transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.2s, visibility 0.2s'
         }}
       >
