@@ -396,7 +396,7 @@ export default function GlobalNavigation(props: { children: React.ReactNode }) {
       <main 
         className="flex-1 w-full relative bg-[#faf8ff]"
         style={{
-          paddingTop: effectiveIsGlobalNavHidden ? '0px' : (Capacitor.isNativePlatform() ? 'calc(60px + env(safe-area-inset-top))' : '60px'),
+          paddingTop: effectiveIsGlobalNavHidden ? '0px' : (Capacitor.isNativePlatform() ? 'env(safe-area-inset-top)' : '0px'),
           paddingBottom: effectiveIsGlobalNavHidden ? '0px' : (pathname === '/venues' || pathname.startsWith('/chat') || pathname.startsWith('/notification') || pathname.startsWith('/search') ? '0px' : (Capacitor.isNativePlatform() ? 'calc(120px + env(safe-area-inset-bottom))' : '120px'))
         }}
       >

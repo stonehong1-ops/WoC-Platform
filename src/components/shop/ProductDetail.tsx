@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { Capacitor } from '@capacitor/core';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { useModalNavigation } from '@/hooks/useModalNavigation';
@@ -295,7 +296,10 @@ export default function ProductDetail({ product, isLiked, onClose, onToggleLike,
       `}} />
 
       {/* ━━━ Header ━━━ */}
-      <div className={`fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4 py-3 transition-all duration-300 ${isScrolled ? 'bg-white/95 backdrop-blur-md shadow-sm' : 'bg-gradient-to-b from-black/30 to-transparent'}`}>
+      <div 
+        className={`fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4 pb-3 transition-all duration-300 ${isScrolled ? 'bg-white/95 backdrop-blur-md shadow-sm' : 'bg-gradient-to-b from-black/30 to-transparent'}`}
+        style={{ paddingTop: Capacitor.isNativePlatform() ? 'max(env(safe-area-inset-top), 24px)' : '24px' }}
+      >
         <button onClick={onClose} className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${isScrolled ? 'bg-slate-100 text-[#2d3435]' : 'bg-black/20 backdrop-blur-sm text-white'}`}>
           <span className="material-symbols-rounded text-xl">arrow_back</span>
         </button>
@@ -736,7 +740,13 @@ export default function ProductDetail({ product, isLiked, onClose, onToggleLike,
       </div>
 
       {/* ━━━ Fixed Bottom Bar (compact) ━━━ */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-100 px-4 py-2.5 flex items-center gap-3 max-w-md mx-auto">
+      <div 
+        className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-100 px-4 flex items-center gap-3 max-w-md mx-auto"
+        style={{
+          paddingTop: '10px',
+          paddingBottom: Capacitor.isNativePlatform() ? 'calc(10px + env(safe-area-inset-bottom))' : '10px'
+        }}
+      >
         <div className="flex-1 min-w-0">
           <p className="text-lg font-black text-[#2d3435] font-headline leading-tight">₩{finalPrice.toLocaleString()}</p>
           {(discountPercent > 0 || extraPrice > 0) && (
