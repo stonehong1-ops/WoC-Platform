@@ -478,7 +478,13 @@ export default function ResaleItemDetail({ item, onClose }: ResaleItemDetailProp
       </div>
 
       {/* Fixed Bottom Action Bar */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-100 px-4 py-2.5 flex items-center gap-3 max-w-md mx-auto">
+      <div 
+        className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-100 px-4 flex items-center gap-3 max-w-md mx-auto"
+        style={{
+          paddingTop: '10px',
+          paddingBottom: Capacitor.isNativePlatform() ? 'calc(10px + env(safe-area-inset-bottom))' : '10px'
+        }}
+      >
         <div className="flex-1 min-w-0">
           <p className="text-lg font-black text-[#2d3435] font-headline leading-tight">
             {item.currency || 'KRW'} {item.price.toLocaleString()}
