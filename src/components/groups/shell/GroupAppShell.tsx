@@ -236,7 +236,10 @@ export default function GroupAppShell({
 
         /* HEADER */
         .group-app-shell .header {
-          padding: 16px 36px 12px;
+          padding-top: calc(env(safe-area-inset-top) + 16px);
+          padding-left: 36px;
+          padding-right: 36px;
+          padding-bottom: 12px;
           position: relative;
           z-index: 2;
         }

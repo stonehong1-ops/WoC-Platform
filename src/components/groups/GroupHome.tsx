@@ -427,7 +427,10 @@ export default function GroupHome({ group: initialGroup, isModal, onClose }: { g
       </GroupAppShell>
 
       {/* Main Content */}
-      <main className="pt-[120px] md:pt-[176px] pb-12">
+      <main 
+        className="pb-12"
+        style={{ paddingTop: 'calc(env(safe-area-inset-top) + 120px)' }}
+      >
         <div className={`max-w-7xl mx-auto ${activeTab === 'feed' || activeTab === 'home' || activeTab === 'live' || activeTab === 'calendar' || activeTab === 'board' || activeTab === 'members' || activeTab === 'about' || activeTab === 'settings' || activeTab === 'brand' || activeTab === 'class' || activeTab === 'class-setting' || activeTab === 'shop-setting' || activeTab === 'stay-setting' || activeTab === 'rental-setting' ? 'px-0 md:px-0 mt-0 space-y-0 pb-0' : 'px-4 md:px-8 space-y-10 mt-6 pb-12'}`}>
           
           {/* 1. 홈 피드 대시보드 탭 (Home) */}
