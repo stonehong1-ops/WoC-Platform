@@ -14,6 +14,7 @@ import { matchLocationGroup } from '@/app/social/constants/regionMapping';
 import { useBlockedUsers } from '@/hooks/useBlockedUsers';
 import { db } from '@/lib/firebase/clientApp';
 import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 
 interface UniversalFeedProps {
   context: any;
@@ -32,10 +33,39 @@ export default function UniversalFeed({
   viewMode: propViewMode,
   setViewMode: propSetViewMode
 }: UniversalFeedProps) {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+  const createFlowParam = searchParams.get('createFlow');
+
   // 0ms의 즉각적인 체감 성능을 위해 무거운 URL 쿼리 대신 순수 로컬 상태로 모달을 초고속 제어합니다.
   const [createFlowValue, setCreateFlowValue] = useState<string | null>(null);
-  const openCreate = (value: string) => setCreateFlowValue(value);
-  const closeCreate = () => setCreateFlowValue(null);
+  
+  const openCreate = (value: string) => {
+    setCreateFlowValue(value);
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('createFlow', value === 'new' ? 'true' : value);
+    router.push(`${pathname}?${params.toString()}`);
+  };
+
+  const closeCreate = () => {
+    setCreateFlowValue(null);
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete('createFlow');
+    const qs = params.toString();
+    router.replace(`${pathname}${qs ? `?${qs}` : ''}`);
+  };
+
+  // Synchronize URL changes with local createFlow state (e.g. on back button press)
+  useEffect(() => {
+    if (createFlowParam === 'true') {
+      setCreateFlowValue('new');
+    } else if (createFlowParam && createFlowParam !== 'false') {
+      setCreateFlowValue(createFlowParam);
+    } else {
+      setCreateFlowValue(null);
+    }
+  }, [createFlowParam]);
   
   const [localViewMode, setLocalViewMode] = useState<'list' | 'grid'>('list');
   const viewMode = propViewMode !== undefined ? propViewMode : localViewMode;
