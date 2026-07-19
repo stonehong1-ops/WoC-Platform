@@ -49,15 +49,13 @@ export function useModalNavigation(key: string) {
   }, [router, searchParams, pathname, key]);
 
   const closeModal = useCallback(() => {
-    if (!isOpen) return;
-
     const params = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : searchParams.toString());
     params.delete(key);
     const newUrl = params.toString() ? `${pathname}?${params.toString()}` : pathname;
     
     router.replace(newUrl, { scroll: false });
     setValue(null);
-  }, [router, isOpen, searchParams, pathname, key]);
+  }, [router, searchParams, pathname, key]);
 
   return {
     isOpen,
