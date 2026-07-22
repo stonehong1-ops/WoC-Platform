@@ -80,10 +80,14 @@ workflows:
           grep -n "CURRENT_PROJECT_VERSION" App.xcodeproj/project.pbxproj
       - name: Build Xcode Archive & Export IPA
         script: |
+          mkdir -p /tmp/xcodebuild_logs
+          
           xcode-project build-ipa \
             --project ios/App/App.xcodeproj \
             --scheme App \
-            --config Release
+            --config Release 2>&1 | tee /tmp/xcodebuild_logs/build.log
+          
+          exit ${PIPESTATUS[0]}
       - name: Validate IPA Metadata
         script: |
           IPA_PATH=$(find "$CM_BUILD_DIR/build/ios/ipa" -maxdepth 1 -name "*.ipa" | head -n 1)
@@ -110,6 +114,7 @@ workflows:
           echo "=================================================================="
     artifacts:
       - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
     publishing:
       app_store_connect:
         auth: integration
