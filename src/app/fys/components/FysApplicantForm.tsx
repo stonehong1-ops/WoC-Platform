@@ -43,7 +43,7 @@ export default function FysApplicantForm({
               }`}
             >
               <span className="material-symbols-rounded text-lg">face</span>
-              Leader (남성/리더)
+              Leader (리더)
             </button>
             <button
               type="button"
@@ -55,7 +55,7 @@ export default function FysApplicantForm({
               }`}
             >
               <span className="material-symbols-rounded text-lg">face_3</span>
-              Follower (여성/팔로워)
+              Follower (팔로워)
             </button>
           </div>
           {errors.role && <p className="text-xs text-red-500 mt-1">{errors.role}</p>}

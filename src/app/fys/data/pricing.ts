@@ -8,6 +8,6 @@ export const FYS_PRICE = {
 
 export const FYS_DEADLINES = {
   superEarlyBirdUntil: "2026-07-15T23:59:59+09:00",
-  earlyBirdUntil: "2026-07-31T23:59:59+09:00",
-  refundUntil: "2026-07-31T23:59:59+09:00",
+  earlyBirdUntil: "2026-08-05T23:59:59+09:00",
+  refundUntil: "2026-08-05T23:59:59+09:00",
 };

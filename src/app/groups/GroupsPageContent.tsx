@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import ImageWithFallback from '@/components/common/ImageWithFallback';
 import MyGroupsTray from '@/components/groups/MyGroupsTray';
 import GroupDetail from '@/components/groups/GroupDetail';
+import CreateGroupModal from '@/components/groups/CreateGroupModal';
 import { useGroupsData } from './hooks/useGroupsData';
 import { 
   extractDong, 
@@ -52,13 +53,12 @@ export default function GroupsPageContent() {
     handleCreateClose,
     getFilteredGroups,
     handleVenueSearch,
-    handleCreateSubmit
+    handleCreateSubmit,
+    fetchGroups
   } = useGroupsData();
 
-  // 뒤로가기 버튼으로 모달/풀스크린 닫기
+  // 뒤로가기 버튼으로 모달/풀스크린 닫기 (그룹 디테일 및 생성 모달은 해당 컴포넌트 내부에서 자체 처리)
   useBackButtonClose(!!selectedCategory, closeModals);
-  useBackButtonClose(isCreateOpen, handleCreateClose);
-  useBackButtonClose(!!selectedGroup, closeModals);
 
   // 8개 지정 카테고리 맵핑 데이터
   const portalCategories = React.useMemo(() => {
@@ -120,7 +120,7 @@ export default function GroupsPageContent() {
 
   return (
     <div className="bg-white min-h-screen pb-32 relative font-body">
-      <main className="max-w-4xl mx-auto px-5 py-6 space-y-7">
+      <main className="max-w-4xl mx-auto px-5 pt-0 pb-6 space-y-7">
         
         {/* 2. 새로운 모임 */}
         <section className="space-y-4 text-left">
@@ -285,241 +285,15 @@ export default function GroupsPageContent() {
       )}
 
       {/* Create Group Modal */}
-      {isCreateOpen && (
-        <div className="fixed inset-0 z-[150] bg-background overflow-y-auto no-scrollbar animate-in slide-in-from-bottom duration-300">
-          <header className="sticky top-0 bg-white/95 backdrop-blur-md border-b border-outline-variant/30 px-5 py-4 flex items-center justify-between z-10">
-            <button onClick={handleCreateClose} className="text-outline hover:text-on-surface transition-colors">
-              <span className="material-symbols-outlined">close</span>
-            </button>
-            <h1 className="text-base font-bold text-on-surface">{t('groups.create_title')}</h1>
-            <button
-              onClick={handleCreateSubmit}
-              disabled={createLoading}
-              className="px-4 py-1.5 bg-primary text-on-primary rounded-full text-xs font-bold shadow-md hover:bg-primary/90 transition-all disabled:opacity-50"
-            >
-              {createLoading ? t('common.saving') : t('common.complete')}
-            </button>
-          </header>
-
-          <main className="max-w-xl mx-auto px-5 py-6 space-y-6">
-            {/* Section: Basic info */}
-            <section className="bg-white rounded-[12px] p-6 shadow-sm border border-outline-variant/30 space-y-4">
-              <label className="block text-[10px] font-bold uppercase tracking-wider text-outline mb-2">{t('groups.form_basic_label')}</label>
-              <div>
-                <input
-                  type="text"
-                  placeholder={t('groups.form_name_placeholder')}
-                  value={createForm.name}
-                  onChange={(e) => setCreateForm(prev => ({ ...prev, name: e.target.value }))}
-                  className="w-full px-4 py-3 bg-surface-container-low rounded-lg border-2 border-transparent focus:border-primary outline-none transition-all text-sm font-semibold"
-                />
-              </div>
-              <div>
-                <textarea
-                  placeholder={t('groups.form_desc_placeholder')}
-                  value={createForm.description}
-                  onChange={(e) => setCreateForm(prev => ({ ...prev, description: e.target.value }))}
-                  rows={4}
-                  className="w-full px-4 py-3 bg-surface-container-low rounded-lg border-2 border-transparent focus:border-primary outline-none transition-all text-sm font-semibold resize-none"
-                />
-              </div>
-            </section>
-
-            {/* Section: Location and venue */}
-            <section className="bg-white rounded-[12px] p-6 shadow-sm border border-outline-variant/30 space-y-4 text-left">
-              <label className="block text-[10px] font-bold uppercase tracking-wider text-outline mb-2">{t('groups.form_location_label')}</label>
-              
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  onClick={() => {
-                    setVenueType('venue');
-                    setCreateForm(prev => ({ ...prev, isOnline: false }));
-                  }}
-                  className={`flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all active:scale-95 ${venueType === 'venue'
-                    ? 'border-primary bg-primary-container/10'
-                    : 'border-transparent bg-surface-container-low hover:bg-surface-container-high'
-                    }`}
-                >
-                  <span className="material-symbols-outlined mb-1">location_on</span>
-                  <span className="text-xs font-bold">{t('groups.venue_offline')}</span>
-                </button>
-
-                <button
-                  onClick={() => {
-                    setVenueType('online');
-                    setCreateForm(prev => ({ ...prev, isOnline: true, venueId: 'online', locationDescription: 'Online' }));
-                  }}
-                  className={`flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all active:scale-95 ${venueType === 'online'
-                    ? 'border-primary bg-primary-container/10'
-                    : 'border-transparent bg-surface-container-low hover:bg-surface-container-high'
-                    }`}
-                >
-                  <span className="material-symbols-outlined mb-1">laptop_chromebook</span>
-                  <span className="text-xs font-bold">{t('groups.venue_online')}</span>
-                </button>
-              </div>
-
-              {venueType === 'venue' && (
-                <div className="space-y-3">
-                  <div className="relative">
-                    <span className="absolute left-3.5 top-3 text-outline material-symbols-outlined text-lg">search</span>
-                    <input
-                      type="text"
-                      placeholder={t('groups.form_venue_search_placeholder')}
-                      value={venueSearch}
-                      onChange={(e) => {
-                        setVenueSearch(e.target.value);
-                        handleVenueSearch(e.target.value);
-                      }}
-                      className="w-full pl-10 pr-4 py-2.5 bg-surface-container-low rounded-lg border-2 border-transparent focus:border-primary outline-none transition-all text-sm font-semibold"
-                    />
-                  </div>
-
-                  {/* Search results dropdown */}
-                  {venueSearchLoading && <div className="text-xs text-outline p-2">{t('common.searching')}</div>}
-                  {venueResults.length > 0 && (
-                    <div className="border border-outline-variant/30 rounded-lg max-h-40 overflow-y-auto divide-y divide-outline-variant/20 bg-surface-container-lowest">
-                      {venueResults.map((v) => (
-                        <div
-                          key={v.id}
-                          onClick={() => {
-                            setSelectedVenue(v);
-                            setCreateForm(prev => ({
-                              ...prev,
-                              venueId: v.id,
-                              locationDescription: `${v.name} (${v.address})`
-                            }));
-                            setVenueResults([]);
-                            setVenueSearch('');
-                          }}
-                          className="p-3 text-left hover:bg-surface-container-low cursor-pointer transition-colors"
-                        >
-                          <p className="text-xs font-bold text-on-surface">{v.name}</p>
-                          <p className="text-[10px] text-outline font-semibold mt-0.5">{v.address}</p>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Selected Venue Info */}
-                  {selectedVenue && (
-                    <div className="p-3 bg-primary-container/10 border border-primary/20 rounded-lg flex justify-between items-start">
-                      <div>
-                        <p className="text-xs font-bold text-primary">{selectedVenue.name}</p>
-                        <p className="text-[10px] text-outline font-medium mt-0.5">{selectedVenue.address}</p>
-                      </div>
-                      <button
-                        onClick={() => {
-                          setSelectedVenue(null);
-                          setCreateForm(prev => ({ ...prev, venueId: '', locationDescription: '' }));
-                        }}
-                        className="text-outline hover:text-on-surface"
-                      >
-                        <span className="material-symbols-outlined text-sm">close</span>
-                      </button>
-                    </div>
-                  )}
-
-                  {/* Guide for unregistered venue */}
-                  <div className="flex items-start gap-2 p-3 bg-amber-50 rounded-lg border border-amber-200/50">
-                    <span className="material-symbols-outlined text-amber-600 text-lg mt-0.5">info</span>
-                    <div>
-                      <p className="text-[12px] font-semibold text-amber-800">{t('groups.venue_not_registered')}</p>
-                      <p className="text-[11px] text-amber-700">{t('groups.venue_register_guide')}</p>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </section>
-
-            {/* Section: Category */}
-            {venueType && (
-            <section className="bg-white rounded-[12px] p-6 shadow-sm border border-outline-variant/30">
-              <label className="block text-[10px] font-bold uppercase tracking-wider text-outline mb-4">{t('groups.form_category_label')}</label>
-              <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-3">
-                {(() => {
-                  const allCats = [
-                    { id: 'Studio', icon: 'palette' },
-                    { id: 'Shop', icon: 'shopping_bag' },
-                    { id: 'Academy', icon: 'school' },
-                    { id: 'Stay', icon: 'bed' },
-                    { id: 'Rental', icon: 'meeting_room' },
-                    { id: 'Beauty', icon: 'face_retouching_natural' },
-                    { id: 'Wellness', icon: 'self_care' },
-                    { id: 'Restaurant', icon: 'restaurant' },
-                    { id: 'Cafe', icon: 'local_cafe' },
-                    { id: 'Office', icon: 'work' }
-                  ];
-                  const onlineRestricted = ['Stay', 'Rental', 'Restaurant', 'Cafe'];
-                  return allCats.map((cat) => {
-                    const isDisabled = venueType === 'online' && onlineRestricted.includes(cat.id);
-                    return (
-                      <button
-                        key={cat.id}
-                        disabled={isDisabled}
-                        onClick={() => !isDisabled && setCreateForm(prev => ({ ...prev, category: cat.id }))}
-                        className={`flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all active:scale-95 ${isDisabled
-                          ? 'border-transparent bg-surface-container-low/50 opacity-40 cursor-not-allowed'
-                          : createForm.category === cat.id
-                          ? 'border-primary bg-primary-container/10'
-                          : 'border-transparent bg-surface-container-low hover:bg-surface-container-high cursor-pointer'
-                          }`}
-                      >
-                        <span className={`material-symbols-outlined mb-2 ${isDisabled ? 'text-outline/50' : createForm.category === cat.id ? 'text-primary' : 'text-outline'}`}>{cat.icon}</span>
-                        <span className={`text-[12px] font-semibold ${isDisabled ? 'text-outline/50' : createForm.category === cat.id ? 'text-primary' : 'text-on-surface-variant'}`}>{t(`groups.cat_${cat.id.toLowerCase()}`)}</span>
-                      </button>
-                    );
-                  });
-                })()}
-              </div>
-              {venueType === 'online' && (
-                <p className="mt-3 text-[11px] text-outline flex items-center gap-1.5">
-                  <span className="material-symbols-outlined text-sm">info</span>
-                  {t('groups.category_unavailable_online')}:{' '}
-                  <span className="font-semibold">{t('groups.cat_stay')}, {t('groups.cat_rental')}, {t('groups.cat_restaurant')}, {t('groups.cat_cafe')}</span>
-                </p>
-              )}
-            </section>
-            )}
-
-            {/* Section: Membership Strategy */}
-            <section className="bg-white rounded-[12px] p-6 shadow-sm border border-outline-variant/30">
-              <label className="block text-[10px] font-bold uppercase tracking-wider text-outline mb-4">{t('groups.form_policy_label')}</label>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                {[
-                  { id: 'open', label: t('groups.policy_open_label'), icon: 'public', desc: t('groups.policy_open_desc') },
-                  { id: 'approval', label: t('groups.policy_approval_label'), icon: 'verified_user', desc: t('groups.policy_approval_desc') },
-                  { id: 'invite', label: t('groups.policy_invite_label'), icon: 'mail', desc: t('groups.policy_invite_desc') }
-                ].map((policy) => (
-                  <div
-                    key={policy.id}
-                    onClick={() => setCreateForm(prev => ({ ...prev, joinPolicy: policy.id }))}
-                    className={`relative p-4 rounded-xl border-2 cursor-pointer group hover:shadow-md transition-all ${createForm.joinPolicy === policy.id
-                      ? 'border-primary bg-primary-container/5'
-                      : 'border-outline-variant/30 bg-white hover:border-outline'
-                      }`}
-                  >
-                    <div className="flex justify-between items-start mb-2">
-                      <span className={`material-symbols-outlined ${createForm.joinPolicy === policy.id ? 'text-primary' : 'text-outline'}`}>{policy.icon}</span>
-                      <div className={`w-5 h-5 rounded-full border-4 bg-white ${createForm.joinPolicy === policy.id ? 'border-primary' : 'border-outline-variant'}`}></div>
-                    </div>
-                    <p className="font-bold text-sm mb-1">{policy.label}</p>
-                    <p className="text-[12px] text-on-surface-variant font-medium">{policy.desc}</p>
-                  </div>
-                ))}
-              </div>
-            </section>
-
-            <div className="h-8"></div>
-          </main>
-        </div>
-      )}
+      <CreateGroupModal
+        isOpen={isCreateOpen}
+        onClose={handleCreateClose}
+        onSuccess={fetchGroups}
+      />
 
       {/* Group Detail Overlay */}
       {selectedGroup && (
-        <div className="fixed inset-0 z-[150] bg-background overflow-y-auto no-scrollbar animate-in slide-in-from-bottom duration-300">
-          <GroupDetail group={selectedGroup} isModal={true} onClose={closeModals} />
-        </div>
+        <GroupDetail group={selectedGroup} isModal={true} onClose={closeModals} />
       )}
 
       {/* Floating Action Button (Tray) for My Groups */}

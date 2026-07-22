@@ -11,10 +11,11 @@ import UserProfileModal from '@/components/profile/UserProfileModal';
 import { useModalNavigation } from '@/hooks/useModalNavigation';
 import { useNavigation } from '@/components/providers/NavigationProvider';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 
 
 function PlazaPageContent() {
+  const router = useRouter();
   const { user, profile } = useAuth();
   const [storyUsers, setStoryUsers] = useState<any[]>([]);
   const [activeFilter, setActiveFilter] = useState('all');
@@ -47,12 +48,11 @@ function PlazaPageContent() {
   };
 
   const closeCreate = () => {
-    setCreateFlowValue(null); // 무조건 즉시 UI를 닫아서 딜레이와 프리징을 원천 차단
-    const params = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : searchParams.toString());
-    params.delete('createFlow');
-    const newQs = params.toString();
+    setCreateFlowValue(null); // 즉시 UI 닫기
     if (typeof window !== 'undefined') {
-      window.history.replaceState(null, '', `${window.location.pathname}${newQs ? `?${newQs}` : ''}`);
+      if (window.location.search.includes('createFlow=')) {
+        router.back();
+      }
     }
   };
 

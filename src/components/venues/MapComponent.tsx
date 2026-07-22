@@ -683,7 +683,7 @@ export default function MapComponent({
       <div 
         className="fixed inset-x-0 px-6 z-30 pointer-events-none flex justify-center"
         style={{ 
-          bottom: 'calc(64px + max(env(safe-area-inset-bottom), 12px) + 3mm)',
+          bottom: 'calc(76px + env(safe-area-inset-bottom, 0px) + 3mm)',
           transform: 'translateY(var(--woc-bottom-nav-y, 0px))',
           transition: 'transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1)'
         }}

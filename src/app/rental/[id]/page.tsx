@@ -476,11 +476,11 @@ export default function RentalDetailPage({ params }: { params: Promise<{ id: str
             <span className="font-black text-sm">Processing...</span>
           ) : (date && startTime && endTime) ? (
             <>
-              <span className="font-black text-[15px]">{date.split('-').slice(1).join('/')}</span>
+              <span className="font-black text-sm">{date.split('-').slice(1).join('/')}</span>
               <span className="text-[10px] font-medium text-white/80">{startTime} - {endTime}</span>
             </>
           ) : (
-             <span className="font-black text-[15px]">Request Rental</span>
+             <span className="font-black text-sm">Request Rental</span>
           )}
         </button>
       </div>

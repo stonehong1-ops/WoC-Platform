@@ -284,7 +284,7 @@ export default function CoachingRoomDetailPage() {
         <main className="max-w-3xl w-full mx-auto px-4 py-6">
           
           {/* Dashboard Bento Card */}
-          <div className="p-6 rounded-2xl bg-white border border-surface-container shadow-sm mb-6 flex flex-col gap-4">
+          <div className="p-6 rounded-2xl bg-white border border-[#e0e4e5] shadow-sm mb-6 flex flex-col gap-4">
           <div className="flex flex-col sm:flex-row justify-between sm:items-start gap-2">
             <div>
               <div className="flex items-center gap-2">
@@ -308,11 +308,11 @@ export default function CoachingRoomDetailPage() {
                   </button>
                 )}
               </div>
-              <h1 className="text-lg font-bold text-on-surface tracking-tight mt-1">{room.title}</h1>
+              <h1 className="text-lg font-bold text-[#2d3435] tracking-tight mt-1">{room.title}</h1>
             </div>
             
             <div className="text-left sm:text-right shrink-0">
-              <p className="text-[10px] font-bold text-outline uppercase tracking-wider">{t('coaching.progress')}</p>
+              <p className="text-[10px] font-bold text-[#acb3b4] uppercase tracking-wider">{t('coaching.progress')}</p>
               <h2 className="text-2xl font-black text-primary leading-none mt-0.5">{room.overallProgress || 0}%</h2>
             </div>
           </div>
@@ -326,24 +326,24 @@ export default function CoachingRoomDetailPage() {
           </div>
 
           {/* Members Badge Row */}
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs font-semibold text-on-surface-variant border-t border-slate-50 pt-3.5">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs font-semibold text-[#596061] border-t border-slate-50 pt-3.5">
             <div className="flex items-center gap-1.5">
-              <span className="text-[10px] text-outline uppercase font-extrabold">{t('coaching.coach')}</span>
+              <span className="text-[10px] text-[#acb3b4] uppercase font-extrabold">{t('coaching.coach')}</span>
               <UserBadge uid={room.coachId} nickname={room.coachName} avatarSize="w-7 h-7" nameClassName="text-xs font-bold text-primary" />
             </div>
             <div className="w-[1px] h-3 bg-slate-200" />
             <div className="flex items-center gap-1.5">
-              <span className="text-[10px] text-outline uppercase font-extrabold">{t('coaching.students')}</span>
+              <span className="text-[10px] text-[#acb3b4] uppercase font-extrabold">{t('coaching.students')}</span>
               <div className="flex items-center gap-3">
                 {room.studentIds.map((sid, idx) => (
-                  <UserBadge key={sid} uid={sid} nickname={room.studentNames[idx]} avatarSize="w-7 h-7" nameClassName="text-xs font-bold text-on-surface" />
+                  <UserBadge key={sid} uid={sid} nickname={room.studentNames[idx]} avatarSize="w-7 h-7" nameClassName="text-xs font-bold text-[#2d3435]" />
                 ))}
               </div>
             </div>
             <div className="w-[1px] h-3 bg-slate-200" />
             <div className="flex items-center gap-1.5">
-              <span className="text-[10px] text-outline uppercase font-extrabold">Active</span>
-              <span className="text-on-surface-variant font-bold">
+              <span className="text-[10px] text-[#acb3b4] uppercase font-extrabold">Active</span>
+              <span className="text-[#596061] font-bold">
                 {t('coaching.active_assignments').replace('{count}', String(room.activeAssignmentCount))}
               </span>
             </div>
@@ -351,7 +351,7 @@ export default function CoachingRoomDetailPage() {
         </div>
 
         {/* Tab Header */}
-        <div className="flex border-b border-surface-container mb-6 bg-white sticky top-0 z-10">
+        <div className="flex border-b border-[#e0e4e5] mb-6 bg-white sticky top-0 z-10">
           {[
             { id: 'overview', label: t('coaching.overview') },
             { id: 'assignments', label: t('coaching.assignments') },
@@ -363,7 +363,7 @@ export default function CoachingRoomDetailPage() {
               className={`flex-1 py-3.5 text-center text-sm font-bold border-b-2 transition-colors active:scale-98 ${
                 activeTab === tab.id
                   ? 'border-primary text-primary'
-                  : 'border-transparent text-on-surface-variant hover:text-on-surface'
+                  : 'border-transparent text-[#596061] hover:text-[#2d3435]'
               }`}
             >
               {tab.label}
@@ -375,25 +375,25 @@ export default function CoachingRoomDetailPage() {
         {activeTab === 'overview' && (
           <div className="space-y-6 animate-in fade-in duration-200">
             {/* Overview Detail Card */}
-            <div className="p-6 rounded-2xl bg-white border border-surface-container shadow-sm space-y-4">
-              <h3 className="text-sm font-bold text-on-surface uppercase tracking-wider border-b border-slate-50 pb-2">
+            <div className="p-6 rounded-2xl bg-white border border-[#e0e4e5] shadow-sm space-y-4">
+              <h3 className="text-sm font-bold text-[#2d3435] uppercase tracking-wider border-b border-slate-50 pb-2">
                 {t('coaching.info_title')}
               </h3>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <p className="text-[10px] font-bold text-outline uppercase tracking-wider">{t('coaching.created_at')}</p>
-                  <p className="text-xs font-semibold text-on-surface">{formatFeedDate(room.createdAt)}</p>
+                  <p className="text-[10px] font-bold text-[#acb3b4] uppercase tracking-wider">{t('coaching.created_at')}</p>
+                  <p className="text-xs font-semibold text-[#2d3435]">{formatFeedDate(room.createdAt)}</p>
                 </div>
                 <div className="space-y-1">
-                  <p className="text-[10px] font-bold text-outline uppercase tracking-wider">{t('coaching.last_updated')}</p>
-                  <p className="text-xs font-semibold text-on-surface">{formatFeedDate(room.updatedAt)}</p>
+                  <p className="text-[10px] font-bold text-[#acb3b4] uppercase tracking-wider">{t('coaching.last_updated')}</p>
+                  <p className="text-xs font-semibold text-[#2d3435]">{formatFeedDate(room.updatedAt)}</p>
                 </div>
               </div>
 
               <div className="space-y-2 mt-4 pt-2 border-t border-slate-50">
-                <p className="text-[10px] font-bold text-outline uppercase tracking-wider">{t('coaching.summary_label')}</p>
-                <p className="text-xs font-medium text-on-surface-variant leading-relaxed">
+                <p className="text-[10px] font-bold text-[#acb3b4] uppercase tracking-wider">{t('coaching.summary_label')}</p>
+                <p className="text-xs font-medium text-[#596061] leading-relaxed">
                   {t('coaching.summary_desc')}
                 </p>
               </div>
@@ -406,7 +406,7 @@ export default function CoachingRoomDetailPage() {
             
             {/* Add Assignment Block (Coach only) */}
             {isCoach && (
-              <div className="p-4 rounded-2xl bg-white border border-surface-container shadow-sm">
+              <div className="p-4 rounded-2xl bg-white border border-[#e0e4e5] shadow-sm">
                 {!isAddingAssignment ? (
                   <button
                     onClick={() => setIsAddingAssignment(true)}
@@ -418,7 +418,7 @@ export default function CoachingRoomDetailPage() {
                 ) : (
                   <form onSubmit={handleCreateAssignment} className="space-y-3">
                     <div className="space-y-1">
-                      <label className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">
+                      <label className="text-[10px] font-bold text-[#596061] uppercase tracking-wider">
                         {t('coaching.assignment_title_label')}
                       </label>
                       <input
@@ -427,7 +427,7 @@ export default function CoachingRoomDetailPage() {
                         value={newAssignmentTitle}
                         onChange={(e) => setNewAssignmentTitle(e.target.value)}
                         placeholder={t('coaching.assignment_title_placeholder')}
-                        className="w-full px-3 py-2 bg-surface rounded-xl border border-surface-container focus:outline-none focus:border-primary text-xs font-semibold"
+                        className="w-full px-3 py-2 bg-white rounded-xl border border-[#e0e4e5] focus:outline-none focus:border-primary text-xs font-semibold"
                       />
                     </div>
                     <div className="flex gap-2 justify-end">
@@ -437,7 +437,7 @@ export default function CoachingRoomDetailPage() {
                           setIsAddingAssignment(false);
                           setNewAssignmentTitle('');
                         }}
-                        className="px-3 py-1.5 bg-slate-50 hover:bg-slate-100 rounded-lg text-[10px] font-bold text-on-surface-variant transition-colors"
+                        className="px-3 py-1.5 bg-slate-50 hover:bg-slate-100 rounded-lg text-[10px] font-bold text-[#596061] transition-colors"
                       >
                         {t('coaching.cancel')}
                       </button>
@@ -455,9 +455,9 @@ export default function CoachingRoomDetailPage() {
 
             {/* Assignments List */}
             {assignments.length === 0 ? (
-              <div className="py-12 text-center border border-dashed border-surface-container rounded-2xl bg-surface-container-lowest">
-                <span className="material-symbols-rounded text-3xl text-outline mb-1.5">assignment</span>
-                <p className="text-xs font-bold text-outline">
+              <div className="py-12 text-center border border-dashed border-[#e0e4e5] rounded-2xl bg-surface-container-lowest">
+                <span className="material-symbols-rounded text-3xl text-[#acb3b4] mb-1.5">assignment</span>
+                <p className="text-xs font-bold text-[#acb3b4]">
                   {t('coaching.no_assignments')}
                 </p>
               </div>
@@ -471,11 +471,11 @@ export default function CoachingRoomDetailPage() {
                   return (
                     <div
                       key={assignment.id}
-                      className="p-5 rounded-2xl bg-white border border-surface-container shadow-sm flex flex-col gap-4"
+                      className="p-5 rounded-2xl bg-white border border-[#e0e4e5] shadow-sm flex flex-col gap-4"
                     >
                       {/* Assignment Top Header */}
                       <div className="flex items-start justify-between gap-4">
-                        <h4 className="font-bold text-sm text-on-surface leading-tight">
+                        <h4 className="font-bold text-sm text-[#2d3435] leading-tight">
                           {assignment.title}
                         </h4>
                         <span className={`px-2 py-0.5 rounded text-[9px] font-extrabold uppercase tracking-wider shrink-0 ${
@@ -495,7 +495,7 @@ export default function CoachingRoomDetailPage() {
 
                       {/* 5% Step Slider UI */}
                       <div className="space-y-2">
-                        <div className="flex justify-between items-center text-xs font-semibold text-on-surface-variant">
+                        <div className="flex justify-between items-center text-xs font-semibold text-[#596061]">
                           <span>{t('coaching.progress')}</span>
                           <span className="text-primary font-bold">{progressValue}%</span>
                         </div>
@@ -519,7 +519,7 @@ export default function CoachingRoomDetailPage() {
                       </div>
 
                       {/* Slider Guide details */}
-                      <div className="flex justify-between items-center text-[9px] text-outline font-semibold">
+                      <div className="flex justify-between items-center text-[9px] text-[#acb3b4] font-semibold">
                         <span>{t('coaching.progress_start')}</span>
                         <span>{t('coaching.progress_mid')}</span>
                         <span>{t('coaching.progress_end')}</span>
@@ -536,7 +536,7 @@ export default function CoachingRoomDetailPage() {
           <div className="space-y-6 animate-in fade-in duration-200">
             
             {/* Timeline Create Form (Coach & Student common) */}
-            <div className="p-4 rounded-2xl bg-white border border-surface-container shadow-sm space-y-4">
+            <div className="p-4 rounded-2xl bg-white border border-[#e0e4e5] shadow-sm space-y-4">
               <form onSubmit={handlePostFeed} className="space-y-3">
                 <textarea
                   required={!mediaFile}
@@ -544,12 +544,12 @@ export default function CoachingRoomDetailPage() {
                   value={feedContent}
                   onChange={(e) => setFeedContent(e.target.value)}
                   placeholder={t('coaching.feed_placeholder')}
-                  className="w-full p-3 bg-surface rounded-xl border border-surface-container focus:outline-none focus:border-primary text-xs font-medium resize-none leading-relaxed"
+                  className="w-full p-3 bg-white rounded-xl border border-[#e0e4e5] focus:outline-none focus:border-primary text-xs font-medium resize-none leading-relaxed"
                 />
 
                 {/* Media Preview Box */}
                 {mediaPreview && (
-                  <div className="relative rounded-xl overflow-hidden border border-surface-container aspect-video max-h-48 bg-slate-900 flex items-center justify-center">
+                  <div className="relative rounded-xl overflow-hidden border border-[#e0e4e5] aspect-video max-h-48 bg-slate-900 flex items-center justify-center">
                     {mediaType === 'video' ? (
                       <video src={mediaPreview} className="w-full h-full object-contain" controls />
                     ) : (
@@ -581,14 +581,14 @@ export default function CoachingRoomDetailPage() {
                     <button
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
-                      className="w-9 h-9 rounded-full flex items-center justify-center bg-slate-50 hover:bg-slate-100 text-on-surface-variant hover:text-primary active:scale-90 transition-all"
+                      className="w-9 h-9 rounded-full flex items-center justify-center bg-slate-50 hover:bg-slate-100 text-[#596061] hover:text-primary active:scale-90 transition-all"
                     >
                       <span className="material-symbols-outlined text-[18px]">photo_camera</span>
                     </button>
                     <button
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
-                      className="w-9 h-9 rounded-full flex items-center justify-center bg-slate-50 hover:bg-slate-100 text-on-surface-variant hover:text-primary active:scale-90 transition-all"
+                      className="w-9 h-9 rounded-full flex items-center justify-center bg-slate-50 hover:bg-slate-100 text-[#596061] hover:text-primary active:scale-90 transition-all"
                     >
                       <span className="material-symbols-outlined text-[18px]">videocam</span>
                     </button>
@@ -597,7 +597,7 @@ export default function CoachingRoomDetailPage() {
                   <button
                     type="submit"
                     disabled={uploadingMedia || (!feedContent.trim() && !mediaFile)}
-                    className="px-4 py-2 bg-primary hover:bg-primary/95 disabled:bg-slate-200 disabled:text-outline text-white rounded-xl text-xs font-black transition-colors shadow-sm active:scale-95"
+                    className="px-4 py-2 bg-primary hover:bg-primary/95 disabled:bg-slate-200 disabled:text-[#acb3b4] text-white rounded-xl text-xs font-black transition-colors shadow-sm active:scale-95"
                   >
                     {uploadingMedia ? t('common.uploading') : t('coaching.post_feedback')}
                   </button>
@@ -607,9 +607,9 @@ export default function CoachingRoomDetailPage() {
 
             {/* Timeline Feed Stream */}
             {feedItems.length === 0 ? (
-              <div className="py-12 text-center border border-dashed border-surface-container rounded-2xl bg-surface-container-lowest">
-                <span className="material-symbols-rounded text-3xl text-outline mb-1.5">history</span>
-                <p className="text-xs font-bold text-outline">
+              <div className="py-12 text-center border border-dashed border-[#e0e4e5] rounded-2xl bg-surface-container-lowest">
+                <span className="material-symbols-rounded text-3xl text-[#acb3b4] mb-1.5">history</span>
+                <p className="text-xs font-bold text-[#acb3b4]">
                   {t('coaching.timeline_empty')}
                 </p>
               </div>
@@ -643,7 +643,7 @@ export default function CoachingRoomDetailPage() {
                       }`} />
 
                       {/* Card Content */}
-                      <div className="p-4 rounded-xl bg-white border border-surface-container shadow-xs space-y-3">
+                      <div className="p-4 rounded-xl bg-white border border-[#e0e4e5] shadow-xs space-y-3">
                         
                         {/* Header Sender Info */}
                         <div className="flex items-center justify-between gap-4">
@@ -655,10 +655,10 @@ export default function CoachingRoomDetailPage() {
                             }`}>
                               {item.senderRole.toUpperCase()}
                             </span>
-                            <UserBadge uid={item.senderId} nickname={item.senderName} avatarSize="w-6 h-6" nameClassName="text-xs font-bold text-on-surface" />
+                            <UserBadge uid={item.senderId} nickname={item.senderName} avatarSize="w-6 h-6" nameClassName="text-xs font-bold text-[#2d3435]" />
                           </div>
                           <div className="flex items-center gap-2">
-                            <span className="text-[9px] text-outline font-semibold">
+                            <span className="text-[9px] text-[#acb3b4] font-semibold">
                               {formatFeedDate(item.createdAt)}
                             </span>
                             {!isSystem && item.senderId === user?.uid && (
@@ -738,7 +738,7 @@ export default function CoachingRoomDetailPage() {
                           </div>
                         ) : (
                           item.content && (
-                            <p className="text-xs font-medium leading-relaxed whitespace-pre-wrap break-words text-on-surface-variant">
+                            <p className="text-xs font-medium leading-relaxed whitespace-pre-wrap break-words text-[#596061]">
                               {item.content}
                             </p>
                           )
@@ -746,7 +746,7 @@ export default function CoachingRoomDetailPage() {
 
                         {/* Media display */}
                         {item.mediaUrl && (
-                          <div className="rounded-xl overflow-hidden border border-surface-container max-h-60 bg-slate-900 flex items-center justify-center relative aspect-video">
+                          <div className="rounded-xl overflow-hidden border border-[#e0e4e5] max-h-60 bg-slate-900 flex items-center justify-center relative aspect-video">
                             {item.type === 'video' ? (
                               <video src={item.mediaUrl} className="w-full h-full object-contain" controls />
                             ) : (

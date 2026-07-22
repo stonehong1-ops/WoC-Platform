@@ -2,6 +2,7 @@
 
 import '../live.css';
 import React, { useState, useEffect, useRef, Suspense } from 'react';
+import { Capacitor } from '@capacitor/core';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
 import { 
@@ -801,309 +802,437 @@ const GalleryCreateContent = () => {
     }
   };
 
+  // 2단계 마법사 관리
+  const [step, setStep] = useState(1);
+  const TOTAL_STEPS = 2;
+
+  const handleHeaderBack = () => {
+    if (step > 1) {
+      setStep(prev => prev - 1);
+    } else {
+      const isDirty = caption || images.length > 0 || previews.length > 0;
+      if (isDirty) {
+        if (confirm(t('common.confirm_discard') || "작성 중인 내용이 있습니다. 정말 나가시겠습니까?")) {
+          router.back();
+        }
+      } else {
+        router.back();
+      }
+    }
+  };
+
+  const stepTitles: Record<number, string> = {
+    1: language === 'KR' ? '미디어 및 게시글 내용' : 'Media & Content',
+    2: language === 'KR' ? '연관 정보 및 인물 태그' : 'Tags & Mentions',
+  };
+
   // ---- Render ----
   return (
-    <div className="fixed inset-0 z-[100] bg-white md:bg-black/80 flex justify-center backdrop-blur-sm">
-      <div className="gallery-create-container w-full h-full overflow-y-auto bg-white shadow-xl flex flex-col relative">
-        {/* Header */}
-        <div className="flex-shrink-0 bg-white border-b border-slate-100 px-4 h-14 flex items-center justify-between z-50 sticky top-0">
-          <button type="button" onClick={() => router.back()} className="w-10 h-10 flex items-center justify-center -ml-2 active:scale-95 transition-transform text-slate-700">
-            <span className="material-symbols-rounded text-2xl">arrow_back</span>
-          </button>
-          <span className="text-[16px] font-bold text-slate-800">{isEditMode ? t('gallery.edit_post', 'Edit Post') : t('gallery.new_post', 'New Post')}</span>
-          <button 
-            className="px-5 py-2 rounded-full bg-[#007AFF] text-white text-[14px] font-bold disabled:opacity-50 active:scale-95 transition-all" 
-            onClick={handlePost} 
-            disabled={isUploading || (images.length === 0 && existingImages.length === 0) || !caption.trim()}
-          >
-            {isUploading ? `${uploadProgress}%` : (isEditMode ? t('common.update', 'Update') : t('common.post', 'Post'))}
-          </button>
-        </div>
+    <div
+      className="fixed inset-0 bg-white overflow-y-auto animate-in fade-in duration-300"
+      style={{ zIndex: 100000, paddingTop: Capacitor.isNativePlatform() ? 'calc(56px + env(safe-area-inset-top))' : '56px' }}
+    >
+      <style dangerouslySetInnerHTML={{ __html: `.material-symbols-rounded { font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24; }` }} />
 
-        {isUploading && <div className="w-full bg-gray-100 h-1"><div className="bg-primary h-1 transition-all" style={{ width: `${uploadProgress}%` }} /></div>}
+      {/* 소셜 100% 동일 Header (X버튼 삭제, 뒤로가기로 조작) */}
+      <header
+        className="fixed top-0 left-0 w-full flex-shrink-0 bg-white border-b border-slate-100 px-4 flex items-center justify-between z-50"
+        style={{
+          zIndex: 100010,
+          paddingTop: Capacitor.isNativePlatform() ? 'env(safe-area-inset-top)' : '0px',
+          height: Capacitor.isNativePlatform() ? 'calc(56px + env(safe-area-inset-top))' : '56px'
+        }}
+      >
+        <button
+          type="button"
+          onClick={handleHeaderBack}
+          className="w-10 h-10 flex items-center justify-center -ml-2 active:scale-95 transition-transform text-slate-700"
+        >
+          <span className="material-symbols-rounded text-2xl">arrow_back</span>
+        </button>
+        <h1 className="text-[16px] font-bold text-slate-800">
+          {isEditMode ? (t('gallery.edit_post') || '게시물 수정') : (t('gallery.new_post') || '새 게시물 작성')}
+        </h1>
+        <div className="w-10" />
+      </header>
 
-        {/* Media Upload */}
-        <div className="upload-section" style={{ padding: '12px 16px' }}>
-          <div className="image-preview-scroll bg-gray-50/50 p-2.5 rounded-xl border border-dashed border-gray-200">
-            {previews.map((item, idx) => (
-              <div key={idx} className="preview-item animate-fade-in" style={{ flex: '0 0 80px', height: '100px' }}>
-                {item.type === 'video'
-                  ? <video src={item.url} className="w-full h-full object-cover rounded-lg" muted loop autoPlay playsInline />
-                  : <img src={item.url} alt="" className="w-full h-full object-cover rounded-lg" />}
-                <button className="btn-remove-image" onClick={() => removeImage(idx)}><X size={12} /></button>
-              </div>
-            ))}
-            <button 
-              className="btn-add-more flex flex-col items-center justify-center border border-dashed border-gray-300 hover:border-primary rounded-lg bg-white transition-all text-gray-400 hover:text-primary gap-1 shrink-0" 
-              style={{ flex: '0 0 100px', height: '100px' }} 
-              onClick={() => fileInputRef.current?.click()}
-            >
-              <Camera size={20} />
-              <span className="text-[9px] font-bold tracking-tight">{t('gallery.add_media') || '이미지/동영상 추가'}</span>
-            </button>
+      {/* 소셜 100% 동일 Step Indicator Bar */}
+      <div className="max-w-2xl mx-auto px-4 mt-3">
+        <div className="flex items-center justify-between border border-slate-100 bg-slate-50/80 backdrop-blur rounded-2xl px-4 py-3 shadow-sm">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-black text-slate-700">
+              {language === 'KR' ? `${step} / ${TOTAL_STEPS} 단계` : `Step ${step} of ${TOTAL_STEPS}`}
+            </span>
+            <span className="text-xs font-bold text-[#007AFF] bg-[#007AFF]/10 px-2.5 py-0.5 rounded-full">
+              {stepTitles[step]}
+            </span>
           </div>
-          <input type="file" multiple accept="image/*,video/*" hidden ref={fileInputRef} onChange={handleImageChange} />
+          <div className="w-20 h-1.5 bg-slate-200 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-[#007AFF] transition-all duration-300"
+              style={{ width: `${(step / TOTAL_STEPS) * 100}%` }}
+            />
+          </div>
         </div>
+      </div>
 
-        {/* Caption - compact single line */}
-        <div className="px-4 py-2 border-b border-gray-100 flex items-center gap-2 bg-white">
-          <input
-            type="text"
-            className="flex-1 text-[16px] bg-transparent border-none focus:outline-none placeholder:text-gray-400 font-normal text-gray-800"
-            placeholder={(t('gallery.write_caption') || '내용을 입력하세요...') + ' (필수)'}
-            value={caption}
-            maxLength={MAX_CAPTION}
-            onChange={e => setCaption(e.target.value)}
-          />
-          <span className={`text-[10px] font-bold shrink-0 ${caption.length >= MAX_CAPTION ? 'text-red-500' : 'text-gray-300'}`}>
-            {caption.length}/{MAX_CAPTION}
-          </span>
+      {isUploading && (
+        <div className="max-w-2xl mx-auto px-4 mt-2">
+          <div className="w-full bg-gray-100 h-1.5 rounded-full overflow-hidden">
+            <div className="bg-[#007AFF] h-full transition-all" style={{ width: `${uploadProgress}%` }} />
+          </div>
         </div>
+      )}
 
-        {/* ── LIVE TOGGLE ── */}
-        {!isFromLive && (
-          <div className="px-4 py-2 border-b border-gray-100 bg-white">
-            <button
-              className="w-full flex items-center gap-2.5 py-1"
-              onClick={() => setShowInLive(!showInLive)}
-            >
-              <span className="material-symbols-outlined text-[16px] text-red-500" style={{ fontVariationSettings: "'FILL' 1" }}>play_circle</span>
-              <span className="text-xs font-bold text-gray-700 flex-1 text-left">{t('gallery.also_show_in_live', 'Also show in Live')}</span>
-              <div className={`w-9 h-5 rounded-full transition-colors duration-200 flex items-center px-0.5 ${showInLive ? 'bg-red-500' : 'bg-gray-300'}`}>
-                <div className={`w-4 h-4 rounded-full bg-white shadow-sm transition-transform duration-200 ${showInLive ? 'translate-x-4' : 'translate-x-0'}`} />
+      <main className="pt-4 pb-36 max-w-2xl mx-auto px-4">
+        {step === 1 && (
+          <div className="space-y-5 animate-in fade-in duration-200">
+            {/* 카드 1: 미디어 첨부 */}
+            <div className="border border-[#e0e4e5] rounded-2xl bg-white">
+              <div className="bg-[#f8f9fa] px-4 py-3 border-b border-[#e0e4e5] flex items-center gap-2 rounded-t-[15px]">
+                <span className="material-symbols-rounded text-sm text-primary">add_a_photo</span>
+                <p className="text-[14px] font-bold text-primary">미디어 첨부 (사진 / 동영상)</p>
               </div>
-            </button>
+              <div className="p-4">
+                <div className="image-preview-scroll bg-[#f8f9fa] p-3 rounded-xl border border-dashed border-[#e0e4e5] flex gap-2 overflow-x-auto">
+                  {previews.map((item, idx) => (
+                    <div key={idx} className="preview-item relative shrink-0 rounded-lg overflow-hidden border border-[#e0e4e5]" style={{ width: '90px', height: '110px' }}>
+                      {item.type === 'video'
+                        ? <video src={item.url} className="w-full h-full object-cover" muted loop autoPlay playsInline />
+                        : <img src={item.url} alt="" className="w-full h-full object-cover" />}
+                      <button className="absolute top-1 right-1 w-5 h-5 bg-black/60 rounded-full flex items-center justify-center text-white" onClick={() => removeImage(idx)}>
+                        <X size={12} />
+                      </button>
+                    </div>
+                  ))}
+                  <button 
+                    className="flex flex-col items-center justify-center border border-dashed border-[#acb3b4] hover:border-primary rounded-xl bg-white transition-all text-[#acb3b4] hover:text-primary gap-1 shrink-0" 
+                    style={{ width: '100px', height: '110px' }} 
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <Camera size={24} />
+                    <span className="text-[10px] font-bold">{t('gallery.add_media') || '미디어 추가'}</span>
+                  </button>
+                </div>
+                <input type="file" multiple accept="image/*,video/*" hidden ref={fileInputRef} onChange={handleImageChange} />
+              </div>
+            </div>
+
+            {/* 카드 2: 내용 작성 & 옵션 */}
+            <div className="border border-[#e0e4e5] rounded-2xl bg-white">
+              <div className="bg-[#f8f9fa] px-4 py-3 border-b border-[#e0e4e5] flex items-center gap-2 rounded-t-[15px]">
+                <span className="material-symbols-rounded text-sm text-primary">edit_note</span>
+                <p className="text-[14px] font-bold text-primary">게시글 내용 및 옵션</p>
+              </div>
+              <div className="p-4 space-y-4">
+                <div>
+                  <label className="block text-[14px] font-bold text-[#acb3b4] mb-1.5">
+                    게시글 설명 / 캡션 <span className="text-red-500">*</span>
+                  </label>
+                  <div className="flex items-center px-4 py-3 border border-[#e0e4e5] rounded-xl bg-[#f8f9fa] focus-within:bg-white focus-within:ring-2 focus-within:ring-primary/20 transition-all">
+                    <input
+                      type="text"
+                      className="flex-1 bg-transparent border-none p-0 focus:ring-0 text-[16px] font-bold text-[#2d3435] placeholder:text-[#acb3b4] outline-none"
+                      placeholder={(t('gallery.write_caption') || '내용을 입력하세요...') + ' (필수)'}
+                      value={caption}
+                      maxLength={MAX_CAPTION}
+                      onChange={e => setCaption(e.target.value)}
+                    />
+                    <span className={`text-xs font-bold shrink-0 ml-2 ${caption.length >= MAX_CAPTION ? 'text-red-500' : 'text-[#acb3b4]'}`}>
+                      {caption.length}/{MAX_CAPTION}
+                    </span>
+                  </div>
+                </div>
+
+                {!isFromLive && (
+                  <div className="pt-2">
+                    <button
+                      type="button"
+                      className="w-full flex items-center justify-between px-4 py-3 border border-[#e0e4e5] rounded-xl bg-[#f8f9fa] hover:bg-[#f2f4f4] transition-colors"
+                      onClick={() => setShowInLive(!showInLive)}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="material-symbols-rounded text-red-500 text-lg">play_circle</span>
+                        <span className="text-sm font-bold text-[#2d3435]">{t('gallery.also_show_in_live', 'Live 피드에도 함께 노출')}</span>
+                      </div>
+                      <div className={`w-10 h-5 rounded-full transition-colors duration-200 flex items-center px-0.5 ${showInLive ? 'bg-red-500' : 'bg-slate-300'}`}>
+                        <div className={`w-4 h-4 rounded-full bg-white shadow-sm transition-transform duration-200 ${showInLive ? 'translate-x-5' : 'translate-x-0'}`} />
+                      </div>
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         )}
 
-        {/* ===== TAG SYSTEM v2 개편 ===== */}
-        <div className="flex-1 overflow-y-auto px-4 py-3 flex flex-col gap-4">
-          
-          {/* [1] 태그 검색 섹션 (최상단) */}
-          <div className="space-y-2 shrink-0">
-            <div className="flex items-center gap-2">
-              <span className="text-[13px] font-extrabold text-gray-500 uppercase tracking-wider">태그 검색</span>
-              <div className="flex-1 h-px bg-gray-100" />
-            </div>
-            <div className="relative">
-              <input
-                type="text"
-                className="w-full bg-white border border-gray-200 rounded-xl pl-9 pr-10 py-2.5 text-[16px] focus:outline-none focus:border-primary shadow-sm text-gray-800 placeholder:text-gray-400 placeholder:font-normal"
-                placeholder={t('gallery.search_placeholder', 'Search group, social, event, class, people...')}
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-              />
-              <Search className="absolute left-3.5 top-3 text-gray-400" size={14} />
-              {isSearching && (
-                <div className="absolute right-4 top-3 w-4 h-4 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
-              )}
-            </div>
-
-            {searchQuery.length >= 1 && (
-              <div className="absolute left-0 right-0 mt-1 bg-white border border-gray-100 rounded-xl max-h-60 overflow-y-auto shadow-lg divide-y divide-gray-50 z-20">
-                {searchResults.length > 0 ? (
-                  searchResults.map(r => (
-                    <button
-                      key={`${r.type}-${r.id}`}
-                      className="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-gray-50 text-left transition-colors"
-                      onClick={() => addSearchResult(r)}
-                    >
-                      <div className={`w-7 h-7 rounded-full flex items-center justify-center border shrink-0 ${CLR[r.type] || 'bg-gray-100 text-gray-400 border-gray-200'}`}>
-                        {ICON[r.type]}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="text-[11px] font-semibold text-gray-900 truncate">
-                          {getLocalizedName(r.name, (r as any).nameNative)}
-                        </div>
-                        <div className="text-[9px] text-gray-400 truncate">
-                          {r.type.toUpperCase()} · {r.subtitle}
-                        </div>
-                      </div>
-                    </button>
-                  ))
-                ) : (
-                  <div className="py-6 text-center text-gray-400 text-[11px]">
-                    {t('gallery.no_results', 'No results found.')}
-                  </div>
-                )}
+        {step === 2 && (
+          <div className="space-y-5 animate-in fade-in duration-200">
+            {/* 카드 1: 태그 검색 */}
+            <div className="border border-[#e0e4e5] rounded-2xl bg-white relative z-30">
+              <div className="bg-[#f8f9fa] px-4 py-3 border-b border-[#e0e4e5] flex items-center gap-2 rounded-t-[15px]">
+                <span className="material-symbols-rounded text-sm text-primary">search</span>
+                <p className="text-[14px] font-bold text-primary">태그 검색 (그룹, 소셜, 클래스, 이벤트, 인물)</p>
               </div>
-            )}
-          </div>
-
-          {/* [2] 연관 추천 태그 섹션 (가운데) - 단일 칩 정렬식 */}
-          <div className="space-y-2.5 shrink-0">
-            <div className="flex items-center gap-2">
-              <span className="text-[13px] font-extrabold text-gray-500 uppercase tracking-wider">{t('gallery.relevant_tags') || '연관 추천 태그'}</span>
-              <div className="flex-1 h-px bg-gray-100" />
-            </div>
-
-            {loadingRelevant ? (
-              <Spinner />
-            ) : (
-              <div className="flex flex-wrap gap-1.5 py-1">
-                  {myRoleSocials.map(s => {
-                    const isSelected = selectedActivity?.id === s.id;
-                    return (
-                      <ChipCompact
-                        key={s.id}
-                        label={getLocalizedName(s.name, (s as any).nameNative)}
-                        icon={ICON.social}
-                        onClick={() => setSelectedActivity(isSelected ? null : s)}
-                        color={isSelected ? CLR.social : undefined}
-                      />
-                    );
-                  })}
-                  {myClasses.map(c => {
-                    const isSelected = selectedActivity?.id === c.id;
-                    return (
-                      <ChipCompact
-                        key={c.id}
-                        label={getLocalizedName(c.name, (c as any).nameNative)}
-                        icon={ICON.class}
-                        onClick={async () => {
-                          if (isSelected) {
-                            setSelectedActivity(null);
-                          } else {
-                            setSelectedActivity(c);
-                            if (c.groupId && (!selectedGroup || selectedGroup.id !== c.groupId)) {
-                              try {
-                                const matchedGroup = userGroups.find(g => g.id === c.groupId);
-                                if (matchedGroup) {
-                                  setSelectedGroup(matchedGroup);
-                                } else {
-                                  const groupSnap = await getDoc(doc(db, 'groups', c.groupId));
-                                  if (groupSnap.exists()) {
-                                    const gData = groupSnap.data();
-                                    setSelectedGroup({
-                                      type: 'group',
-                                      id: groupSnap.id,
-                                      name: gData.name || '',
-                                      nameNative: gData.nativeName || '',
-                                      subtitle: gData.address || '',
-                                      avatar: gData.logo || gData.coverImage || ''
-                                    } as any);
-                                  }
-                                }
-                              } catch (err) {
-                                console.error(err);
-                              }
-                            }
-                          }
-                        }}
-                        color={isSelected ? CLR.class : undefined}
-                      />
-                    );
-                  })}
-                  {myActiveEvents.map(e => {
-                    const isSelected = selectedActivity?.id === e.id;
-                    return (
-                      <ChipCompact
-                        key={e.id}
-                        label={getLocalizedName(e.name, (e as any).nameNative)}
-                        icon={ICON.event}
-                        onClick={() => setSelectedActivity(isSelected ? null : e)}
-                        color={isSelected ? CLR.event : undefined}
-                      />
-                    );
-                  })}
-                  {userGroups.filter(g => g.id !== selectedGroup?.id).map(g => {
-                    const isSelected = selectedGroup?.id === g.id;
-                    return (
-                      <ChipCompact
-                        key={g.id}
-                        label={getLocalizedName(g.name, (g as any).nameNative)}
-                        avatar={g.avatar}
-                        onClick={() => {
-                          if (isSelected) {
-                            setSelectedGroup(null);
-                            if (selectedActivity?.groupId === g.id) {
-                              setSelectedActivity(null);
-                            }
-                          } else {
-                            setSelectedGroup(g);
-                          }
-                        }}
-                        color={isSelected ? 'bg-indigo-500 text-white border-indigo-600' : undefined}
-                      />
-                    );
-                  })}
-
-                  {myRoleSocials.length === 0 && myClasses.length === 0 && myActiveEvents.length === 0 && userGroups.filter(g => g.id !== selectedGroup?.id).length === 0 && (
-                    <p className="text-[9px] text-gray-400 py-1 text-center w-full">연관된 추천 태그가 없습니다.</p>
+              <div className="p-4 space-y-3">
+                <div className="relative flex items-center px-4 py-3 border border-[#e0e4e5] rounded-xl bg-[#f8f9fa] focus-within:bg-white focus-within:ring-2 focus-within:ring-primary/20 transition-all">
+                  <Search className="text-[#acb3b4] mr-2 shrink-0" size={18} />
+                  <input
+                    type="text"
+                    className="flex-1 bg-transparent border-none p-0 focus:ring-0 text-[16px] font-bold text-[#2d3435] placeholder:text-[#acb3b4] outline-none"
+                    placeholder={t('gallery.search_placeholder', '검색어를 입력하세요...')}
+                    value={searchQuery}
+                    onChange={e => setSearchQuery(e.target.value)}
+                  />
+                  {isSearching && (
+                    <div className="w-4 h-4 border-2 border-primary/30 border-t-primary rounded-full animate-spin shrink-0" />
                   )}
-              </div>
-            )}
-          </div>
+                </div>
 
-          {/* [3] 최종 태그 결과 섹션 (하단) */}
-          <div className="flex-1 space-y-2.5 min-h-[120px]">
-            <div className="flex items-center gap-1.5">
-              <Hash size={12} className="text-gray-400 shrink-0" />
-              <span className="text-[13px] font-extrabold text-gray-500 uppercase tracking-wider">최종 태그 결과</span>
-            </div>
-
-            {/* 선택된 태그가 없는 경우 안내 문구 */}
-            {!selectedGroup && !selectedActivity && selectedPeople.length <= 1 && (
-              <p className="text-[9px] text-gray-400 py-1.5 font-normal">
-                태그된 정보가 없습니다. 추천 태그나 검색을 이용해 주세요.
-              </p>
-            )}
-
-            {/* 최종 선택된 칩들의 목록 */}
-            {(selectedGroup || selectedActivity || selectedPeople.length > 0) && (
-              <div className="flex flex-wrap gap-1.5 py-0.5">
-                {selectedGroup && (
-                  <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[8.5px] font-extrabold border bg-white ${CLR.group} shadow-[0_1px_3px_rgba(0,0,0,0.04)]`}>
-                    {ICON.group}
-                    <span>{getLocalizedName(selectedGroup.name, (selectedGroup as any).nameNative)}</span>
-                    <button 
-                      type="button" 
-                      onClick={() => {
-                        setSelectedGroup(null);
-                        if (selectedActivity?.groupId === selectedGroup.id) {
-                          setSelectedActivity(null);
-                        }
-                      }} 
-                      className="opacity-60 hover:opacity-100 ml-0.5"
-                    >
-                      <X size={9} />
-                    </button>
-                  </span>
-                )}
-                {selectedActivity && (
-                  <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[8.5px] font-extrabold border bg-white ${CLR[selectedActivity.type]} shadow-[0_1px_3px_rgba(0,0,0,0.04)]`}>
-                    {ICON[selectedActivity.type]}
-                    <span>{getLocalizedName(selectedActivity.name, (selectedActivity as any).nameNative)}</span>
-                    <button 
-                      type="button" 
-                      onClick={() => setSelectedActivity(null)} 
-                      className="opacity-60 hover:opacity-100 ml-0.5"
-                    >
-                      <X size={9} />
-                    </button>
-                  </span>
-                )}
-                {selectedPeople.map(p => (
-                  <div key={p.id} className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[8.5px] font-extrabold border bg-white ${CLR.people} shadow-[0_1px_3px_rgba(0,0,0,0.04)]`}>
-                    {p.avatar
-                      ? <img src={p.avatar} alt="" className="w-3.5 h-3.5 rounded-full object-cover" />
-                      : <User size={9} />}
-                    <span>{getLocalizedName(p.name, (p as any).nameNative)}</span>
-                    <span className="text-[7.5px] opacity-65">
-                      {p.role === 'me' ? '(me)' : p.role === 'organizer' ? '(org)' : p.role === 'dj' ? '(dj)' : p.role === 'instructor' ? '(inst)' : ''}
-                    </span>
-                    {p.role !== 'me' && (
-                      <button onClick={() => setSelectedPeople(prev => prev.filter(x => x.id !== p.id))} className="opacity-50 hover:opacity-100 ml-0.5">
-                        <X size={8} />
-                      </button>
+                {searchQuery.length >= 1 && (
+                  <div className="absolute left-4 right-4 mt-1 bg-white border border-[#e0e4e5] rounded-xl max-h-60 overflow-y-auto shadow-lg divide-y divide-[#f2f4f4] z-50">
+                    {searchResults.length > 0 ? (
+                      searchResults.map(r => (
+                        <button
+                          key={`${r.type}-${r.id}`}
+                          type="button"
+                          className="w-full flex items-center gap-3 px-4 py-3 hover:bg-[#f8f9fa] text-left transition-colors"
+                          onClick={() => addSearchResult(r)}
+                        >
+                          <div className={`w-7 h-7 rounded-full flex items-center justify-center border shrink-0 ${CLR[r.type] || 'bg-gray-100 text-gray-400 border-gray-200'}`}>
+                            {ICON[r.type]}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="text-sm font-bold text-[#2d3435] truncate">
+                              {getLocalizedName(r.name, (r as any).nameNative)}
+                            </div>
+                            <div className="text-[10px] font-medium text-[#acb3b4] truncate">
+                              {r.type.toUpperCase()} · {r.subtitle}
+                            </div>
+                          </div>
+                        </button>
+                      ))
+                    ) : (
+                      <div className="py-6 text-center text-[#acb3b4] text-xs font-medium">
+                        {t('gallery.no_results', '검색 결과가 없습니다.')}
+                      </div>
                     )}
                   </div>
-                ))}
+                )}
               </div>
-            )}
-          </div>
+            </div>
 
-        </div>
+            {/* 카드 2: 연관 추천 태그 */}
+            <div className="border border-[#e0e4e5] rounded-2xl bg-white">
+              <div className="bg-[#f8f9fa] px-4 py-3 border-b border-[#e0e4e5] flex items-center gap-2 rounded-t-[15px]">
+                <span className="material-symbols-rounded text-sm text-primary">auto_awesome</span>
+                <p className="text-[14px] font-bold text-primary">{t('gallery.relevant_tags') || '연관 추천 태그'}</p>
+              </div>
+              <div className="p-4">
+                {loadingRelevant ? (
+                  <Spinner />
+                ) : (
+                  <div className="flex flex-wrap gap-2">
+                    {myRoleSocials.map(s => {
+                      const isSelected = selectedActivity?.id === s.id;
+                      return (
+                        <ChipCompact
+                          key={s.id}
+                          label={getLocalizedName(s.name, (s as any).nameNative)}
+                          icon={ICON.social}
+                          onClick={() => setSelectedActivity(isSelected ? null : s)}
+                          color={isSelected ? CLR.social : undefined}
+                        />
+                      );
+                    })}
+                    {myClasses.map(c => {
+                      const isSelected = selectedActivity?.id === c.id;
+                      return (
+                        <ChipCompact
+                          key={c.id}
+                          label={getLocalizedName(c.name, (c as any).nameNative)}
+                          icon={ICON.class}
+                          onClick={async () => {
+                            if (isSelected) {
+                              setSelectedActivity(null);
+                            } else {
+                              setSelectedActivity(c);
+                              if (c.groupId && (!selectedGroup || selectedGroup.id !== c.groupId)) {
+                                try {
+                                  const matchedGroup = userGroups.find(g => g.id === c.groupId);
+                                  if (matchedGroup) {
+                                    setSelectedGroup(matchedGroup);
+                                  } else {
+                                    const groupSnap = await getDoc(doc(db, 'groups', c.groupId));
+                                    if (groupSnap.exists()) {
+                                      const gData = groupSnap.data();
+                                      setSelectedGroup({
+                                        type: 'group',
+                                        id: groupSnap.id,
+                                        name: gData.name || '',
+                                        nameNative: gData.nativeName || '',
+                                        subtitle: gData.address || '',
+                                        avatar: gData.logo || gData.coverImage || ''
+                                      } as any);
+                                    }
+                                  }
+                                } catch (err) {
+                                  console.error(err);
+                                }
+                              }
+                            }
+                          }}
+                          color={isSelected ? CLR.class : undefined}
+                        />
+                      );
+                    })}
+                    {myActiveEvents.map(e => {
+                      const isSelected = selectedActivity?.id === e.id;
+                      return (
+                        <ChipCompact
+                          key={e.id}
+                          label={getLocalizedName(e.name, (e as any).nameNative)}
+                          icon={ICON.event}
+                          onClick={() => setSelectedActivity(isSelected ? null : e)}
+                          color={isSelected ? CLR.event : undefined}
+                        />
+                      );
+                    })}
+                    {userGroups.filter(g => g.id !== selectedGroup?.id).map(g => {
+                      const isSelected = selectedGroup?.id === g.id;
+                      return (
+                        <ChipCompact
+                          key={g.id}
+                          label={getLocalizedName(g.name, (g as any).nameNative)}
+                          avatar={g.avatar}
+                          onClick={() => {
+                            if (isSelected) {
+                              setSelectedGroup(null);
+                              if (selectedActivity?.groupId === g.id) {
+                                setSelectedActivity(null);
+                              }
+                            } else {
+                              setSelectedGroup(g);
+                            }
+                          }}
+                          color={isSelected ? 'bg-indigo-500 text-white border-indigo-600' : undefined}
+                        />
+                      );
+                    })}
+
+                    {myRoleSocials.length === 0 && myClasses.length === 0 && myActiveEvents.length === 0 && userGroups.filter(g => g.id !== selectedGroup?.id).length === 0 && (
+                      <p className="text-xs text-[#acb3b4] py-1 text-center w-full font-medium">연관된 추천 태그가 없습니다.</p>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* 카드 3: 최종 지정 태그 배지 목록 */}
+            <div className="border border-[#e0e4e5] rounded-2xl bg-white">
+              <div className="bg-[#f8f9fa] px-4 py-3 border-b border-[#e0e4e5] flex items-center gap-2 rounded-t-[15px]">
+                <span className="material-symbols-rounded text-sm text-primary">style</span>
+                <p className="text-[14px] font-bold text-primary">최종 지정 태그 목록</p>
+              </div>
+              <div className="p-4 min-h-[100px]">
+                {!selectedGroup && !selectedActivity && selectedPeople.length <= 1 && (
+                  <p className="text-xs text-[#acb3b4] font-medium py-2">
+                    지정된 태그가 없습니다. 상단 검색이나 추천 태그를 눌러 등록해 주세요.
+                  </p>
+                )}
+
+                {(selectedGroup || selectedActivity || selectedPeople.length > 0) && (
+                  <div className="flex flex-wrap gap-2">
+                    {selectedGroup && (
+                      <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border bg-white ${CLR.group} shadow-sm`}>
+                        {ICON.group}
+                        <span>{getLocalizedName(selectedGroup.name, (selectedGroup as any).nameNative)}</span>
+                        <button 
+                          type="button" 
+                          onClick={() => {
+                            setSelectedGroup(null);
+                            if (selectedActivity?.groupId === selectedGroup.id) {
+                              setSelectedActivity(null);
+                            }
+                          }} 
+                          className="hover:opacity-100 ml-1 text-red-500"
+                        >
+                          <X size={12} />
+                        </button>
+                      </span>
+                    )}
+                    {selectedActivity && (
+                      <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border bg-white ${CLR[selectedActivity.type]} shadow-sm`}>
+                        {ICON[selectedActivity.type]}
+                        <span>{getLocalizedName(selectedActivity.name, (selectedActivity as any).nameNative)}</span>
+                        <button 
+                          type="button" 
+                          onClick={() => setSelectedActivity(null)} 
+                          className="hover:opacity-100 ml-1 text-red-500"
+                        >
+                          <X size={12} />
+                        </button>
+                      </span>
+                    )}
+                    {selectedPeople.map(p => (
+                      <div key={p.id} className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border bg-white ${CLR.people} shadow-sm`}>
+                        {p.avatar
+                          ? <img src={p.avatar} alt="" className="w-4 h-4 rounded-full object-cover" />
+                          : <User size={12} />}
+                        <span>{getLocalizedName(p.name, (p as any).nameNative)}</span>
+                        <span className="text-[10px] opacity-75">
+                          {p.role === 'me' ? '(나)' : p.role === 'organizer' ? '(주최)' : p.role === 'dj' ? '(DJ)' : p.role === 'instructor' ? '(강사)' : ''}
+                        </span>
+                        {p.role !== 'me' && (
+                          <button onClick={() => setSelectedPeople(prev => prev.filter(x => x.id !== p.id))} className="hover:opacity-100 ml-1 text-red-500">
+                            <X size={12} />
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+      </main>
+
+      {/* 소셜 100% 동일 하단 네비게이션 버튼 바 */}
+      <div
+        className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-100 px-4 shadow-lg flex gap-3 items-center justify-between"
+        style={{
+          zIndex: 100010,
+          paddingTop: '16px',
+          paddingBottom: Capacitor.isNativePlatform() ? 'calc(16px + env(safe-area-inset-bottom))' : '16px',
+          height: Capacitor.isNativePlatform() ? 'calc(76px + env(safe-area-inset-bottom))' : '76px'
+        }}
+      >
+        {step > 1 && (
+          <button
+            type="button"
+            onClick={handleHeaderBack}
+            className="flex-grow py-3.5 rounded-full border border-slate-200 text-slate-700 text-sm font-bold active:scale-95 transition-transform"
+          >
+            {language === 'KR' ? '이전 단계' : 'Previous'}
+          </button>
+        )}
+        <button
+          type="button"
+          onClick={() => {
+            if (step < TOTAL_STEPS) {
+              setStep(prev => prev + 1);
+            } else {
+              handlePost();
+            }
+          }}
+          disabled={isUploading || (step === 1 && (!caption.trim() || (images.length === 0 && existingImages.length === 0)))}
+          className="flex-grow py-3.5 rounded-full bg-[#007AFF] text-white text-sm font-bold active:scale-95 transition-transform disabled:opacity-50"
+        >
+          {step < TOTAL_STEPS
+            ? (language === 'KR' ? '다음 단계' : 'Next Step')
+            : (isUploading ? `${uploadProgress}%` : (isEditMode ? (t('common.update') || "수정 완료") : (t('common.post') || "게시물 등록")))}
+        </button>
       </div>
     </div>
   );

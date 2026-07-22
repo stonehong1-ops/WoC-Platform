@@ -1,4 +1,5 @@
 import React, { useRef, useEffect } from 'react';
+import { Capacitor } from '@capacitor/core';
 import type { ChatRoom, ChatMessage } from '@/types/chat';
 import { motion, AnimatePresence } from 'framer-motion';
 import { chatService } from '@/lib/firebase/chatService';
@@ -226,7 +227,10 @@ export default function ChatInputBar({
   };
 
   return (
-    <div className="border-t border-gray-100/50 bg-white z-20 flex flex-col shrink-0 relative pb-safe-bottom">
+    <div 
+      className="border-t border-gray-100/50 bg-white z-20 flex flex-col shrink-0 relative"
+      style={{ paddingBottom: Capacitor.isNativePlatform() ? 'env(safe-area-inset-bottom)' : '0px' }}
+    >
       {/* Pended Media Preview */}
       <AnimatePresence>
         {previewMedia && (

@@ -61,14 +61,14 @@ export default function FysHero({ onOpenPoster }: FysHeroProps) {
         </Link>
       </div>
 
-      {/* 수퍼얼리버드 하이라이트 문구 */}
+      {/* 얼리버드 하이라이트 문구 */}
       <div className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white p-3.5 rounded-xl space-y-0.5 shadow-sm">
         <p className="text-xs font-black flex items-center gap-1">
           <span className="material-symbols-rounded text-sm text-yellow-300 animate-pulse">emergency_home</span>
-          7월 15일까지는 수퍼얼리버드 신청 기간입니다.
+          8월 5일까지는 얼리버드 신청 기간입니다.
         </p>
         <p className="text-[10px] text-blue-100 font-medium leading-none">
-          Super Early Bird registration is open until July 15.
+          Early Bird registration is open until August 5.
         </p>
         <p className="text-[10px] text-yellow-200 font-bold pt-1">
           * 가격은 신청 시점에 따라 자동 계산됩니다. / Calculated automatically.

@@ -48,7 +48,7 @@ export default function GroupFeedSection({
   const router = useRouter();
 
   return (
-    <div className="flex flex-col gap-6 p-4">
+    <div className="flex flex-col gap-6 px-4 pt-1 pb-4">
       {/* Admin Todo Section */}
       {isAdminUser && adminTodos.length > 0 && (
         <section>

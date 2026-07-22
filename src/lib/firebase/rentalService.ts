@@ -27,8 +27,9 @@ export const rentalService = {
         let groupCoverImage = '';
         let groupCategory = '';
 
-        if (sData.groupId && activeGroupSettings.has(sData.groupId)) {
-          const settings = activeGroupSettings.get(sData.groupId);
+        if (sData.groupId && groupDataMap.has(sData.groupId)) {
+          const groupData = groupDataMap.get(sData.groupId);
+          const settings = groupData.rentalSettings || {};
           if (settings.pricePalette) {
              const prices = Object.values(settings.pricePalette).filter((p: any) => typeof p === 'number' && p > 0) as number[];
              if (prices.length > 0) {
@@ -36,8 +37,6 @@ export const rentalService = {
                maxPrice = Math.max(...prices);
              }
           }
-          
-          const groupData = groupDataMap.get(sData.groupId);
           if (groupData) {
             groupCoverImage = groupData.coverImage || '';
             groupCategory = groupData.tags?.[0] || '';
@@ -54,7 +53,7 @@ export const rentalService = {
         };
       }) as (RentalSpace & { minPrice?: number, maxPrice?: number, groupCoverImage?: string, groupCategory?: string })[];
 
-      spaces = spaces.filter(s => s.groupId && activeGroupSettings.has(s.groupId));
+      spaces = spaces.filter(s => Boolean(s.groupId));
       callback(spaces);
     };
 
@@ -64,10 +63,8 @@ export const rentalService = {
       groupDataMap = new Map();
       snapshot.forEach(d => {
         const data = d.data();
-        if (data.activeServices?.rental === true) {
-          activeGroupSettings.set(d.id, data.rentalSettings || {});
-          groupDataMap.set(d.id, data);
-        }
+        activeGroupSettings.set(d.id, data.rentalSettings || {});
+        groupDataMap.set(d.id, data);
       });
       groupsReady = true;
       emitIfReady();
@@ -100,6 +97,18 @@ export const rentalService = {
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp()
     });
+
+    if (data.groupId) {
+      try {
+        const groupRef = doc(db, 'groups', data.groupId);
+        await updateDoc(groupRef, {
+          'activeServices.rental': true
+        });
+      } catch (err) {
+        console.error("Failed to enable activeServices.rental on group:", err);
+      }
+    }
+
     return docRef.id;
   },
 
@@ -109,6 +118,11 @@ export const rentalService = {
       ...data,
       updatedAt: serverTimestamp()
     });
+  },
+
+  deleteSpace: async (id: string) => {
+    const docRef = doc(db, 'rental_spaces', id);
+    await deleteDoc(docRef);
   },
 
   // --- Likes ---

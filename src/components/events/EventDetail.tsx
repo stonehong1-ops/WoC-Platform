@@ -201,7 +201,7 @@ export default function EventDetail({ event, onClose, onEdit, onDelete }: EventD
         {/* Floating Bottom Bar (Action Hub Style) */}
         {!isHost && (
           <div className="absolute bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t border-[#f2f4f4] p-4 flex gap-3 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] z-20 pb-safe">
-            <button className="flex-1 py-3.5 bg-primary hover:bg-[#004190] text-white rounded-2xl font-bold text-[14px] transition-all flex items-center justify-center gap-2 shadow-sm shadow-primary/20">
+            <button className="flex-1 py-3.5 bg-primary hover:bg-[#004190] text-white rounded-xl font-black text-sm transition-all flex items-center justify-center gap-2 shadow-sm shadow-primary/20">
               <span className="material-symbols-rounded text-[20px]">how_to_reg</span>
               Register
             </button>

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
+import { Capacitor } from '@capacitor/core';
 import { doc, updateDoc, serverTimestamp, deleteDoc } from 'firebase/firestore';
 import { deleteUser } from 'firebase/auth';
 import { toast } from 'sonner';
@@ -284,7 +285,11 @@ export default function MyInfoBottomSheet({ isOpen, onClose, profile }: MyInfoBo
     >
       <div 
         className="bg-surface w-full relative flex flex-col overflow-hidden bottom-sheet-container animate-in slide-in-from-bottom duration-500"
-        style={{ height: 'calc(100% - 48px)', borderRadius: '24px 24px 0 0' }}
+        style={{ 
+          height: 'calc(100% - 48px)', 
+          borderRadius: '24px 24px 0 0',
+          paddingBottom: Capacitor.isNativePlatform() ? 'env(safe-area-inset-bottom)' : '0px'
+        }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Grab Handle */}

@@ -663,7 +663,10 @@ export default function ClassDetail({ groupId, onClose, isOpen, itemId, itemDeta
 
       {/* Fixed Bottom Price Bar - 오직 CLOSE 버튼만 존재 */}
       {itemDetail && !loading && (
-        <div className="fixed bottom-0 left-0 right-0 z-[260] bg-white border-t border-[#f2f4f4] px-5 py-4 flex items-center justify-between max-w-[56rem] mx-auto">
+        <div 
+          className="fixed bottom-0 left-0 right-0 z-[260] bg-white border-t border-[#f2f4f4] px-5 py-4 pb-safe flex items-center justify-between max-w-[56rem] mx-auto"
+          style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom, 0px))' }}
+        >
           <div className="flex flex-col">
             <span className="text-[10px] font-black text-[#acb3b4] uppercase tracking-widest">
               {language === 'KR' ? '금액' : 'Price'}

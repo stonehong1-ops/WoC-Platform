@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useMemo } from "react";
+import { Capacitor } from '@capacitor/core';
 import { Social } from "@/types/social";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { socialService } from "@/lib/firebase/socialService";
@@ -61,6 +62,8 @@ export default function SocialViewer({ social: initialSocial, onClose, targetDat
     if (hasPoster) {
       // Live poster mode: use original image as background, overlay renders DJ live
       setImages(social.imageUrl ? [social.imageUrl] : []);
+    } else if (social.imageUrls && social.imageUrls.length > 0) {
+      setImages(social.imageUrls);
     } else if (social.posterExportUrl) {
       setImages([social.posterExportUrl]);
     } else if (social.imageUrl) {
@@ -68,7 +71,7 @@ export default function SocialViewer({ social: initialSocial, onClose, targetDat
     } else {
       setImages([]);
     }
-  }, [social.imageUrl, social.posterExportUrl, social.posterLayoutId]);
+  }, [social.imageUrl, social.posterExportUrl, social.posterLayoutId, social.imageUrls]);
 
   // UI state
   const [isScrolled, setIsScrolled] = useState(false);
@@ -224,7 +227,13 @@ export default function SocialViewer({ social: initialSocial, onClose, targetDat
       <style dangerouslySetInnerHTML={{ __html: `.detail-scrollbar::-webkit-scrollbar{display:none}.detail-scrollbar{-ms-overflow-style:none;scrollbar-width:none}` }} />
 
       {/* Header */}
-      <div className={`fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4 py-3 transition-all duration-300 ${isScrolled ? "bg-white/95 backdrop-blur-md shadow-sm" : ""}`}>
+      <div 
+        className={`fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4 pb-3 transition-all duration-300 ${isScrolled ? "bg-white/95 backdrop-blur-md shadow-sm" : ""}`}
+        style={{
+          paddingTop: 'calc(12px + env(safe-area-inset-top, 0px))',
+          height: 'calc(56px + env(safe-area-inset-top, 0px))'
+        }}
+      >
         <button onClick={onClose} className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${isScrolled ? "bg-slate-100 text-[#2d3435]" : "bg-black/20 backdrop-blur-sm text-white"}`}>
           <span className="material-symbols-rounded text-xl">arrow_back</span>
         </button>
@@ -240,7 +249,10 @@ export default function SocialViewer({ social: initialSocial, onClose, targetDat
 
       {/* Fixed Tab Bar — appears when scrolled past anchor */}
       {isTabStuck && (
-        <div className="fixed top-[56px] left-0 right-0 z-40">
+        <div 
+          className="fixed left-0 right-0 z-40"
+          style={{ top: Capacitor.isNativePlatform() ? 'calc(56px + env(safe-area-inset-top))' : '56px' }}
+        >
           <TabBar />
         </div>
       )}
@@ -248,11 +260,17 @@ export default function SocialViewer({ social: initialSocial, onClose, targetDat
       {/* Scrollable Content */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto detail-scrollbar pb-[80px]">
         {/* Image */}
-        <div ref={heroRef} className={`relative overflow-hidden ${(social.posterLayoutId && social.posterLayoutId !== "none") ? "aspect-[4/5] bg-[#f2f4f4]" : "w-full bg-black"}`}>
+        <div ref={heroRef} className={`relative overflow-hidden ${
+          (images.length === 0) 
+            ? "w-full aspect-[4/5] bg-slate-100" 
+            : (social.posterLayoutId && social.posterLayoutId !== "none") 
+              ? "aspect-[4/5] bg-[#f2f4f4]" 
+              : "w-full bg-black"
+        }`}>
           {images.length === 0 && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center text-[#c4cacc]">
-              <span className="material-symbols-rounded text-5xl mb-1">local_activity</span>
-              <span className="text-[10px] font-bold tracking-wider uppercase">{t('social.no_image')}</span>
+            <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-400 bg-slate-100">
+              <span className="material-symbols-rounded text-5xl mb-1 text-slate-300">local_activity</span>
+              <span className="text-[12px] font-bold tracking-wider uppercase text-slate-400">{t('social.no_image')}</span>
             </div>
           )}
           {images.length > 0 && (
@@ -414,7 +432,10 @@ export default function SocialViewer({ social: initialSocial, onClose, targetDat
       {showMenu && (
         <>
           <div className="fixed inset-0 z-[200] bg-black/40 animate-in fade-in duration-150" onClick={() => setShowMenu(false)} />
-          <div className="fixed bottom-0 left-0 right-0 z-[201] bg-white rounded-t-2xl shadow-2xl animate-in slide-in-from-bottom duration-200 pb-safe">
+          <div 
+            className="fixed bottom-0 left-0 right-0 z-[201] bg-white rounded-t-2xl shadow-2xl animate-in slide-in-from-bottom duration-200"
+            style={{ paddingBottom: Capacitor.isNativePlatform() ? 'env(safe-area-inset-bottom)' : '0px' }}
+          >
             <div className="w-10 h-1 bg-gray-300 rounded-full mx-auto mt-3 mb-2" />
             <div className="px-2 pb-4">
               {canEdit && (

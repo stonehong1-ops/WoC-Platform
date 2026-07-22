@@ -3,6 +3,7 @@
 import React, { useState, useEffect, Suspense } from 'react';
 import dynamic from 'next/dynamic';
 import { useJsApiLoader } from '@react-google-maps/api';
+import { Capacitor } from '@capacitor/core';
 import PageWrapper from '@/components/layout/PageWrapper';
 import ManageEntry from '@/components/venues/ManageEntry';
 import { venueService } from '@/lib/firebase/venueService';
@@ -104,7 +105,13 @@ function VenuesPageContent() {
 
   return (
     <PageWrapper>
-      <div className="fixed inset-0 w-full overflow-hidden" style={{ top: 'var(--header-height, 60px)', bottom: 'calc(64px + max(env(safe-area-inset-bottom), 12px))' }}>
+      <div 
+        className="fixed inset-0 w-full overflow-hidden z-10" 
+        style={{ 
+          top: Capacitor.isNativePlatform() ? 'calc(60px + env(safe-area-inset-top))' : '60px', 
+          bottom: 'calc(64px + max(env(safe-area-inset-bottom), 12px))' 
+        }}
+      >
         <MapComponent 
           isLoaded={isLoaded}
           onRegisterOpen={handleRegisterOpen}

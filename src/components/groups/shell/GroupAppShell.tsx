@@ -219,27 +219,28 @@ export default function GroupAppShell({
         /* ===== GROUP APP SHELL — antigravity.txt 1:1 ===== */
         .group-app-shell {
           width: 100%;
+          height: 100%;
+          display: flex;
+          flex-direction: column;
+          min-height: 0;
           max-width: 1280px;
           margin: 0 auto;
           background: #FAF8FF;
           position: relative;
         }
 
-        /* FIXED HEADER WRAPPER — 뷰포트 기준 고정 */
+        /* HEADER WRAPPER — flex 상단 고정 */
         .group-app-shell .sticky-header-wrapper {
-          position: fixed;
+          flex-shrink: 0;
+          position: sticky;
           top: 0;
-          left: 0;
-          right: 0;
-          max-width: 1280px;
-          margin: 0 auto;
           z-index: 100;
           background: #FAF8FF;
         }
 
         /* HEADER */
         .group-app-shell .header {
-          padding-top: ${isNative ? 'calc(env(safe-area-inset-top) + 16px)' : '16px'};
+          padding-top: ${isNative ? 'max(env(safe-area-inset-top), 12px)' : '16px'};
           padding-left: 36px;
           padding-right: 36px;
           padding-bottom: 12px;
@@ -389,9 +390,16 @@ export default function GroupAppShell({
         .group-app-shell .nav-icon { font-size: 22px; }
         .group-app-shell .nav-label { font-size: 12px; font-weight: 600; }
 
-        /* CONTENT */
+        /* CONTENT — 푸터 클리어런스 적용 */
         .group-app-shell .shell-content {
-          padding: 0;
+          flex: 1 1 0%;
+          min-height: 0;
+          overflow-y: auto;
+          -webkit-overflow-scrolling: touch;
+          padding-top: 16px;
+          padding-bottom: ${isNative ? 'calc(100px + env(safe-area-inset-bottom, 0px))' : '100px'};
+          padding-left: 0;
+          padding-right: 0;
         }
 
         /* MORE DROPDOWN */
@@ -460,12 +468,12 @@ export default function GroupAppShell({
             0 0 0 5px var(--palette-main);
         }
 
-        /* FOOTER / PRESENCE BAR — 원본: height:74px, border-radius:28px */
+        /* FOOTER / PRESENCE BAR — 화면 하단 고정 */
         .group-app-shell .presence-bar {
           position: fixed;
           left: 28px;
           right: 28px;
-          bottom: 28px;
+          bottom: ${isNative ? 'calc(28px + env(safe-area-inset-bottom, 0px))' : '28px'};
           height: 74px;
           border-radius: 28px;
           color: white;
@@ -474,7 +482,7 @@ export default function GroupAppShell({
           padding: 0 28px;
           gap: 28px;
           font-weight: 600;
-          box-shadow: 0 20px 40px rgba(163,0,0,0.25);
+          box-shadow: 0 12px 30px rgba(0,0,0,0.15);
           z-index: 50;
         }
         .group-app-shell .presence-dot {
@@ -507,7 +515,12 @@ export default function GroupAppShell({
         /* RESPONSIVE — 모바일 */
         @media (max-width: 768px) {
           /* 헤더 축소 */
-          .group-app-shell .header { padding: 10px 16px 8px; }
+          .group-app-shell .header { 
+            padding-top: ${isNative ? 'env(safe-area-inset-top, 0px)' : '4px'};
+            padding-left: 16px;
+            padding-right: 16px;
+            padding-bottom: 8px;
+          }
           .group-app-shell .group-info { gap: 10px; }
           .group-app-shell .group-icon { width: 36px; height: 36px; font-size: 16px; }
           .group-app-shell .group-title { font-size: 16px; margin-bottom: 2px; letter-spacing: -0.3px; }
@@ -538,8 +551,17 @@ export default function GroupAppShell({
           .group-app-shell .nav-icon { font-size: 18px; }
           .group-app-shell .nav-label { font-size: 10px; }
 
-          /* 콘텐츠 여백 축소 - 모바일에서 완전히 상단 여백 제거 */
-          .group-app-shell .shell-content { padding: 0; }
+          /* 콘텐츠 여백 */
+          .group-app-shell .shell-content {
+            flex: 1 1 0%;
+            min-height: 0;
+            overflow-y: auto;
+            overscroll-behavior-y: contain;
+            padding-top: 0px;
+            padding-bottom: ${isNative ? 'calc(80px + env(safe-area-inset-bottom, 0px))' : '80px'};
+            padding-left: 0;
+            padding-right: 0;
+          }
 
           /* More 드롭다운 */
           .group-app-shell .more-dropdown {
@@ -552,10 +574,11 @@ export default function GroupAppShell({
           .group-app-shell .palette-row { gap: 6px; margin-top: 8px; }
           .group-app-shell .palette-color { width: 24px; height: 24px; }
 
-          /* 푸터 축소 */
+          /* 푸터 축소 — 모바일 하단 고정 */
           .group-app-shell .presence-bar {
-            left: 8px; right: 8px; bottom: 8px;
-            height: 44px; border-radius: 16px;
+            left: 8px; right: 8px;
+            bottom: ${isNative ? 'calc(8px + env(safe-area-inset-bottom, 0px))' : '8px'};
+            height: 48px; border-radius: 18px;
             padding: 0 14px; gap: 12px; font-size: 11px;
           }
           .group-app-shell .presence-dot { width: 7px; height: 7px; }
@@ -569,10 +592,16 @@ export default function GroupAppShell({
           .group-app-shell .header { padding: 14px 24px 10px; }
           .group-app-shell .shell-nav { margin: 0 24px; }
           .group-app-shell .nav-item { height: 60px; }
-          .group-app-shell .shell-content { padding: 0; }
+          .group-app-shell .shell-content {
+            padding-top: 14px;
+            padding-bottom: 24px;
+            padding-left: 0;
+            padding-right: 0;
+          }
           .group-app-shell .more-dropdown { right: 24px; width: 210px; left: auto; }
           .group-app-shell .presence-bar {
-            left: 16px; right: 16px; bottom: 16px;
+            margin: 20px 16px;
+            margin-bottom: ${isNative ? 'max(env(safe-area-inset-bottom), 28px)' : '28px'};
             height: 56px; border-radius: 22px;
             padding: 0 20px; gap: 20px; font-size: 13px;
           }

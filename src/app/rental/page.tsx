@@ -478,10 +478,12 @@ function RentalPageContent() {
       )}
 
       {/* Create Modal */}
-      <CreateRentalSpace
-        isOpen={isComposeOpen}
-        onClose={closeCompose}
-      />
+      {isComposeOpen && (
+        <CreateRentalSpace
+          isOpen={isComposeOpen}
+          onClose={closeCompose}
+        />
+      )}
     </main>
   );
 }

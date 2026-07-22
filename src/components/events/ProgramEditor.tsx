@@ -55,15 +55,15 @@ export default function ProgramEditor({ programs, onChange }: Props) {
       <div className="bg-[#f8f9fa] px-4 py-3 border-b border-[#e0e4e5] flex items-center justify-between rounded-t-[15px]">
         <div className="flex items-center gap-2">
           <span className="material-symbols-rounded text-sm text-primary">calendar_month</span>
-          <p className="text-[10px] font-black text-primary uppercase tracking-widest">{t('event.programs_label')}</p>
+          <p className="text-[14px] font-bold text-primary">{t('event.programs_label')}</p>
         </div>
         <div className="flex gap-1.5">
           <button onClick={() => addProgram('class')}
-            className="text-[10px] font-bold text-primary flex items-center gap-1 bg-primary/10 px-2.5 py-1 rounded-full hover:bg-primary/20 transition-colors">
+            className="text-xs font-bold text-primary flex items-center gap-1 bg-primary/10 px-2.5 py-1 rounded-full hover:bg-primary/20 transition-colors">
             <span className="material-symbols-rounded text-[14px]">add</span>{t('event.add_class')}
           </button>
           <button onClick={() => addProgram('milonga')}
-            className="text-[10px] font-bold text-amber-600 flex items-center gap-1 bg-amber-50 px-2.5 py-1 rounded-full hover:bg-amber-100 transition-colors">
+            className="text-xs font-bold text-amber-600 flex items-center gap-1 bg-amber-50 px-2.5 py-1 rounded-full hover:bg-amber-100 transition-colors">
             <span className="material-symbols-rounded text-[14px]">add</span>{t('event.add_milonga')}
           </button>
         </div>
@@ -102,51 +102,51 @@ export default function ProgramEditor({ programs, onChange }: Props) {
                 <div className="p-4 space-y-3 border-t border-[#e0e4e5]">
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-[10px] font-bold text-[#acb3b4] uppercase tracking-wider mb-1">{t('event.id_label')}</label>
+                      <label className="block text-xs font-bold text-slate-700 mb-1.5">{t('event.id_label')}</label>
                       <input value={p.id} onChange={e => updateProgram(p.id, { id: e.target.value })}
-                        className="w-full px-3 py-2 border border-[#e0e4e5] rounded-lg bg-[#f8f9fa] text-sm font-bold text-[#2d3435] outline-none focus:ring-2 focus:ring-primary/20" />
+                        className="w-full px-3 py-2 border border-[#e0e4e5] rounded-xl bg-[#f8f9fa] text-sm font-bold text-[#2d3435] outline-none focus:ring-2 focus:ring-[#007AFF]/20" />
                     </div>
                     <div>
-                      <label className="block text-[10px] font-bold text-[#acb3b4] uppercase tracking-wider mb-1">{t('event.category_label')}</label>
+                      <label className="block text-xs font-bold text-slate-700 mb-1.5">{t('event.category_label')}</label>
                       <input value={p.category || ''} onChange={e => updateProgram(p.id, { category: e.target.value })}
-                        className="w-full px-3 py-2 border border-[#e0e4e5] rounded-lg bg-[#f8f9fa] text-sm font-bold text-[#2d3435] outline-none focus:ring-2 focus:ring-primary/20" placeholder={t('event.category_placeholder')} />
+                        className="w-full px-3 py-2 border border-[#e0e4e5] rounded-xl bg-[#f8f9fa] text-sm font-bold text-[#2d3435] outline-none focus:ring-2 focus:ring-[#007AFF]/20" placeholder={t('event.category_placeholder')} />
                     </div>
                   </div>
                   <div>
-                    <label className="block text-[10px] font-bold text-[#acb3b4] uppercase tracking-wider mb-1">{t('event.title_en_label')}</label>
+                    <label className="block text-xs font-bold text-slate-700 mb-1.5">{t('event.title_en_label')}</label>
                     <input value={p.title} onChange={e => updateProgram(p.id, { title: e.target.value })}
-                      className="w-full px-3 py-2 border border-[#e0e4e5] rounded-lg bg-[#f8f9fa] text-sm font-bold text-[#2d3435] outline-none focus:ring-2 focus:ring-primary/20" placeholder="e.g. Tango Salon Fundamentals" />
+                      className="w-full px-3 py-2 border border-[#e0e4e5] rounded-xl bg-[#f8f9fa] text-sm font-bold text-[#2d3435] outline-none focus:ring-2 focus:ring-[#007AFF]/20" placeholder="e.g. Tango Salon Fundamentals" />
                   </div>
                   <div>
-                    <label className="block text-[10px] font-bold text-[#acb3b4] uppercase tracking-wider mb-1">{t('event.title_native_label')}</label>
+                    <label className="block text-xs font-bold text-slate-700 mb-1.5">{t('event.title_native_label')}</label>
                     <input value={p.titleNative || ''} onChange={e => updateProgram(p.id, { titleNative: e.target.value })}
-                      className="w-full px-3 py-2 border border-[#e0e4e5] rounded-lg bg-[#f8f9fa] text-sm font-bold text-[#2d3435] outline-none focus:ring-2 focus:ring-primary/20" placeholder={t('event.title_native_placeholder')} />
+                      className="w-full px-3 py-2 border border-[#e0e4e5] rounded-xl bg-[#f8f9fa] text-sm font-bold text-[#2d3435] outline-none focus:ring-2 focus:ring-[#007AFF]/20" placeholder={t('event.title_native_placeholder')} />
                   </div>
                   {/* Time */}
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-[10px] font-bold text-[#acb3b4] uppercase tracking-wider mb-1">{t('event.start_time_label')}</label>
+                      <label className="block text-xs font-bold text-slate-700 mb-1.5">{t('event.start_time_label')}</label>
                       <input type="time" value={p.startTime} onChange={e => updateProgram(p.id, { startTime: e.target.value })}
-                        className="w-full px-3 py-2 border border-[#e0e4e5] rounded-lg bg-[#f8f9fa] text-sm font-bold text-[#2d3435] outline-none focus:ring-2 focus:ring-primary/20" />
+                        className="w-full px-3 py-2 border border-[#e0e4e5] rounded-xl bg-[#f8f9fa] text-sm font-bold text-[#2d3435] outline-none focus:ring-2 focus:ring-[#007AFF]/20" />
                     </div>
                     <div>
-                      <label className="block text-[10px] font-bold text-[#acb3b4] uppercase tracking-wider mb-1">{t('event.end_time_label')}</label>
+                      <label className="block text-xs font-bold text-slate-700 mb-1.5">{t('event.end_time_label')}</label>
                       <input type="time" value={p.endTime} onChange={e => updateProgram(p.id, { endTime: e.target.value })}
-                        className="w-full px-3 py-2 border border-[#e0e4e5] rounded-lg bg-[#f8f9fa] text-sm font-bold text-[#2d3435] outline-none focus:ring-2 focus:ring-primary/20" />
+                        className="w-full px-3 py-2 border border-[#e0e4e5] rounded-xl bg-[#f8f9fa] text-sm font-bold text-[#2d3435] outline-none focus:ring-2 focus:ring-[#007AFF]/20" />
                     </div>
                   </div>
                   {/* Type-specific */}
                   {isClass ? (
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <label className="block text-[10px] font-bold text-[#acb3b4] uppercase tracking-wider mb-1">{t('event.instructor_label')}</label>
+                        <label className="block text-xs font-bold text-slate-700 mb-1.5">{t('event.instructor_label')}</label>
                         <input value={p.instructor || ''} onChange={e => updateProgram(p.id, { instructor: e.target.value })}
-                          className="w-full px-3 py-2 border border-[#e0e4e5] rounded-lg bg-[#f8f9fa] text-sm font-bold text-[#2d3435] outline-none focus:ring-2 focus:ring-primary/20" placeholder={t('event.instructor_placeholder')} />
+                          className="w-full px-3 py-2 border border-[#e0e4e5] rounded-xl bg-[#f8f9fa] text-sm font-bold text-[#2d3435] outline-none focus:ring-2 focus:ring-[#007AFF]/20" placeholder={t('event.instructor_placeholder')} />
                       </div>
                       <div>
-                        <label className="block text-[10px] font-bold text-[#acb3b4] uppercase tracking-wider mb-1">{t('event.level_label')}</label>
+                        <label className="block text-xs font-bold text-slate-700 mb-1.5">{t('event.level_label')}</label>
                         <select value={p.level || 'all'} onChange={e => updateProgram(p.id, { level: e.target.value })}
-                          className="w-full px-3 py-2 border border-[#e0e4e5] rounded-lg bg-[#f8f9fa] text-sm font-bold text-[#2d3435] outline-none focus:ring-2 focus:ring-primary/20 appearance-none">
+                          className="w-full px-3 py-2 border border-[#e0e4e5] rounded-xl bg-[#f8f9fa] text-sm font-bold text-[#2d3435] outline-none focus:ring-2 focus:ring-[#007AFF]/20 appearance-none">
                           <option value="all">{t('event.level_all')}</option>
                           <option value="beginner">{t('event.level_beginner')}</option>
                           <option value="intermediate">{t('event.level_intermediate')}</option>
@@ -156,34 +156,34 @@ export default function ProgramEditor({ programs, onChange }: Props) {
                     </div>
                   ) : (
                     <div>
-                      <label className="block text-[10px] font-bold text-[#acb3b4] uppercase tracking-wider mb-1">{t('event.dj_label')}</label>
+                      <label className="block text-xs font-bold text-slate-700 mb-1.5">{t('event.dj_label')}</label>
                       <input value={p.djName || ''} onChange={e => updateProgram(p.id, { djName: e.target.value })}
-                        className="w-full px-3 py-2 border border-[#e0e4e5] rounded-lg bg-[#f8f9fa] text-sm font-bold text-[#2d3435] outline-none focus:ring-2 focus:ring-primary/20" placeholder={t('event.dj_placeholder')} />
+                        className="w-full px-3 py-2 border border-[#e0e4e5] rounded-xl bg-[#f8f9fa] text-sm font-bold text-[#2d3435] outline-none focus:ring-2 focus:ring-[#007AFF]/20" placeholder={t('event.dj_placeholder')} />
                     </div>
                   )}
                   {/* Capacity */}
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-[10px] font-bold text-[#acb3b4] uppercase tracking-wider mb-1">{t('event.max_participants_label')}</label>
+                      <label className="block text-xs font-bold text-slate-700 mb-1.5">{t('event.max_participants_label')}</label>
                       <input type="number" min="0" value={p.maxParticipants} onChange={e => updateProgram(p.id, { maxParticipants: parseInt(e.target.value) || 0 })}
-                        className="w-full px-3 py-2 border border-[#e0e4e5] rounded-lg bg-[#f8f9fa] text-sm font-bold text-[#2d3435] outline-none focus:ring-2 focus:ring-primary/20" />
+                        className="w-full px-3 py-2 border border-[#e0e4e5] rounded-xl bg-[#f8f9fa] text-sm font-bold text-[#2d3435] outline-none focus:ring-2 focus:ring-[#007AFF]/20" />
                     </div>
                     <div>
-                      <label className="block text-[10px] font-bold text-[#acb3b4] uppercase tracking-wider mb-1">{t('event.price_per_program_label')}</label>
+                      <label className="block text-xs font-bold text-slate-700 mb-1.5">{t('event.price_per_program_label')}</label>
                       <input type="number" min="0" value={p.price || ''} onChange={e => updateProgram(p.id, { price: parseInt(e.target.value) || 0 })}
-                        className="w-full px-3 py-2 border border-[#e0e4e5] rounded-lg bg-[#f8f9fa] text-sm font-bold text-[#2d3435] outline-none focus:ring-2 focus:ring-primary/20" placeholder="0" />
+                        className="w-full px-3 py-2 border border-[#e0e4e5] rounded-xl bg-[#f8f9fa] text-sm font-bold text-[#2d3435] outline-none focus:ring-2 focus:ring-[#007AFF]/20" placeholder="0" />
                     </div>
                   </div>
                   {/* Dates */}
                   <div>
-                    <label className="block text-[10px] font-bold text-[#acb3b4] uppercase tracking-wider mb-1.5">{t('event.schedule_dates_label')}</label>
+                    <label className="block text-xs font-bold text-slate-700 mb-1.5">{t('event.schedule_dates_label')}</label>
                     <div className="flex items-center gap-2 mb-2">
                       <input type="date" id={`date-${p.id}`}
-                        className="flex-1 px-3 py-2 border border-[#e0e4e5] rounded-lg bg-[#f8f9fa] text-sm font-bold text-[#2d3435] outline-none focus:ring-2 focus:ring-primary/20" />
+                        className="flex-1 px-3 py-2 border border-[#e0e4e5] rounded-xl bg-[#f8f9fa] text-sm font-bold text-[#2d3435] outline-none focus:ring-2 focus:ring-[#007AFF]/20" />
                       <button onClick={() => {
                         const input = document.getElementById(`date-${p.id}`) as HTMLInputElement;
                         if (input?.value) { addDateToProgram(p.id, input.value); input.value = ''; }
-                      }} className="px-3 py-2 bg-primary text-white rounded-lg text-xs font-bold hover:bg-primary/90 transition-colors">
+                      }} className="px-3 py-2 bg-primary text-white rounded-xl text-xs font-bold hover:bg-primary/90 transition-colors">
                         {t('event.add_btn')}
                       </button>
                     </div>

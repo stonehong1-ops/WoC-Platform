@@ -29,6 +29,7 @@ export interface UserProfile {
   phone?: string;
   contactNumber?: string;
   fcmTokens?: string[];
+  platform?: string;
   language?: string;
   countryCode?: string;
   likedClassIds?: string[];

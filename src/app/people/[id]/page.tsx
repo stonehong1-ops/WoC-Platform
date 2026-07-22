@@ -159,7 +159,7 @@ export default function PeopleDetailPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
-        <div className="flex flex-col items-center gap-3 text-on-surface-variant">
+        <div className="flex flex-col items-center gap-3 text-[#596061]">
           <span className="material-symbols-outlined text-4xl animate-spin">progress_activity</span>
           <p className="text-sm">{t('people.alert_loading')}</p>
         </div>
@@ -176,7 +176,7 @@ export default function PeopleDetailPage() {
     if (previewUser.isSeller) roleLabels.push(t('people.filter_seller', '판매자'));
 
     return (
-      <main className="pt-0 pb-20 max-w-[480px] mx-auto bg-surface min-h-screen shadow-2xl relative">
+      <main className="pt-0 pb-20 max-w-[480px] mx-auto bg-white min-h-screen shadow-2xl relative">
         {/* Header */}
         <header 
           className="fixed top-0 w-full z-50 bg-white shadow-md pb-2 max-w-[480px]"
@@ -185,9 +185,9 @@ export default function PeopleDetailPage() {
           <div className="relative flex justify-between items-center px-6">
             <button onClick={() => router.back()}
               className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-slate-100 transition-colors">
-              <span className="material-symbols-outlined text-on-surface">arrow_back</span>
+              <span className="material-symbols-outlined text-[#2d3435]">arrow_back</span>
             </button>
-            <h1 className="text-base font-black text-on-surface truncate max-w-[200px]">
+            <h1 className="text-base font-black text-[#2d3435] truncate max-w-[200px]">
               {previewUser.nickname || previewUser.nativeNickname || '멤버'}
             </h1>
             <div className="w-10" />
@@ -206,7 +206,7 @@ export default function PeopleDetailPage() {
                 </div>
               )}
             </div>
-            <h2 className="text-2xl font-black text-on-surface">{previewUser.nickname || previewUser.nativeNickname || '멤버'}</h2>
+            <h2 className="text-2xl font-black text-[#2d3435]">{previewUser.nickname || previewUser.nativeNickname || '멤버'}</h2>
             {previewUser.nativeNickname && previewUser.nickname !== previewUser.nativeNickname && (
               <p className="text-sm text-slate-500 font-bold mt-1">{previewUser.nativeNickname}</p>
             )}
@@ -225,13 +225,13 @@ export default function PeopleDetailPage() {
               {previewUser.career && (
                 <div className="bg-slate-50 rounded-2xl p-4 text-left">
                   <p className="text-xs font-bold text-slate-400 mb-1">{t('people.preview_career', '경력')}</p>
-                  <p className="text-sm font-bold text-on-surface">{previewUser.career}</p>
+                  <p className="text-sm font-bold text-[#2d3435]">{previewUser.career}</p>
                 </div>
               )}
               {previewUser.partnerStatus && (
                 <div className="bg-slate-50 rounded-2xl p-4 text-left">
                   <p className="text-xs font-bold text-slate-400 mb-1">{t('people.preview_partner', '파트너')}</p>
-                  <p className="text-sm font-bold text-on-surface">{previewUser.partnerStatus}</p>
+                  <p className="text-sm font-bold text-[#2d3435]">{previewUser.partnerStatus}</p>
                 </div>
               )}
               {(previewUser.socialLinks?.instagram || previewUser.socialLinks?.facebook) && (
@@ -263,7 +263,7 @@ export default function PeopleDetailPage() {
   if (!person) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen gap-4">
-        <p className="text-on-surface-variant">{t('people.alert_not_found')}</p>
+        <p className="text-[#596061]">{t('people.alert_not_found')}</p>
         <Link href="/people" className="text-primary text-sm font-semibold">{t('people.alert_back_people')}</Link>
       </div>
     );
@@ -271,7 +271,7 @@ export default function PeopleDetailPage() {
 
   if (isBlocked) {
     return (
-      <main className="pt-0 pb-20 max-w-[480px] mx-auto bg-surface min-h-screen shadow-2xl relative flex flex-col items-center justify-center p-6 text-center">
+      <main className="pt-0 pb-20 max-w-[480px] mx-auto bg-white min-h-screen shadow-2xl relative flex flex-col items-center justify-center p-6 text-center">
         <header 
           className="fixed top-0 w-full z-50 bg-white shadow-md pb-2 max-w-[480px]"
           style={{ paddingTop: isNative ? 'env(safe-area-inset-top)' : '0px' }}
@@ -279,7 +279,7 @@ export default function PeopleDetailPage() {
           <div className="relative flex justify-between items-center px-6">
             <button onClick={() => router.back()}
               className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-slate-100 transition-colors">
-              <span className="material-symbols-outlined text-on-surface">arrow_back</span>
+              <span className="material-symbols-outlined text-[#2d3435]">arrow_back</span>
             </button>
             <h1 className="text-base font-black text-[#2d3435] truncate max-w-[200px]">
               {person.name}
@@ -290,9 +290,9 @@ export default function PeopleDetailPage() {
                 <span className="material-symbols-outlined text-[#2d3435]">more_vert</span>
               </button>
               {showMenu && (
-                <div className="absolute right-0 top-12 bg-white rounded-xl shadow-2xl border border-outline/10 overflow-hidden min-w-[160px] z-[100] animate-in fade-in slide-in-from-top-2 duration-200">
+                <div className="absolute right-0 mt-2 z-[120] bg-white border border-slate-100 shadow-xl rounded-2xl py-1 w-28 overflow-hidden">
                   <button onClick={() => { setShowMenu(false); handleBlockToggle(); }}
-                    className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-500 hover:bg-red-50 transition-colors">
+                    className="w-full px-4 py-2.5 text-left text-xs font-bold text-red-600 hover:bg-red-50 transition-colors flex items-center gap-2">
                     <span className="material-symbols-outlined text-lg">check_circle</span> {t('block.unblock') || '차단 해제'}
                   </button>
                 </div>
@@ -320,7 +320,7 @@ export default function PeopleDetailPage() {
   }
 
   return (
-    <main className="pt-0 pb-20 max-w-[480px] mx-auto bg-surface min-h-screen shadow-2xl relative">
+    <main className="pt-0 pb-20 max-w-[480px] mx-auto bg-white min-h-screen shadow-2xl relative">
       <style dangerouslySetInnerHTML={{ __html: `
         .material-symbols-outlined {
           font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
@@ -336,7 +336,7 @@ export default function PeopleDetailPage() {
       {/* Floating Header */}
       <header 
         className={`fixed top-0 w-full z-50 transition-all duration-300 max-w-[480px] ${
-          scrolled ? 'bg-white shadow-md pb-2' : 'bg-transparent pb-4'
+          scrolled ? 'bg-white/95 backdrop-blur-md shadow-sm pb-2' : 'bg-transparent pb-4'
         }`}
         style={{ paddingTop: isNative ? 'env(safe-area-inset-top)' : '0px' }}
       >
@@ -344,7 +344,7 @@ export default function PeopleDetailPage() {
         <div className="relative flex justify-between items-center px-6">
           <button onClick={() => router.back()}
             className={`w-10 h-10 flex items-center justify-center rounded-full transition-all ${
-              scrolled ? 'text-[#2d3435] hover:bg-slate-100' : 'bg-white/10 backdrop-blur-md text-white active:scale-90'
+              scrolled ? 'bg-slate-100 text-[#2d3435]' : 'bg-black/20 backdrop-blur-sm text-white active:scale-90'
             }`}>
             <span className="material-symbols-outlined">arrow_back</span>
           </button>
@@ -359,38 +359,38 @@ export default function PeopleDetailPage() {
           <div className="relative" ref={menuRef}>
             <button onClick={() => setShowMenu(!showMenu)} 
               className={`w-10 h-10 flex items-center justify-center rounded-full transition-all ${
-                scrolled ? 'text-[#2d3435] hover:bg-slate-100' : 'bg-white/10 backdrop-blur-md text-white active:scale-90'
+                scrolled ? 'bg-slate-100 text-[#2d3435]' : 'bg-black/20 backdrop-blur-sm text-white active:scale-90'
               }`}>
               <span className="material-symbols-outlined">more_vert</span>
             </button>
             {showMenu && (
-              <div className="absolute right-0 top-12 bg-white rounded-xl shadow-2xl border border-outline/10 overflow-hidden min-w-[160px] z-[100] animate-in fade-in slide-in-from-top-2 duration-200">
+              <div className="absolute right-0 top-12 bg-white rounded-xl shadow-2xl border border-[#e0e4e5]/10 overflow-hidden min-w-[160px] z-[100] animate-in fade-in slide-in-from-top-2 duration-200">
                 {user && (user.uid === person.authorId || ADMIN_UIDS.includes(user.uid) || user.email === 'stonehong1@gmail.com') && (
                   <>
                     <button onClick={() => { setShowMenu(false); router.push(`/people/register?edit=${person.id}`); }}
-                      className="w-full flex items-center gap-3 px-4 py-3 text-sm text-on-surface hover:bg-surface-container transition-colors">
+                      className="w-full px-4 py-2.5 text-left text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors flex items-center gap-2">
                       <span className="material-symbols-outlined text-lg">edit</span> {t('people.menu_edit')}
                     </button>
                     <button onClick={async () => { setShowMenu(false); if (!confirm(t('people.confirm_delete_profile'))) return; try { await peopleService.delete(person.id); router.push('/people'); } catch(e) { console.error(e); alert(t('people.alert_delete_failed')); } }}
-                      className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-500 hover:bg-red-50 transition-colors">
+                      className="w-full px-4 py-2.5 text-left text-xs font-bold text-red-600 hover:bg-red-50 transition-colors flex items-center gap-2">
                       <span className="material-symbols-outlined text-lg">delete</span> {t('people.menu_delete')}
                     </button>
                   </>
                 )}
                 <button onClick={() => { setShowMenu(false); navigator.share ? navigator.share({ title: person.name, url: window.location.href }).catch(console.error) : alert(t('people.alert_share_err')); }}
-                  className="w-full flex items-center gap-3 px-4 py-3 text-sm text-on-surface hover:bg-surface-container transition-colors border-t border-outline/5">
+                  className="w-full px-4 py-2.5 text-left text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors flex items-center gap-2">
                   <span className="material-symbols-outlined text-lg">share</span> {t('people.detail_share')}
                 </button>
                 {user && user.uid !== person.authorId && (
                   <button onClick={() => { setShowMenu(false); handleBlockToggle(); }}
-                    className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-500 hover:bg-red-50 transition-colors border-t border-outline/5">
+                    className="w-full px-4 py-2.5 text-left text-xs font-bold text-red-600 hover:bg-red-50 transition-colors flex items-center gap-2">
                     <span className="material-symbols-outlined text-lg">{isBlocked ? 'check_circle' : 'block'}</span> 
                     {isBlocked ? t('block.unblock') || '차단 해제' : t('block.button') || '차단하기'}
                   </button>
                 )}
                 {user && user.uid !== person.authorId && (
                   <button onClick={() => { setShowMenu(false); setIsReportModalOpen(true); }}
-                    className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-500 hover:bg-red-50 transition-colors border-t border-outline/5">
+                    className="w-full px-4 py-2.5 text-left text-xs font-bold text-red-600 hover:bg-red-50 transition-colors flex items-center gap-2">
                     <span className="text-base">🚨</span> {t('plaza.report') || '신고하기 / Report'}
                   </button>
                 )}
@@ -479,7 +479,7 @@ export default function PeopleDetailPage() {
             <button className="bg-primary text-white py-3.5 rounded-xl text-[13px] font-semibold flex items-center justify-center gap-1 active:scale-95 transition-all shadow-lg">
               <span className="material-symbols-outlined text-[18px]">auto_stories</span> {t('people.detail_explore_journey')}
             </button>
-            <button className="bg-white/10 backdrop-blur-md text-white border border-white/20 py-3.5 rounded-xl text-[13px] font-semibold flex items-center justify-center gap-1 active:scale-95 transition-all">
+            <button className="bg-black/20 backdrop-blur-sm text-white border border-white/20 py-3.5 rounded-xl text-[13px] font-semibold flex items-center justify-center gap-1 active:scale-95 transition-all">
               <span className="material-symbols-outlined text-[18px]">event_available</span> {t('people.detail_connect')}
             </button>
           </div>
@@ -489,9 +489,9 @@ export default function PeopleDetailPage() {
       {/* Bio */}
       {person.bio && (
         <section className="px-6 pt-10">
-          <h2 className="text-[24px] font-bold text-on-surface mb-4">{t('people.detail_journey')}</h2>
-          <div className="bg-surface-container-low p-6 rounded-2xl border border-outline-variant/10">
-            <p className="text-[16px] text-on-surface-variant leading-relaxed opacity-90">{person.bio}</p>
+          <h2 className="text-[24px] font-bold text-[#2d3435] mb-4">{t('people.detail_journey')}</h2>
+          <div className="bg-[#f8f9fa] p-6 rounded-2xl border border-[#e0e4e5]">
+            <p className="text-[16px] text-[#596061] leading-relaxed opacity-90">{person.bio}</p>
           </div>
         </section>
       )}
@@ -500,7 +500,7 @@ export default function PeopleDetailPage() {
       {person.activityFlow?.length > 0 && (
         <section className="px-6 pt-10">
           <div className="flex justify-between items-end mb-6">
-            <h2 className="text-[24px] font-bold text-on-surface">{t('people.detail_activity')}</h2>
+            <h2 className="text-[24px] font-bold text-[#2d3435]">{t('people.detail_activity')}</h2>
             <span className="text-primary text-[12px] font-semibold">{t('people.detail_global_cycle')}</span>
           </div>
           <div className="relative space-y-8 before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-[2px] before:bg-gradient-to-b before:from-primary before:via-outline-variant before:to-transparent">
@@ -510,8 +510,8 @@ export default function PeopleDetailPage() {
                   act.status === 'live'
                     ? 'bg-primary ring-4 ring-primary/10'
                     : act.status === 'upcoming'
-                    ? 'bg-surface-container-highest border-2 border-primary'
-                    : 'bg-surface-container-highest border-2 border-outline'
+                    ? 'bg-[#f2f4f4] border-2 border-primary'
+                    : 'bg-[#f2f4f4] border-2 border-[#e0e4e5]'
                 }`}>
                   {act.status === 'live'
                     ? <span className="material-symbols-outlined text-[14px] text-white" style={{ fontVariationSettings: "'FILL' 1" }}>location_on</span>
@@ -520,15 +520,15 @@ export default function PeopleDetailPage() {
                 </div>
                 <div className="flex-1 -mt-1">
                   <div className="flex justify-between items-start">
-                    <span className={`text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded ${
-                      act.status === 'live' ? 'bg-primary/10 text-primary' : 'text-on-surface-variant'
+                    <span className={`text-[10px] font-black text-[#acb3b4] uppercase tracking-widest px-2 py-0.5 rounded ${
+                      act.status === 'live' ? 'bg-primary/10 text-primary' : 'text-[#596061]'
                     }`}>{act.label}</span>
                     {act.location && (
-                      <span className="text-[11px] text-on-surface-variant px-2 py-0.5 bg-surface-container rounded">{act.location}</span>
+                      <span className="text-[11px] text-[#596061] px-2 py-0.5 bg-[#f2f4f4] rounded">{act.location}</span>
                     )}
                   </div>
-                  <h3 className="text-[18px] font-semibold text-on-surface mt-1">{act.title}</h3>
-                  <p className="text-[14px] text-on-surface-variant mt-1">{act.description}</p>
+                  <h3 className="text-[18px] font-semibold text-[#2d3435] mt-1">{act.title}</h3>
+                  <p className="text-[14px] text-[#596061] mt-1">{act.description}</p>
                   {act.cta && (
                     <button className="mt-3 text-primary text-[13px] font-semibold flex items-center gap-1 py-1 border-b border-primary/30 hover:border-primary transition-all">
                       {act.cta} <span className="material-symbols-outlined text-sm">arrow_forward</span>
@@ -544,13 +544,13 @@ export default function PeopleDetailPage() {
       {/* Tour Tags */}
       {person.tourStops?.length > 0 && (
         <section className="px-6 pt-10">
-          <h2 className="text-[24px] font-bold text-on-surface mb-4">{t('people.detail_tour')}</h2>
+          <h2 className="text-[24px] font-bold text-[#2d3435] mb-4">{t('people.detail_tour')}</h2>
           <div className="flex flex-wrap gap-2">
             {person.tourStops.map((stop, i) => (
-              <div key={i} className="bg-surface-container px-4 py-2 rounded-xl border border-outline-variant/20 flex items-center gap-2">
+              <div key={i} className="bg-[#f2f4f4] px-4 py-2 rounded-xl border border-[#e0e4e5]/20 flex items-center gap-2">
                 <span className="material-symbols-outlined text-[16px] text-primary">flight</span>
-                <span className="text-[13px] font-semibold text-on-surface">{stop.city}</span>
-                <span className="text-[11px] text-on-surface-variant">{stop.month}</span>
+                <span className="text-[13px] font-semibold text-[#2d3435]">{stop.city}</span>
+                <span className="text-[11px] text-[#596061]">{stop.month}</span>
               </div>
             ))}
           </div>
@@ -560,34 +560,34 @@ export default function PeopleDetailPage() {
       {/* Global Impact */}
       {person.globalImpact && (
         <section className="px-6 pt-10">
-          <h2 className="text-[24px] font-bold text-on-surface mb-4">{t('people.detail_impact')}</h2>
+          <h2 className="text-[24px] font-bold text-[#2d3435] mb-4">{t('people.detail_impact')}</h2>
           <div className="grid grid-cols-2 gap-3">
             {person.globalImpact.award && (
               <div className="bg-primary/5 p-6 rounded-2xl border border-primary/10 flex flex-col justify-between aspect-square">
                 <span className="material-symbols-outlined text-primary text-[40px]" style={{ fontVariationSettings: "'wght' 200" }}>workspace_premium</span>
                 <div>
                   <p className="text-primary text-[20px] font-bold">{person.globalImpact.award}</p>
-                  <p className="text-[10px] text-on-surface-variant uppercase tracking-widest mt-1">{person.globalImpact.awardSub}</p>
+                  <p className="text-[10px] text-[#596061] uppercase tracking-widest mt-1">{person.globalImpact.awardSub}</p>
                 </div>
               </div>
             )}
             {person.globalImpact.org && (
-              <div className="bg-secondary/5 p-6 rounded-2xl border border-outline-variant/20 flex flex-col justify-between aspect-square">
+              <div className="bg-secondary/5 p-6 rounded-2xl border border-[#e0e4e5]/20 flex flex-col justify-between aspect-square">
                 <span className="material-symbols-outlined text-secondary text-[40px]" style={{ fontVariationSettings: "'wght' 200" }}>public</span>
                 <div>
-                  <p className="text-[20px] font-bold text-on-surface">{person.globalImpact.org}</p>
-                  <p className="text-[10px] text-on-surface-variant uppercase tracking-widest mt-1">{person.globalImpact.orgSub}</p>
+                  <p className="text-[20px] font-bold text-[#2d3435]">{person.globalImpact.org}</p>
+                  <p className="text-[10px] text-[#596061] uppercase tracking-widest mt-1">{person.globalImpact.orgSub}</p>
                 </div>
               </div>
             )}
             {person.globalImpact.classCount && (
-              <div className="col-span-2 bg-surface-container p-6 rounded-2xl border border-outline-variant/10 flex items-center gap-6">
-                <div className="bg-surface w-14 h-14 rounded-full flex items-center justify-center shadow-sm shrink-0">
+              <div className="col-span-2 bg-[#f2f4f4] p-6 rounded-2xl border border-[#e0e4e5]/10 flex items-center gap-6">
+                <div className="bg-white w-14 h-14 rounded-full flex items-center justify-center shadow-sm shrink-0">
                   <span className="material-symbols-outlined text-primary">analytics</span>
                 </div>
                 <div className="flex-1">
-                  <p className="text-[16px] font-semibold text-on-surface">{person.globalImpact.classCount}</p>
-                  {person.globalImpact.classReach && <p className="text-[14px] text-on-surface-variant">{person.globalImpact.classReach}</p>}
+                  <p className="text-[16px] font-semibold text-[#2d3435]">{person.globalImpact.classCount}</p>
+                  {person.globalImpact.classReach && <p className="text-[14px] text-[#596061]">{person.globalImpact.classReach}</p>}
                   {person.globalImpact.appearances && <p className="text-[12px] text-primary mt-2 font-semibold">{person.globalImpact.appearances}</p>}
                 </div>
               </div>
@@ -600,13 +600,13 @@ export default function PeopleDetailPage() {
       {person.mediaItems?.length > 0 && (
         <section className="pt-10">
           <div className="px-6 mb-4 flex justify-between items-end">
-            <h2 className="text-[24px] font-bold text-on-surface">{t('people.detail_media')}</h2>
+            <h2 className="text-[24px] font-bold text-[#2d3435]">{t('people.detail_media')}</h2>
             <a className="text-[13px] font-semibold text-primary hover:underline" href="#">{t('people.detail_all_media')}</a>
           </div>
           <div className="flex overflow-x-auto hide-scrollbar gap-6 px-6 pb-2">
             {person.mediaItems.map((media, i) => (
               <div key={i} className="min-w-[300px] group cursor-pointer">
-                <div className="relative aspect-video rounded-2xl overflow-hidden mb-2 border border-outline-variant/20 shadow-sm">
+                <div className="relative aspect-video rounded-2xl overflow-hidden mb-2 border border-[#e0e4e5]/20 shadow-sm">
                   <img alt={media.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" src={media.thumbnailUrl} />
                   <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                     <div className="w-14 h-14 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center border border-white/30">
@@ -616,12 +616,12 @@ export default function PeopleDetailPage() {
                 </div>
                 <div className="flex justify-between items-start">
                   <div>
-                    <h3 className="text-[13px] font-semibold text-on-surface">{media.title}</h3>
-                    <p className="text-[13px] text-on-surface-variant">{media.subtitle}</p>
+                    <h3 className="text-[13px] font-semibold text-[#2d3435]">{media.title}</h3>
+                    <p className="text-[13px] text-[#596061]">{media.subtitle}</p>
                   </div>
                   <span className={`text-[11px] font-bold px-2 py-0.5 rounded ${
                     media.type === 'VOD' ? 'text-primary bg-primary/10' :
-                    media.type === 'COURSE' ? 'text-secondary bg-secondary/10' : 'text-outline bg-surface-container'
+                    media.type === 'COURSE' ? 'text-secondary bg-secondary/10' : 'text-[#acb3b4] bg-[#f2f4f4]'
                   }`}>{media.type}</span>
                 </div>
               </div>
@@ -633,7 +633,7 @@ export default function PeopleDetailPage() {
       {/* Featured Content */}
       {person.featuredVideoUrls?.length > 0 && (
         <section className="px-6 pt-10">
-          <h2 className="text-[24px] font-bold text-on-surface mb-4">{t('people.detail_featured')}</h2>
+          <h2 className="text-[24px] font-bold text-[#2d3435] mb-4">{t('people.detail_featured')}</h2>
           <div className="grid grid-cols-2 gap-3">
             {person.featuredVideoUrls.map((url, i) => (
               <div key={i} className="relative aspect-video rounded-xl overflow-hidden cursor-pointer group">
@@ -650,11 +650,11 @@ export default function PeopleDetailPage() {
       )}
 
       {/* Footer */}
-      <footer className="mt-10 px-6 py-10 bg-surface-container-highest/30 border-t border-outline-variant/20">
+      <footer className="mt-10 px-6 py-10 bg-[#f2f4f4]/30 border-t border-[#e0e4e5]/20">
         <div className="flex flex-col items-center text-center gap-4">
           <span className="text-primary font-bold text-[20px] tracking-tight">{t('people.detail_woc')}</span>
-          <p className="text-[14px] text-on-surface-variant px-8 opacity-80">{t('people.detail_slogan')}</p>
-          <p className="text-[10px] text-outline mt-2">{t('people.detail_portal')}</p>
+          <p className="text-[14px] text-[#596061] px-8 opacity-80">{t('people.detail_slogan')}</p>
+          <p className="text-[10px] text-[#acb3b4] mt-2">{t('people.detail_portal')}</p>
         </div>
       </footer>
 

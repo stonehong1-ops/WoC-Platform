@@ -31,26 +31,44 @@ export function SectionHeader({ icon, label, count }: {
   );
 }
 
-function getRecurrenceDisplay(recurrence: string | undefined, t: (key: string) => string): string {
-  if (!recurrence || recurrence === "every") return "";
+function getRecurrenceDisplay(
+  recurrence: string | undefined,
+  dayOfWeek: number | undefined,
+  t: (key: string) => string,
+  language: string
+): string {
+  const dayNames = {
+    KR: ['일', '월', '화', '수', '목', '금', '토'],
+    EN: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+  };
+  const dayName = dayOfWeek !== undefined ? dayNames[language === 'KR' ? 'KR' : 'EN'][dayOfWeek] : '';
+
+  if (!recurrence || recurrence === "every") {
+    return language === 'KR' ? `매주 ${dayName}` : `Every ${dayName}`;
+  }
+  
   const parts = recurrence.split(",").map((p) => p.trim()).filter(Boolean);
   if (parts.length === 0) return "";
 
   if (parts.length === 1 && parts[0] === "last") {
-    return t("social.recurrence.last_only");
+    return language === 'KR' ? `마지막주(${dayName})` : `Last ${dayName}`;
   }
 
   const mappedParts = parts.map((part) => {
-    if (part === "1st") return t("social.recurrence.1st");
-    if (part === "2nd") return t("social.recurrence.2nd");
-    if (part === "3rd") return t("social.recurrence.3rd");
-    if (part === "4th") return t("social.recurrence.4th");
-    if (part === "5th") return t("social.recurrence.5th");
-    if (part === "last") return t("social.recurrence.last");
+    if (part === "1st") return language === 'KR' ? '1주' : '1st';
+    if (part === "2nd") return language === 'KR' ? '2주' : '2nd';
+    if (part === "3rd") return language === 'KR' ? '3주' : '3rd';
+    if (part === "4th") return language === 'KR' ? '4주' : '4th';
+    if (part === "5th") return language === 'KR' ? '5주' : '5th';
+    if (part === "last") return language === 'KR' ? '마지막주' : 'Last';
     return part;
   });
 
-  return mappedParts.join(",") + t("social.recurrence.suffix");
+  if (language === 'KR') {
+    return mappedParts.join(",") + `(${dayName})`;
+  } else {
+    return mappedParts.join(",") + ` (${dayName})`;
+  }
 }
 
 function SocialCard({ social, date, venuesMap, onPress }: {
@@ -86,7 +104,7 @@ function SocialCard({ social, date, venuesMap, onPress }: {
   const hasBoth = !!orgFormatted && !!djFormatted;
   const venue = formatCommunityName(getVenueDisplay(social, language, venuesMap), language);
   const shortVenue = venue.length > 8 ? venue.slice(0, 8) + "…" : venue;
-  const recurrenceText = social.type === "regular" ? getRecurrenceDisplay(social.recurrence, t) : "";
+  const recurrenceText = social.type === "regular" ? getRecurrenceDisplay(social.recurrence, social.dayOfWeek, t, language) : "";
 
   const hasPoster = social.posterLayoutId && social.posterLayoutId !== "none";
   const displayImageUrl = hasPoster ? social.imageUrl : (social.posterExportUrl || social.imageUrl);

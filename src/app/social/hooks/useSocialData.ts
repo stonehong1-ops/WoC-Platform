@@ -28,7 +28,6 @@ export function useSocialData() {
   const [localViewSocial, setLocalViewSocial] = useState<Social | null>(null);
   const [viewSocialDate, setViewSocialDate] = useState<Date | null>(null);
   const isClosingRef = useRef(false);
-  const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [viewType, setViewType] = useState<'slide' | 'list' | 'weekly' | 'favorite'>('weekly');
   const [venuesMap, setVenuesMap] = useState<Record<string, any>>({});
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
@@ -72,12 +71,6 @@ export function useSocialData() {
     const checkNativeQuery = () => {
       if (typeof window !== 'undefined') {
         const params = new URLSearchParams(window.location.search);
-        if (params.get('createSocial') === 'true') {
-          setIsCreateOpen(true);
-        } else {
-          setIsCreateOpen(false);
-        }
-
         const id = params.get('id');
         if (id) {
           socialService.getSocialById(id).then((social) => {
@@ -134,12 +127,6 @@ export function useSocialData() {
   const { isOpen: isCreateOpenURL, openModal: openCreateURL, closeModal: closeCreateURL } = useModalNavigation('createSocial');
   const { isOpen: isViewOpenURL, value: viewSocialId, openModal: openViewURL, closeModal: closeViewURL } = useModalNavigation('viewSocial');
   const { isOpen: isEditOpenURL, openModal: openEditURL, closeModal: closeEditURL } = useModalNavigation('editSocial');
-
-
-  // URL 쿼리와 로컬 등록 모달 상태의 무결점 실시간 정밀 동기화 (Single Source of Truth)
-  useEffect(() => {
-    setIsCreateOpen(isCreateOpenURL);
-  }, [isCreateOpenURL]);
 
   // URL 쿼리와 로컬 수정 모달 상태의 무결점 실시간 정밀 동기화 (Single Source of Truth)
   useEffect(() => {
@@ -240,12 +227,10 @@ export function useSocialData() {
   };
 
   const handleOpenCreate = useCallback(() => {
-    setIsCreateOpen(true);
     openCreateURL('true');
   }, [openCreateURL]);
 
   const handleCloseCreate = useCallback(() => {
-    setIsCreateOpen(false);
     closeCreateURL();
   }, [closeCreateURL]);
 
@@ -575,8 +560,7 @@ export function useSocialData() {
     setSearchQuery,
     selectedSocial,
     setSelectedSocial,
-    isCreateOpen,
-    setIsCreateOpen,
+    isCreateOpen: isCreateOpenURL,
     viewType,
     setViewType,
     venuesMap,

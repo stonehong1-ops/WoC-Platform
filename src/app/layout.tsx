@@ -54,12 +54,14 @@ import { NotificationProvider } from "@/contexts/NotificationContext";
 import { AuthProvider } from "@/components/providers/AuthProvider";
 import { LocationProvider } from "@/components/providers/LocationProvider";
 import { ClassCartProvider } from "@/contexts/ClassCartContext";
+import PlatformGate from "@/components/providers/PlatformGate";
+import NativeAppGuard from "@/components/providers/NativeAppGuard";
+import NativePushProvider from "@/components/providers/NativePushProvider";
 import NavigationDrawer from "@/components/layout/NavigationDrawer";
 import NotificationTray from "@/components/layout/NotificationTray";
 import LocationSelector from "@/components/layout/LocationSelector";
 import AuthModal from "@/components/auth/AuthModal";
 import AuthGuard from "@/components/auth/AuthGuard";
-import InAppBrowserGuard from "@/components/layout/InAppBrowserGuard";
 import { Toaster } from "sonner";
 
 export default function RootLayout({
@@ -80,42 +82,45 @@ export default function RootLayout({
       <body className="overflow-x-hidden bg-background text-on-surface font-body selection:bg-primary-container selection:text-on-primary-container antialiased">
         <div className="w-full relative flex flex-col min-h-[100dvh]">
           <LanguageProvider>
-            <AuthProvider>
-              <AuthModal />
-              <AuthGuard>
-                <NotificationProvider>
-                  <LocationProvider>
-                    <NavigationProvider>
-                      <ClassCartProvider>
-                        <SWRegister />
-                        <GlobalNavigation>
-                          {/* Full Screen Menu */}
-                          <NavigationDrawer />
+            <PlatformGate>
+              <AuthProvider>
+                <AuthModal />
+                <NativeAppGuard>
+                  <NativePushProvider>
+                    <AuthGuard>
+                      <NotificationProvider>
+                        <LocationProvider>
+                          <NavigationProvider>
+                            <ClassCartProvider>
+                              <SWRegister />
+                              <GlobalNavigation>
+                                {/* Full Screen Menu */}
+                                <NavigationDrawer />
 
-                          {/* Notification Tray */}
-                          <NotificationTray />
+                                {/* Notification Tray */}
+                                <NotificationTray />
 
-                          {/* Location Selector Bottom Sheet/Modal */}
-                          <LocationSelector />
+                                {/* Location Selector Bottom Sheet/Modal */}
+                                <LocationSelector />
 
-                          {/* Dynamic Body Content */}
-                          <PageWrapper>
-                            {children}
-                          </PageWrapper>
+                                {/* Dynamic Body Content */}
+                                <PageWrapper>
+                                  {children}
+                                </PageWrapper>
 
-                          {/* Parallel Route Modal Content */}
-                          {modal}
-
-                          {/* In-App Browser Guard (KakaoTalk etc.) */}
-                          <InAppBrowserGuard />
-                        </GlobalNavigation>
-                      </ClassCartProvider>
-                    </NavigationProvider>
-                  </LocationProvider>
-                </NotificationProvider>
-              </AuthGuard>
-              <Toaster position="top-center" richColors theme="light" />
-            </AuthProvider>
+                                {/* Parallel Route Modal Content */}
+                                {modal}
+                              </GlobalNavigation>
+                            </ClassCartProvider>
+                          </NavigationProvider>
+                        </LocationProvider>
+                      </NotificationProvider>
+                    </AuthGuard>
+                  </NativePushProvider>
+                </NativeAppGuard>
+                <Toaster position="top-center" richColors theme="light" />
+              </AuthProvider>
+            </PlatformGate>
           </LanguageProvider>
         </div>
       </body>

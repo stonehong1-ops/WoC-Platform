@@ -88,9 +88,9 @@ export default function FysAdminDetailDrawer({
               <p className="font-bold text-gray-800 text-sm mt-0.5">{registration.depositDate}</p>
             </div>
             <div>
-              <p className="text-gray-400 font-semibold">성별/역할</p>
+              <p className="text-gray-400 font-semibold">역할</p>
               <p className="font-bold text-gray-800 text-sm mt-0.5">
-                {registration.role === "leader" ? "Leader (남)" : "Follower (여)"}
+                {registration.role === "leader" ? "Leader (리더)" : "Follower (팔로워)"}
               </p>
             </div>
             <div>

@@ -96,29 +96,26 @@ export default function WalletPage({ isEmbedded = false }: { isEmbedded?: boolea
   }
 
   return (
-    <div className={isEmbedded ? "bg-transparent font-inter" : "min-h-screen bg-slate-50 pb-24 font-inter"}>
+    <div className={isEmbedded ? "bg-transparent font-inter" : "min-h-screen bg-[#f8f9fa] pb-24 font-inter"}>
       <style jsx global>{`
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@700;800&family=Inter:wght@400;500;600;700&display=swap');
       `}</style>
 
       <div className={isEmbedded ? "space-y-8 animate-in fade-in duration-500" : "px-4 pt-4 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500"}>
         
-        {/* Balance Card */}
-        <section className="relative overflow-hidden bg-gradient-to-br from-slate-800 to-slate-700 rounded-[32px] p-8 shadow-xl shadow-slate-900/10 text-white">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-3xl -mr-16 -mt-16"></div>
-          <div className="absolute bottom-0 left-0 w-24 h-24 bg-purple-500/10 rounded-full blur-3xl -ml-12 -mb-12"></div>
-          
-          <p className="text-white/70 text-xs font-bold uppercase tracking-widest mb-2">{t('wallet.current_balance')}</p>
+        {/* Balance Card Hero Section (Light Blue WoC Standard) */}
+        <section className="relative overflow-hidden bg-[#f0f6ff] rounded-[28px] p-7 shadow-sm border border-blue-100/80 text-slate-800">
+          <p className="text-slate-500 text-xs font-bold uppercase tracking-widest mb-1.5">{t('wallet.current_balance')}</p>
           <div className="flex items-end gap-2">
-            <span className="text-4xl font-extrabold tracking-tight">₩{balance.toLocaleString()}</span>
-            <span className="text-white/70 text-sm font-medium mb-1.5">{t('wallet.points')}</span>
+            <span className="text-4xl md:text-5xl font-black tracking-tight text-slate-900">₩{balance.toLocaleString()}</span>
+            <span className="text-slate-500 text-sm font-medium mb-1.5">{t('wallet.points')}</span>
           </div>
 
-          <div className="flex gap-3 mt-8">
-            <button className="flex-1 bg-white/10 hover:bg-white/20 backdrop-blur-md py-3 rounded-2xl text-sm font-bold transition-all active:scale-[0.98]">
+          <div className="flex gap-3 mt-7">
+            <button className="flex-1 bg-white hover:bg-slate-50 active:scale-[0.98] py-3.5 rounded-2xl text-sm font-bold text-[#007AFF] border border-blue-200/80 transition-all shadow-sm">
               {t('wallet.charge')}
             </button>
-            <button className="flex-1 bg-blue-600 hover:bg-blue-700 py-3 rounded-2xl text-sm font-bold shadow-lg shadow-blue-600/20 transition-all active:scale-[0.98]">
+            <button className="flex-1 bg-[#007AFF] hover:bg-blue-600 active:scale-[0.98] py-3.5 rounded-2xl text-sm font-bold text-white transition-all shadow-md shadow-blue-500/20">
               {t('wallet.send')}
             </button>
           </div>
@@ -197,12 +194,12 @@ export default function WalletPage({ isEmbedded = false }: { isEmbedded?: boolea
             ) : (
               <div className="divide-y divide-slate-50">
                 {transactions.map((t_item) => (
-                  <div key={t_item.id} className="p-5 flex items-center justify-between hover:bg-slate-50 transition-colors">
+                  <div key={t_item.id} className="p-5 flex items-center justify-between hover:bg-[#f8f9fa] transition-colors">
                     <div className="flex items-center gap-4">
                       <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
                         t_item.type === 'CHARGE' ? 'bg-emerald-50 text-emerald-600' :
                         t_item.type === 'PAYMENT' ? 'bg-blue-50 text-blue-600' :
-                        'bg-slate-50 text-slate-600'
+                        'bg-[#f8f9fa] text-slate-600'
                       }`}>
                         <span className="material-symbols-outlined text-[20px]">
                           {t_item.type === 'CHARGE' ? 'add_card' : 
@@ -229,7 +226,7 @@ export default function WalletPage({ isEmbedded = false }: { isEmbedded?: boolea
               </div>
             )}
             {transactions.length > 0 && (
-              <button className="w-full py-4 bg-slate-50 text-slate-500 text-xs font-bold hover:text-slate-800 transition-colors">
+              <button className="w-full py-4 bg-[#f8f9fa] text-slate-500 text-xs font-bold hover:text-slate-800 transition-colors">
                 {t('wallet.view_all')}
               </button>
             )}

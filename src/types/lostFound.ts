@@ -14,6 +14,7 @@ export interface LostFoundItem {
   date: string;           // 분실/습득 일자 (YYYY-MM-DD 형식 권장)
   images: string[];
   reward?: number;        // 사례금 (Bounty)
+  currency?: string;      // 화폐 종류 (KRW, USD 등)
   
   authorId: string;       // 작성자 UID
   authorName?: string;    // 작성자 이름 (표시용)

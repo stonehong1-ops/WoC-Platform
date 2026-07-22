@@ -61,7 +61,7 @@ export default function MyGroupsTray({ groups, onGroupSelect }: MyGroupsTrayProp
       <div 
         className="fixed inset-x-0 z-[60] px-6 w-full max-w-sm mx-auto pointer-events-none flex justify-center"
         style={{ 
-          bottom: 'calc(64px + max(env(safe-area-inset-bottom), 12px) + 3mm)',
+          bottom: 'calc(76px + env(safe-area-inset-bottom, 0px) + 3mm)',
           transform: 'translateY(var(--woc-bottom-nav-y, 0px))',
           transition: 'transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1)'
         }}
@@ -78,7 +78,7 @@ export default function MyGroupsTray({ groups, onGroupSelect }: MyGroupsTrayProp
           onClick={() => !isExpanded && setTrayState('EXPANDED')}
         >
           {/* Top Row / Summary Bar */}
-          <div className={`px-4 flex items-center justify-between min-h-[60px] cursor-pointer ${isExpanded ? 'border-b border-slate-100' : ''}`}>
+          <div className={`px-6 flex items-center justify-between py-3 cursor-pointer ${isExpanded ? 'border-b border-slate-100' : ''}`}>
             <div className="flex items-center">
               <div 
                 onClick={handleToggleExpand}
@@ -185,7 +185,7 @@ export default function MyGroupsTray({ groups, onGroupSelect }: MyGroupsTrayProp
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="fixed inset-0 bg-black/20 z-[50] pointer-events-auto backdrop-blur-[1px]"
+            className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-30 pointer-events-auto"
             onClick={(e) => {
               e.stopPropagation();
               setTrayState('COLLAPSED');

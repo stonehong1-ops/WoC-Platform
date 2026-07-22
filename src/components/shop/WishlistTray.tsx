@@ -93,7 +93,7 @@ export default function WishlistTray({ likes, userId, onProductClick }: Wishlist
       <div 
         className="fixed inset-x-0 z-[60] px-6 w-full max-w-sm mx-auto pointer-events-none flex justify-center"
         style={{ 
-          bottom: 'calc(64px + max(env(safe-area-inset-bottom), 12px) + 3mm)',
+          bottom: 'calc(76px + env(safe-area-inset-bottom, 0px) + 3mm)',
           transform: 'translateY(var(--woc-bottom-nav-y, 0px))',
           transition: 'transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1)'
         }}
@@ -109,7 +109,7 @@ export default function WishlistTray({ likes, userId, onProductClick }: Wishlist
           onClick={() => !isExpanded && setTrayState('EXPANDED')}
         >
           {/* Top Row / Summary Bar */}
-          <div className={`px-4 flex items-center justify-between min-h-[60px] cursor-pointer ${isExpanded ? 'border-b border-slate-100' : ''}`}>
+          <div className={`px-6 flex items-center justify-between py-3 cursor-pointer ${isExpanded ? 'border-b border-slate-100' : ''}`}>
             <div className="flex items-center">
               <div 
                 onClick={handleToggleExpand}

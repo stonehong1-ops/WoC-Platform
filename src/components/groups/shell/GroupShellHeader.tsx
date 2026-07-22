@@ -75,9 +75,9 @@ export default function GroupShellHeader({ group, onExit }: GroupShellHeaderProp
         }} />
       </div>
 
-      <div className="header-top">
+      <div className="header-top flex items-center justify-between gap-3">
         {/* 그룹 정보 */}
-        <div className="group-info">
+        <div className="group-info flex items-center gap-3">
           <div className="group-icon">
             {group.logo ? (
               <ImageWithFallback
@@ -105,14 +105,14 @@ export default function GroupShellHeader({ group, onExit }: GroupShellHeaderProp
           </div>
         </div>
 
-        {/* Leave/Switch 버튼 */}
+        {/* Leave/Switch 버튼 (텍스트 없이 아이콘만) */}
         <div className="leave-wrap">
           <button
             className="leave-btn"
             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+            title={t('group.shell.exit') || '나가기'}
           >
             <span className="material-symbols-outlined" style={{ fontSize: 20 }}>logout</span>
-            <span>{t('group.shell.exit')}</span>
             <span className="material-symbols-outlined" style={{ fontSize: 16 }}>
               {isDropdownOpen ? 'expand_less' : 'expand_more'}
             </span>

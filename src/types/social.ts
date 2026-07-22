@@ -59,6 +59,7 @@ export interface Social {
   moments?: string[];               // Up to 20 images (Moments)
   posterLayoutId?: string;           // Selected poster template layout ID
   posterExportUrl?: string;          // Pre-generated poster image URL for quick download/share
+  imageUrls?: string[];              // Multiple images for carousel
   createdAt: Timestamp;
 }
 

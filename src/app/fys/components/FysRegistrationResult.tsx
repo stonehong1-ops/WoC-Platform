@@ -112,8 +112,8 @@ export default function FysRegistrationResult({ registration, onCancelSuccess }:
                 {registration.role === "leader" ? "face" : "face_3"}
               </span>
               {registration.role === "leader"
-                ? "Leader (남/리더)"
-                : "Follower (여/팔로워)"}
+                ? "Leader (리더)"
+                : "Follower (팔로워)"}
             </p>
           </div>
           {registration.phone && (

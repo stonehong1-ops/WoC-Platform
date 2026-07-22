@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import Script from 'next/script';
 import GaviCartoonPopup from '@/components/home/GaviCartoonPopup';
 import EventViewer from '@/components/events/EventViewer';
@@ -25,6 +26,7 @@ import BottomSheet from '@/components/common/BottomSheet';
 
 export default function SocietyPage() {
   const { t, language, setLanguage } = useLanguage();
+  const router = useRouter();
 
   const formatDate = (date: Date, formatType: string) => {
     try {
@@ -209,8 +211,8 @@ export default function SocietyPage() {
             keywordNative: '상호존중정책',
             description: 'We believe that every embrace should be built on mutual respect and absolute safety. Our community has no room for harassment of any kind.',
             descriptionNative: '탱고의 본질은 서로에 대한 깊은 존중과 신뢰 위에 세워진 포옹에 있습니다. 우리 커뮤니티는 어떠한 형태의 괴롭힘이나 위해도 용납하지 않습니다.',
-            imageUrl: '/life_on_bg.jpg',
-            imageUrls: ['/life_on_bg.jpg', 'https://images.unsplash.com/photo-1542332213-31f87348057f?q=80&w=800'],
+            imageUrl: '/images/magazine/today_magazine_cover.jpg',
+            imageUrls: ['/images/magazine/today_magazine_cover.jpg', 'https://images.unsplash.com/photo-1542332213-31f87348057f?q=80&w=800'],
             content: `Safe Floor: Zero Tolerance Policy
 
 1. Respect the Embrace
@@ -885,6 +887,31 @@ We review Simon Collier, Artemis Cooper, María Susana Azzi, and Richard Martin'
     }
   }, []);
 
+  // Background prefetch for Social and Live core data & route assets
+  useEffect(() => {
+    const triggerPrefetch = () => {
+      // 1. Next.js router prefetch
+      router.prefetch('/social');
+      router.prefetch('/live');
+
+      // 2. Data prefetch
+      import('@/lib/utils/tabCache').then(({ tabCache }) => {
+        tabCache.prefetchSocialData();
+        tabCache.prefetchLiveData();
+      });
+    };
+
+    if (typeof window !== 'undefined') {
+      if ('requestIdleCallback' in window) {
+        window.requestIdleCallback(() => {
+          triggerPrefetch();
+        }, { timeout: 3000 });
+      } else {
+        setTimeout(triggerPrefetch, 1500);
+      }
+    }
+  }, [router]);
+
   return (
     <>
       {/* Tailwind CDN - loaded via Next.js Script for proper lifecycle management */}
@@ -1098,7 +1125,7 @@ We review Simon Collier, Artemis Cooper, María Susana Azzi, and Richard Martin'
                     <img 
                       alt={resolvedTitle} 
                       className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" 
-                      src={getSafeStorageUrl(activeFocus.imageUrl || '/life_on_bg.jpg')}
+                      src={getSafeStorageUrl(activeFocus.imageUrl && activeFocus.imageUrl !== '/life_on_bg.jpg' ? activeFocus.imageUrl : '/images/magazine/today_magazine_cover.jpg')}
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent flex flex-col justify-end p-6 text-left">
                       <span className="absolute top-4 left-4 z-10 bg-[#6750A4] text-white text-[10px] font-bold px-2 py-0.5 rounded tracking-widest">FOCUS</span>
@@ -1124,11 +1151,11 @@ We review Simon Collier, Artemis Cooper, María Susana Azzi, and Richard Martin'
 
               {/* Card 1: 가비의 탱고툰 */}
               <div 
-                className="relative h-[172px] md:h-[232px] rounded-2xl overflow-hidden group cursor-pointer border border-outline/5 shadow-sm"
+                className="relative h-[172px] md:h-[232px] rounded-2xl overflow-hidden group cursor-pointer border border-outline/5 shadow-sm bg-slate-900"
                 onClick={() => setIsCartoonsOpen(true)}
               >
                 <span className="absolute top-4 left-4 z-10 bg-indigo-500/90 text-white text-[9px] font-black px-2 py-0.5 rounded uppercase tracking-wider shadow-sm">새 글</span>
-                <img alt="가비의 탱고툰" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" src="/gavi.jpg"/>
+                <img alt="가비의 탱고툰" className="w-full h-full object-cover object-center transition-transform duration-700 group-hover:scale-105" src="/gavi.jpg"/>
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-4 text-left">
                   <h4 className="text-white font-bold text-base">가비의 탱고툰</h4>
                 </div>
@@ -1153,18 +1180,18 @@ We review Simon Collier, Artemis Cooper, María Susana Azzi, and Richard Martin'
                 </div>
               </div>
 
-              {/* Card 2: 탱고뮤직 365 */}
+              {/* Card 2: 탱고의 역사 리뷰 (위치 교체) */}
               <div 
                 className="relative h-[172px] md:h-[232px] rounded-2xl overflow-hidden group cursor-pointer border border-outline/5 shadow-sm"
                 onClick={() => {
-                  setCurrentMusic365Index(0);
-                  setIsMusic365Open(true);
+                  setCurrentHistoryIndex(0);
+                  setIsHistoryOpen(true);
                 }}
               >
-                <span className="absolute top-4 left-4 z-10 bg-emerald-600/90 text-white text-[9px] font-black px-2 py-0.5 rounded uppercase tracking-wider shadow-sm">TODAY</span>
-                <img alt="탱고뮤직 365" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" src="/camus.jpg"/>
+                <span className="absolute top-4 left-4 z-10 bg-rose-600/95 text-white text-[9px] font-black px-2 py-0.5 rounded uppercase tracking-wider shadow-sm">이번 주</span>
+                <img alt="탱고의 역사 리뷰" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" src="/ddakji.jpg"/>
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-4 text-left">
-                  <h4 className="text-white font-bold text-base">탱고뮤직 365</h4>
+                  <h4 className="text-white font-bold text-base">탱고의 역사 리뷰</h4>
                 </div>
               </div>
 
@@ -1183,18 +1210,58 @@ We review Simon Collier, Artemis Cooper, María Susana Azzi, and Richard Martin'
                 </div>
               </div>
 
-              {/* Card 4: 탱고의 역사 리뷰 */}
+              {/* Card 4 (전폭): 탱고뮤직 365 (좌측 원 구조 유지 + 우측 칩 없이 오른쪽 끝 작게 3줄) */}
               <div 
-                className="col-span-2 md:col-span-4 relative h-[120px] md:h-[160px] rounded-2xl overflow-hidden group cursor-pointer border border-outline/5 shadow-sm"
+                className="col-span-2 md:col-span-4 relative h-[140px] md:h-[180px] rounded-2xl overflow-hidden group cursor-pointer border border-outline/5 shadow-sm"
                 onClick={() => {
-                  setCurrentHistoryIndex(0);
-                  setIsHistoryOpen(true);
+                  setSelectedSubcategory('music365');
+                  setCurrentMusic365Index(0);
+                  setIsMusic365Open(true);
                 }}
               >
-                <span className="absolute top-4 left-4 z-10 bg-rose-600/95 text-white text-[9px] font-black px-2 py-0.5 rounded uppercase tracking-wider shadow-sm">이번 주</span>
-                <img alt="탱고의 역사 리뷰" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" src="/ddakji.jpg"/>
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-6 text-left">
-                  <h4 className="text-white font-bold text-lg md:text-2xl">탱고의 역사 리뷰</h4>
+                <span className="absolute top-4 left-4 z-10 bg-emerald-600/90 text-white text-[9px] font-black px-2.5 py-1 rounded uppercase tracking-wider shadow-md">TODAY</span>
+                <img alt="탱고뮤직 365" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" src="/camus.jpg"/>
+                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent flex flex-row items-end justify-between p-5 md:p-6 text-left gap-4">
+                  <div>
+                    <h4 className="text-white font-black text-xl md:text-2xl tracking-tight">탱고뮤직 365</h4>
+                  </div>
+
+                  {/* 우측 3개 서브 타이틀: 칩 없이 오른쪽 끝에 작게 세로 3줄 */}
+                  <div className="flex flex-col items-end justify-end gap-1 relative z-20 shrink-0 pb-0.5">
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedSubcategory('music365');
+                        setCurrentMusic365Index(0);
+                        setIsMusic365Open(true);
+                      }}
+                      className="text-white/95 hover:text-white text-xs md:text-sm font-bold transition-all text-right border-none bg-transparent cursor-pointer p-0 hover:underline"
+                    >
+                      {t('home.music.tab.music365') || '탱고음악 365'}
+                    </button>
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedSubcategory('best160');
+                        setCurrentMusic365Index(0);
+                        setIsMusic365Open(true);
+                      }}
+                      className="text-white/75 hover:text-white text-[11px] md:text-xs font-semibold transition-all text-right border-none bg-transparent cursor-pointer p-0 hover:underline"
+                    >
+                      {t('home.music.tab.best160') || '매혹의 시간 BEST 160'}
+                    </button>
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedSubcategory('mapofm');
+                        setCurrentMusic365Index(0);
+                        setIsMusic365Open(true);
+                      }}
+                      className="text-white/75 hover:text-white text-[11px] md:text-xs font-semibold transition-all text-right border-none bg-transparent cursor-pointer p-0 hover:underline"
+                    >
+                      {t('home.music.tab.mapofm') || '불멸의 탱고음악'}
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>

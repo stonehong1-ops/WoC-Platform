@@ -88,7 +88,7 @@ export default function RentalWishlistTray({ likes, userId, onSpaceClick, spaces
       <div 
         className="fixed inset-x-0 z-[60] px-6 w-full max-w-sm mx-auto pointer-events-none flex justify-center"
         style={{ 
-          bottom: 'calc(64px + max(env(safe-area-inset-bottom), 12px) + 3mm)',
+          bottom: 'calc(76px + env(safe-area-inset-bottom, 0px) + 3mm)',
           transform: 'translateY(var(--woc-bottom-nav-y, 0px))',
           transition: 'transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1)'
         }}

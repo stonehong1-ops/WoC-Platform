@@ -288,15 +288,6 @@ export default function SocialHomeTab({ social, targetDate, onChatWithOrganizer,
               <span className="material-symbols-rounded text-sm text-primary">headphones</span>
               <p className="text-[10px] font-black text-primary uppercase tracking-widest">{t('social.dj_lineup')}</p>
             </div>
-            {canEdit && (
-              <button 
-                onClick={() => setIsAdding(!isAdding)}
-                className="flex items-center gap-0.5 px-2.5 py-1 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 rounded-lg text-[10px] font-black active:scale-95 transition-transform"
-              >
-                <span className="material-symbols-rounded text-[11px]">{isAdding ? 'expand_less' : 'add'}</span>
-                <span>{isAdding ? t('common.close') || '닫기' : t('social.add_dj_lineup')}</span>
-              </button>
-            )}
           </div>
           
           <div className="px-4 py-4 space-y-4">

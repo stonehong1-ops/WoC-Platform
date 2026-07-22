@@ -78,12 +78,14 @@ export default function EventsPage() {
   const { isOpen: isCreateOpenURL, openModal: openCreateURL, closeModal: closeCreateURL } = useModalNavigation('create');
   const { blockedUsers } = useBlockedUsers();
 
-  // 최초 진입 시 메인 홈을 다가오는 일정(view=list)으로 강제 리디렉션
+  // 최초 진입 시 메인 홈을 다가오는 일정(view=list)으로 강제 리디렉션 (create 파라미터 유실 방지)
   useEffect(() => {
     if (!viewParam) {
-      router.replace('/events?view=list');
+      const createParam = searchParams.get('create');
+      const targetUrl = createParam ? `/events?view=list&create=${createParam}` : '/events?view=list';
+      router.replace(targetUrl);
     }
-  }, [viewParam, router]);
+  }, [viewParam, searchParams, router]);
 
   // URL 쿼리와 로컬 등록 모달 상태의 무결점 실시간 정밀 동기화
   useEffect(() => {
@@ -645,9 +647,16 @@ export default function EventsPage() {
                           </div>
 
                           <div className="flex flex-col justify-center min-w-0 flex-1 py-0.5 text-left">
-                            <span className="text-[8.5px] font-black text-blue-600 bg-blue-50 border border-blue-100 w-fit px-1.5 py-0.5 rounded-md uppercase tracking-wider mb-1">
-                              {dateStr}
-                            </span>
+                            <div className="flex items-center gap-1.5 mb-1 flex-wrap">
+                              <span className="text-[8.5px] font-black text-blue-600 bg-blue-50 border border-blue-100 w-fit px-1.5 py-0.5 rounded-md uppercase tracking-wider">
+                                {dateStr}
+                              </span>
+                              {event.isDatesUnconfirmed && (
+                                <span className="text-[8.5px] font-black text-amber-600 bg-amber-50 border border-amber-100 w-fit px-1.5 py-0.5 rounded-md uppercase tracking-wider">
+                                  {language === 'KR' ? '일정 미확정' : 'TBA'}
+                                </span>
+                              )}
+                            </div>
                             <h4 className="font-bold text-slate-800 text-[13px] leading-snug truncate">
                               {language === 'KR' && event.titleNative ? event.titleNative : event.title}
                             </h4>
@@ -744,7 +753,7 @@ export default function EventsPage() {
           
           {/* 1) 메인 통합 홈 (viewParam이 없는 경우) */}
           {!viewParam ? (
-            <div className="px-5 py-6">
+            <div className="px-5 pt-0 pb-6">
               {renderEventMainHome()}
             </div>
           ) : (
@@ -907,7 +916,14 @@ export default function EventsPage() {
                                     }
                                   </div>
                                   <div className="flex flex-col justify-center min-w-0 flex-1 py-0.5">
-                                    <span className="text-[10px] font-bold text-blue-600 bg-blue-50 border border-blue-100 w-fit px-1.5 py-0.5 rounded uppercase tracking-wider mb-1.5">{dateStr}</span>
+                                    <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
+                                      <span className="text-[10px] font-bold text-blue-600 bg-blue-50 border border-blue-100 w-fit px-1.5 py-0.5 rounded uppercase tracking-wider">{dateStr}</span>
+                                      {event.isDatesUnconfirmed && (
+                                        <span className="text-[10px] font-bold text-amber-600 bg-amber-50 border border-amber-100 w-fit px-1.5 py-0.5 rounded uppercase tracking-wider">
+                                          {language === 'KR' ? '일정 미확정' : 'TBA'}
+                                        </span>
+                                      )}
+                                    </div>
                                     <h3 className="font-bold text-slate-900 text-[14px] leading-snug truncate">{language === 'KR' && event.titleNative ? event.titleNative : event.title}</h3>
                                     {event.titleNative && language !== 'KR' && <p className="text-[11px] text-slate-400 truncate mt-0.5">{event.titleNative}</p>}
                                     <div className="flex items-center gap-2 mt-1.5 text-[11px] font-medium text-slate-500">

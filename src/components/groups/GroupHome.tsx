@@ -424,59 +424,54 @@ export default function GroupHome({ group: initialGroup, isModal, onClose }: { g
         onDashboardClick={handleDashboardFooterClick}
         onFirstTabDetect={handleFirstTabDetect}
       >
-        <></>
+        <main className="pb-12 pt-0">
+          <div className={`max-w-7xl mx-auto ${activeTab === 'feed' || activeTab === 'home' || activeTab === 'live' || activeTab === 'calendar' || activeTab === 'board' || activeTab === 'members' || activeTab === 'about' || activeTab === 'settings' || activeTab === 'brand' || activeTab === 'class' || activeTab === 'class-setting' || activeTab === 'shop-setting' || activeTab === 'stay-setting' || activeTab === 'rental-setting' ? 'px-0 md:px-0 mt-0 space-y-0 pb-0' : 'px-4 md:px-8 space-y-10 mt-6 pb-12'}`}>
+            
+            {/* 1. 홈 피드 대시보드 탭 (Home) */}
+            {visitedTabs.has('home') && (
+              <div style={{ display: activeTab === 'home' ? 'block' : 'none' }}>
+                <GroupFeedSection
+                  currentGroup={currentGroup}
+                  members={members}
+                  isFullMember={isFullMember}
+                  isAdminUser={isAdminUser}
+                  noticePost={noticePost}
+                  recentFeedPosts={recentFeedPosts}
+                  upcomingEvents={upcomingEvents}
+                  moments={moments}
+                  adminTodos={adminTodos}
+                  handleTabClick={handleTabClick}
+                  safeFormat={safeFormat}
+                  safeFormatRelative={safeFormatRelative}
+                  isPostNew={isPostNew}
+                  pathname={pathname}
+                  t={t}
+                />
+              </div>
+            )}
+
+            {/* 2. 동적 모듈 탭 렌더러 (about, members, calendar, feed, class 등) */}
+            <GroupModuleRenderer
+              activeTab={activeTab}
+              visitedTabs={visitedTabs}
+              currentGroup={currentGroup}
+              members={members}
+              isFullMember={isFullMember}
+              isAdminUser={isAdminUser}
+              user={user}
+              profile={profile}
+              setSelectedMember={setSelectedMember}
+              openClassFlow={openClassFlow}
+              handleTabClick={handleTabClick}
+              allUsers={allUsers}
+              isClaiming={isClaiming}
+              handleClaimAdmin={handleClaimAdmin}
+              isMembersLoading={loading || isMembersLoading}
+            />
+
+          </div>
+        </main>
       </GroupAppShell>
-
-      <main 
-        className="pb-12"
-        style={{ paddingTop: Capacitor.isNativePlatform() ? 'calc(env(safe-area-inset-top) + 120px)' : '120px' }}
-      >
-        <div className={`max-w-7xl mx-auto ${activeTab === 'feed' || activeTab === 'home' || activeTab === 'live' || activeTab === 'calendar' || activeTab === 'board' || activeTab === 'members' || activeTab === 'about' || activeTab === 'settings' || activeTab === 'brand' || activeTab === 'class' || activeTab === 'class-setting' || activeTab === 'shop-setting' || activeTab === 'stay-setting' || activeTab === 'rental-setting' ? 'px-0 md:px-0 mt-0 space-y-0 pb-0' : 'px-4 md:px-8 space-y-10 mt-6 pb-12'}`}>
-          
-          {/* 1. 홈 피드 대시보드 탭 (Home) */}
-          {visitedTabs.has('home') && (
-            <div style={{ display: activeTab === 'home' ? 'block' : 'none' }}>
-              <GroupFeedSection
-                currentGroup={currentGroup}
-                members={members}
-                isFullMember={isFullMember}
-                isAdminUser={isAdminUser}
-                noticePost={noticePost}
-                recentFeedPosts={recentFeedPosts}
-                upcomingEvents={upcomingEvents}
-                moments={moments}
-                adminTodos={adminTodos}
-                handleTabClick={handleTabClick}
-                safeFormat={safeFormat}
-                safeFormatRelative={safeFormatRelative}
-                isPostNew={isPostNew}
-                pathname={pathname}
-                t={t}
-              />
-            </div>
-          )}
-
-          {/* 2. 동적 모듈 탭 렌더러 (about, members, calendar, feed, class 등) */}
-          <GroupModuleRenderer
-            activeTab={activeTab}
-            visitedTabs={visitedTabs}
-            currentGroup={currentGroup}
-            members={members}
-            isFullMember={isFullMember}
-            isAdminUser={isAdminUser}
-            user={user}
-            profile={profile}
-            setSelectedMember={setSelectedMember}
-            openClassFlow={openClassFlow}
-            handleTabClick={handleTabClick}
-            allUsers={allUsers}
-            isClaiming={isClaiming}
-            handleClaimAdmin={handleClaimAdmin}
-            isMembersLoading={loading || isMembersLoading}
-          />
-
-        </div>
-      </main>
 
       {/* Join Modal */}
       <GroupJoinModal

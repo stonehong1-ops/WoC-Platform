@@ -119,7 +119,17 @@ export default function EventHomeTab({ event, onChatWithHost, canEdit }: Props) 
         <div className="px-4 py-4 space-y-3">
           <div className="flex items-start gap-3">
             <span className="material-symbols-rounded text-lg text-[#acb3b4]">calendar_today</span>
-            <div><p className="text-xs font-bold text-[#2d3435]">{t('event.date')}</p><p className="text-xs text-[#596061]">{dateStr}</p></div>
+            <div>
+              <div className="flex items-center gap-1.5">
+                <p className="text-xs font-bold text-[#2d3435]">{t('event.date')}</p>
+                {event.isDatesUnconfirmed && (
+                  <span className="text-[8.5px] font-black text-amber-600 bg-amber-50 border border-amber-100 px-1.5 py-0.5 rounded-md uppercase tracking-wider">
+                    {t('event.unconfirmed')}
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-[#596061]">{dateStr}</p>
+            </div>
           </div>
           <div className="flex items-start gap-3">
             <span className="material-symbols-rounded text-lg text-[#acb3b4]">location_on</span>

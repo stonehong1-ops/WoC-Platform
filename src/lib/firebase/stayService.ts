@@ -123,9 +123,22 @@ export const stayService = {
       const cleaned = cleanData(stayData);
       const docRef = await addDoc(collection(db, STAYS_COLLECTION), {
         ...cleaned,
+        isActive: stayData.isActive ?? true,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp()
       });
+
+      if (stayData.groupId) {
+        try {
+          const groupRef = doc(db, 'groups', stayData.groupId);
+          await updateDoc(groupRef, {
+            'activeServices.stay': true
+          });
+        } catch (err) {
+          console.error("Failed to enable activeServices.stay on group:", err);
+        }
+      }
+
       return docRef.id;
     } catch (error) {
       console.error("Error registering stay:", error);

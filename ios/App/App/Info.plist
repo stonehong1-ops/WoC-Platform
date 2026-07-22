@@ -49,5 +49,9 @@
 	<string>Tango World requires photo library access to upload photos and save images.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>Tango World requires photo library write access to save images.</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
+	</array>
 </dict>
 </plist>

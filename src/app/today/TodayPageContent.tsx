@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useMemo, useCallback, Suspense } from "react";
+import SocialCreateModalTrigger from "../social/components/SocialCreateModalTrigger";
 import { useBackButtonClose } from '@/hooks/useBackButtonClose';
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -10,6 +11,7 @@ import { useLocation } from "@/components/providers/LocationProvider";
 import { socialService } from "@/lib/firebase/socialService";
 import { eventService } from "@/lib/firebase/eventService";
 import { groupService } from "@/lib/firebase/groupService";
+import { venueService } from "@/lib/firebase/venueService";
 import { db, storage } from "@/lib/firebase/clientApp";
 import { collection, getDocs, query, limit, doc, getDoc, setDoc, onSnapshot, where, deleteDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
@@ -24,6 +26,35 @@ import ClassDetail from "@/components/class/ClassDetail";
 import EventViewer from "@/components/events/EventViewer";
 import { toast } from "sonner";
 import { useBlockedUsers } from "@/hooks/useBlockedUsers";
+import { tabCache } from "@/lib/utils/tabCache";
+
+const ensureLegacySchedule = (cls: any) => {
+  if (!cls) return cls;
+  if (cls.schedule && !Array.isArray(cls.schedule)) {
+    const s = cls.schedule;
+    let legacySchedule: any[] = [];
+    if (cls.sessions && cls.sessions.length > 0) {
+      legacySchedule = cls.sessions.map((sess: any, idx: number) => ({
+        week: idx + 1,
+        date: sess.date || null,
+        timeSlot: sess.startTime && sess.endTime ? `${sess.startTime} - ${sess.endTime}` : (s.startTime && s.endTime ? `${s.startTime} - ${s.endTime}` : "시간 조율"),
+        content: ""
+      }));
+    } else {
+      legacySchedule = [{
+        week: 1,
+        date: s.startDate || null,
+        timeSlot: s.startTime && s.endTime ? `${s.startTime} - ${s.endTime}` : "시간 조율",
+        content: ""
+      }];
+    }
+    return {
+      ...cls,
+      schedule: legacySchedule
+    };
+  }
+  return cls;
+};
 
 // 분리된 하위 컴포넌트 임포트
 import TodayHeroSection from "./components/TodayHeroSection";
@@ -454,11 +485,22 @@ export default function TodayPageContent() {
     return !!viewEventId && heroEvent?.id === viewEventId;
   }, [viewEventId, heroEvent]);
 
-  // Groups 데이터 로드
+  // Telemetry telemetry logger
   useEffect(() => {
-    groupService.getGroups().then(data => {
-      setAllGroups(data);
-    }).catch(console.error);
+    tabCache.logTransitionTime('Social', 'render');
+  }, []);
+
+  // Groups 데이터 로드 (Cache-First + SWR)
+  useEffect(() => {
+    const cached = tabCache.getStale('groups:all');
+    if (cached) {
+      setAllGroups(cached);
+    }
+    tabCache.fetchExclusive('groups:all', () => groupService.getGroups())
+      .then(data => {
+        setAllGroups(data);
+      })
+      .catch(console.error);
   }, []);
 
   // 선택된 그룹의 캘린더 이벤트 구독
@@ -686,23 +728,48 @@ export default function TodayPageContent() {
     });
   }, [groupMatchedSocials, selectedDjName]);
 
-  // Venues (한 번만 fetch)
+  // Venues (Cache-First + SWR)
   useEffect(() => {
-    getDocs(collection(db, "venues")).then(snap => {
-      const map: Record<string, any> = {};
-      snap.docs.forEach(d => { map[d.id] = { id: d.id, ...d.data() }; });
-      setVenuesMap(map);
-    }).catch(() => {});
+    const cached = tabCache.getStale('venues:all');
+    if (cached) {
+      if (Array.isArray(cached)) {
+        const map: Record<string, any> = {};
+        cached.forEach((v: any) => { map[v.id] = v; });
+        setVenuesMap(map);
+      } else if (typeof cached === 'object') {
+        setVenuesMap(cached);
+      }
+    }
+    tabCache.fetchExclusive('venues:all', () => venueService.getVenues())
+      .then((venues: any) => {
+        const map: Record<string, any> = {};
+        venues.forEach((v: any) => { map[v.id] = v; });
+        setVenuesMap(map);
+      })
+      .catch(console.error);
   }, []);
 
-  // Socials
+  // Socials (Cache-First + SWR)
   useEffect(() => {
-    setLoadingSocials(true);
-    socialService.getTodayActiveSocials(selectedDate.getDay(), selectedDate).then((data) => {
-      setRawSocials(data);
+    const dateStr = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-${String(selectedDate.getDate()).padStart(2, '0')}`;
+    const city = location?.city || 'All';
+    const socialKey = `social:${dateStr}:${city}`;
+
+    const cached = tabCache.getStale(socialKey);
+    if (cached) {
+      setRawSocials(cached);
       setLoadingSocials(false);
-    });
-  }, [selectedDate]);
+    } else {
+      setLoadingSocials(true);
+    }
+
+    tabCache.fetchExclusive(socialKey, () => socialService.getTodayActiveSocials(selectedDate.getDay(), selectedDate))
+      .then((data) => {
+        setRawSocials(data);
+        setLoadingSocials(false);
+      })
+      .catch(() => setLoadingSocials(false));
+  }, [selectedDate, location]);
 
   // 날짜 범위 다국어 로케일 포맷팅 헬퍼
   const getEventDateRange = (ev: Event) => {
@@ -752,25 +819,45 @@ export default function TodayPageContent() {
     }
   }, [viewEventId]);
 
-  // Classes
+  // Classes (Cache-First + SWR)
   useEffect(() => {
-    setLoadingClasses(true);
-    groupService.getGlobalClassesAll()
+    const cached = tabCache.getStale('classes:all');
+    if (cached) {
+      const mapped = cached.map((cls: any) => ({ cls: ensureLegacySchedule(cls) }));
+      setRawAllClasses(mapped);
+      setLoadingClasses(false);
+    } else {
+      setLoadingClasses(true);
+    }
+    tabCache.fetchExclusive('classes:all', () => groupService.getGlobalClassesAll())
       .then((data) => {
-        setRawAllClasses(data.map(cls => ({ cls })));
+        const mapped = data.map(cls => ({ cls: ensureLegacySchedule(cls) }));
+        setRawAllClasses(mapped);
         setLoadingClasses(false);
       })
       .catch(() => setLoadingClasses(false));
   }, []);
 
-  // Load all socials for filtering active groups
+  // Load all socials for filtering active groups (Cache-First + SWR)
   useEffect(() => {
-    const q = query(collection(db, "socials"), limit(200));
-    getDocs(q).then(snap => {
-      const list = snap.docs.map(d => ({ id: d.id, ...d.data() }) as Social);
+    const cached = tabCache.getStale('socials:filter:all');
+    if (cached) {
+      setRawAllSocials(cached);
+    }
+    tabCache.fetchExclusive('socials:filter:all', () => {
+      const q = query(collection(db, "socials"), limit(200));
+      return getDocs(q).then(snap => snap.docs.map(d => ({ id: d.id, ...d.data() }) as Social));
+    }).then(list => {
       setRawAllSocials(list);
     }).catch(console.error);
   }, []);
+
+  // Telemetry 데이터 완료(T2) 감지기
+  useEffect(() => {
+    if (!loadingSocials && !loadingClasses && allGroups.length > 0 && Object.keys(venuesMap).length > 0) {
+      tabCache.logTransitionTime('Social', 'data');
+    }
+  }, [loadingSocials, loadingClasses, allGroups, venuesMap]);
 
   // 클래스 필터링
   const filteredClasses = useMemo(() => {
@@ -3363,6 +3450,10 @@ export default function TodayPageContent() {
         </div>
       )}
 
+
+      <Suspense fallback={null}>
+        <SocialCreateModalTrigger />
+      </Suspense>
     </div>
   );
 }

@@ -4,6 +4,8 @@ import { createPortal } from "react-dom";
 import { Group, GroupClass, ClassDiscount } from "@/types/group";
 import { groupService } from "@/lib/firebase/groupService";
 import { db } from "@/lib/firebase/clientApp";
+import { wocClassService } from '@/lib/firebase/wocClassService';
+import { WocClass } from '@/types/class';
 import { motion, AnimatePresence } from "framer-motion";
 import { doc, writeBatch, deleteField, Timestamp } from "firebase/firestore";
 
@@ -238,6 +240,8 @@ const GroupClassEditor: React.FC<GroupClassEditorProps> = ({ group, onSave, onCl
   // Real-time data from subcollections
   const [subClasses, setSubClasses] = useState<GroupClass[]>([]);
   const [subDiscounts, setSubDiscounts] = useState<ClassDiscount[]>([]);
+  // WocClass 연동 클래스 목록
+  const [linkedWocClasses, setLinkedWocClasses] = useState<WocClass[]>([]);
 
   useEffect(() => {
     // Auto-migration logic for legacy embedded arrays
@@ -272,6 +276,8 @@ const GroupClassEditor: React.FC<GroupClassEditorProps> = ({ group, onSave, onCl
   useEffect(() => {
     const unsubClasses = groupService.subscribeClasses(group.id, setSubClasses);
     const unsubDiscounts = groupService.subscribeDiscounts(group.id, setSubDiscounts);
+    // WocClass 연동 클래스 조회
+    wocClassService.getClassesByConnectedGroup(group.id).then(setLinkedWocClasses).catch(console.error);
     return () => {
       unsubClasses();
       unsubDiscounts();
@@ -436,9 +442,6 @@ const GroupClassEditor: React.FC<GroupClassEditorProps> = ({ group, onSave, onCl
                 <h2 className="text-[24px] leading-[1.3] font-semibold text-on-surface" style={{ fontFamily: "'Inter', sans-serif" }}>
                   {t("group.class.management") || "Class Management"}
                 </h2>
-                <p className="text-[14px] leading-[1.4] tracking-[0.01em] font-medium text-on-surface-variant mt-1" style={{ fontFamily: "'Inter', sans-serif" }}>
-                  {t("group.class.subtitle") || "Manage schedules, classes, and registration options."}
-                </p>
               </div>
             </div>
 
@@ -541,10 +544,10 @@ const GroupClassEditor: React.FC<GroupClassEditorProps> = ({ group, onSave, onCl
               <>
                 {/* Action Buttons */}
                 <section className="px-4 mb-6">
-                  <div className="flex justify-between gap-3">
+                  <div className="grid grid-cols-2 gap-3">
                     <button
                       onClick={() => setEditingState({ type: 'add-class', data: null })}
-                      className="flex-1 flex flex-col items-center justify-center gap-1.5 p-4 bg-white text-on-surface rounded-2xl border border-white/20 shadow-[0px_10px_30px_rgba(0,0,0,0.02)] hover:bg-surface-container-low transition-all active:scale-[0.98] relative group"
+                      className="flex flex-col items-center justify-center gap-1.5 p-4 bg-white text-on-surface rounded-2xl border border-white/20 shadow-[0px_10px_30px_rgba(0,0,0,0.02)] hover:bg-surface-container-low transition-all active:scale-[0.98] relative group"
                     >
                       <div className="absolute top-3 right-3 w-5 h-5 bg-primary text-on-primary rounded-full flex items-center justify-center text-[10px] font-bold shadow-sm">{filteredClasses.length}</div>
                       <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary group-hover:scale-105 transition-transform">
@@ -554,22 +557,13 @@ const GroupClassEditor: React.FC<GroupClassEditorProps> = ({ group, onSave, onCl
                     </button>
                     <button
                       onClick={() => setEditingState({ type: 'discount', data: null })}
-                      className="flex-1 flex flex-col items-center justify-center gap-1.5 p-4 bg-white text-on-surface rounded-2xl border border-white/20 shadow-[0px_10px_30px_rgba(0,0,0,0.02)] hover:bg-surface-container-low transition-all active:scale-[0.98] relative group"
+                      className="flex flex-col items-center justify-center gap-1.5 p-4 bg-white text-on-surface rounded-2xl border border-white/20 shadow-[0px_10px_30px_rgba(0,0,0,0.02)] hover:bg-surface-container-low transition-all active:scale-[0.98] relative group"
                     >
                       <div className="absolute top-3 right-3 w-5 h-5 bg-primary text-on-primary rounded-full flex items-center justify-center text-[10px] font-bold shadow-sm">{filteredDiscounts.length}</div>
                       <div className="w-10 h-10 rounded-xl bg-secondary/10 flex items-center justify-center text-secondary group-hover:scale-105 transition-transform">
                         <span className="material-symbols-outlined text-[20px]">sell</span>
                       </div>
                       <span className="text-[12px] font-bold leading-tight text-center" style={{ fontFamily: "'Inter', sans-serif" }} dangerouslySetInnerHTML={{ __html: t('group.class.bundle_discount') || "Bundle<br />discount" }} />
-                    </button>
-                    <button
-                      onClick={() => setEditingState({ type: 'clone', data: null })}
-                      className="flex-1 flex flex-col items-center justify-center gap-1.5 p-4 bg-white text-on-surface rounded-2xl border border-white/20 shadow-[0px_10px_30px_rgba(0,0,0,0.02)] hover:bg-surface-container-low transition-all active:scale-[0.98] group"
-                    >
-                      <div className="w-10 h-10 rounded-xl bg-tertiary/10 flex items-center justify-center text-tertiary group-hover:scale-105 transition-transform">
-                        <span className="material-symbols-outlined text-[20px]">content_copy</span>
-                      </div>
-                      <span className="text-[12px] font-bold leading-tight text-center" style={{ fontFamily: "'Inter', sans-serif" }}>{t('group.class.clone')}</span>
                     </button>
                   </div>
                 </section>
@@ -705,6 +699,38 @@ const GroupClassEditor: React.FC<GroupClassEditorProps> = ({ group, onSave, onCl
                       </React.Fragment>
                     );
                   })}
+
+                  {/* WocClass 연동 클래스 */}
+                  {linkedWocClasses.length > 0 && (
+                    <>
+                      <div className="border-t border-outline/10 my-4 pt-2">
+                        <span className="text-[11px] font-bold text-primary uppercase tracking-wider">{t('group.class.linked_classes') || 'Linked Classes'}</span>
+                      </div>
+                      {linkedWocClasses.map(wc => (
+                        <div key={wc.id} className="bg-white rounded-2xl shadow-[0px_10px_30px_rgba(0,0,0,0.03)] border border-white/20 p-6 flex items-start gap-4 hover:shadow-[0px_15px_40px_rgba(0,0,0,0.05)] transition-all">
+                          <div className="flex-grow">
+                            <div className="flex justify-between items-start mb-1">
+                              <div className="flex items-center gap-2">
+                                <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-lg ${wc.level ? (wc.level === 'Beginner' ? 'text-emerald-600 bg-emerald-50' : wc.level === 'Intermediate' ? 'text-orange-600 bg-orange-50' : wc.level === 'Advanced' ? 'text-blue-600 bg-blue-50' : 'text-purple-600 bg-purple-50') : 'text-purple-600 bg-purple-50'}`}>
+                                  {wc.level || t('group.class.all_levels') || 'All Levels'}
+                                </span>
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-blue-600 bg-blue-50 px-2 py-0.5 rounded-lg">
+                                  {t('group.class.linked_badge') || '연동됨'}
+                                </span>
+                              </div>
+                            </div>
+                            <h4 className="text-lg font-bold text-on-surface leading-tight mb-2" style={{ fontFamily: "'Inter', sans-serif" }}>{wc.title}</h4>
+                            <div className="flex items-center justify-between pt-2 border-t border-outline/5">
+                              <span className="text-[12px] font-medium text-on-surface-variant" style={{ fontFamily: "'Inter', sans-serif" }}>{wc.type === 'regular' ? (t('group.class.regular') || 'Regular') : (t('group.class.special_type') || 'Special')}</span>
+                              <span className="text-base font-bold text-on-surface" style={{ fontFamily: "'Inter', sans-serif" }}>
+                                {wc.pricing?.dropIn ? `₩${wc.pricing.dropIn.toLocaleString()}` : (t('group.class.free', 'Free'))}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </>
+                  )}
 
                   {(filteredClasses.length > 0 || filteredDiscounts.length > 0) && (
                     <button

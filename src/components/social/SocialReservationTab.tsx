@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
+import { Capacitor } from '@capacitor/core';
 import { Social, SocialReservation, SocialWeeklyState, SocialSubEvent } from "@/types/social";
 import { socialService } from "@/lib/firebase/socialService";
 import { useAuth } from "@/components/providers/AuthProvider";
@@ -268,7 +269,10 @@ export default function SocialReservationTab({ social }: Props) {
       {showBookSheet && (
         <>
           <div className="fixed inset-0 bg-black/40 z-[150] animate-in fade-in duration-200" onClick={() => setShowBookSheet(false)} />
-          <div className="fixed bottom-0 left-0 right-0 z-[151] bg-white rounded-t-3xl shadow-2xl animate-in slide-in-from-bottom duration-300 max-h-[80vh] overflow-y-auto">
+          <div 
+            className="fixed bottom-0 left-0 right-0 z-[151] bg-white rounded-t-3xl shadow-2xl animate-in slide-in-from-bottom duration-300 max-h-[80vh] overflow-y-auto"
+            style={{ paddingBottom: Capacitor.isNativePlatform() ? 'env(safe-area-inset-bottom)' : '0px' }}
+          >
             <div className="w-12 h-1.5 bg-[#e0e4e5] rounded-full mx-auto mt-3 mb-2" />
             <div className="px-5 pb-8">
               <h3 className="text-lg font-black text-[#2d3435] mb-1">{t('social.book_table')}</h3>
@@ -340,7 +344,10 @@ export default function SocialReservationTab({ social }: Props) {
       {showDetailSheet && isOrgOrStaff && (
         <>
           <div className="fixed inset-0 bg-black/40 z-[150] animate-in fade-in duration-200" onClick={() => setShowDetailSheet(null)} />
-          <div className="fixed bottom-0 left-0 right-0 z-[151] bg-white rounded-t-3xl shadow-2xl animate-in slide-in-from-bottom duration-300">
+          <div 
+            className="fixed bottom-0 left-0 right-0 z-[151] bg-white rounded-t-3xl shadow-2xl animate-in slide-in-from-bottom duration-300"
+            style={{ paddingBottom: Capacitor.isNativePlatform() ? 'env(safe-area-inset-bottom)' : '0px' }}
+          >
             <div className="w-12 h-1.5 bg-[#e0e4e5] rounded-full mx-auto mt-3 mb-2" />
             <div className="px-5 pb-8">
               <h3 className="text-lg font-black text-[#2d3435] mb-4">{t('social.reservation_detail')}</h3>

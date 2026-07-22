@@ -251,6 +251,14 @@ function MyInfoPageContent() {
     };
   }, [user?.uid, profile?.customSchedules]);
 
+  useEffect(() => {
+    const handleOpenDjModal = () => {
+      setIsDjModalOpen(true);
+    };
+    window.addEventListener('woc:open-dj-modal', handleOpenDjModal as EventListener);
+    return () => window.removeEventListener('woc:open-dj-modal', handleOpenDjModal as EventListener);
+  }, []);
+
   // Helper: Get list of dates in current Year-Month
   const getDaysInMonth = (year: number, month: number) => {
     const date = new Date(year, month, 1);
@@ -475,58 +483,58 @@ function MyInfoPageContent() {
   }
 
   return (
-    <div className="bg-surface text-on-surface min-h-screen">
+    <div className="bg-white text-[#2d3435] min-h-screen">
       <main className="max-w-3xl mx-auto px-4 py-6 md:py-8">
         {/* 이중 탭 레이아웃이 제거되었습니다 */}
 
         {tab === 'profile' && (
           <>
-            {/* Profile Hero Section (Ultra-compact & Premium Card-like look) */}
-            <div className="relative overflow-hidden p-6 rounded-2xl bg-gradient-to-br from-surface-container-lowest to-surface-container/30 border border-surface-container shadow-sm mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div className="flex items-center gap-4">
+            {/* Profile Hero Section (Light Blue WoC Standard) */}
+            <div className="relative overflow-hidden p-6 md:p-7 rounded-3xl bg-[#f0f6ff] border border-blue-100/80 shadow-sm text-slate-800 mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-4 relative z-10">
                 <div className="relative group shrink-0">
-                  <div className="w-16 h-16 md:w-20 md:h-20 overflow-hidden rounded-full border-2 border-surface-container-lowest shadow-md bg-surface-container">
+                  <div className="w-16 h-16 md:w-20 md:h-20 overflow-hidden rounded-full border-2 border-white shadow-md bg-white">
                     <img 
                       className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" 
-                      src={profile?.photoURL || user?.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile?.nickname || 'User')}&background=1A73E8&color=fff`}
+                      src={profile?.photoURL || user?.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile?.nickname || 'User')}&background=007AFF&color=fff`}
                       alt={t('my.profile_photo')}
                     />
                   </div>
                   <div 
                     onClick={() => setIsEditModalOpen(true)}
-                    className="absolute -bottom-0.5 -right-0.5 bg-primary text-white p-1.5 rounded-full shadow-lg cursor-pointer hover:scale-110 transition-transform flex items-center justify-center z-10 border-2 border-surface"
+                    className="absolute -bottom-0.5 -right-0.5 bg-[#007AFF] text-white p-1.5 rounded-full shadow-md cursor-pointer hover:scale-110 transition-transform flex items-center justify-center z-10 border-2 border-white"
                   >
                     <span className="material-symbols-outlined !text-[12px]">edit</span>
                   </div>
                 </div>
                 
                 <div className="min-w-0">
-                  <div className="flex flex-wrap items-baseline gap-2 mb-0.5">
-                    <h1 className="text-xl md:text-2xl font-bold tracking-tight text-on-surface font-headline truncate">
+                  <div className="flex flex-wrap items-baseline gap-2 mb-1">
+                    <h1 className="text-xl md:text-2xl font-bold tracking-tight text-slate-900 font-headline truncate">
                       {profile?.nickname || user?.displayName || t('my.default_nickname')}
                     </h1>
                     <div className="flex flex-wrap gap-1">
                       {profile?.isInstructor && (
-                        <span className="px-2 py-0.5 rounded bg-primary-container text-on-primary-container text-[9px] font-bold uppercase tracking-tighter">{t('my.role_instructor')}</span>
+                        <span className="px-2.5 py-0.5 rounded-full bg-[#007AFF]/10 text-[#007AFF] text-[9px] font-bold uppercase tracking-tighter">{t('my.role_instructor')}</span>
                       )}
                       {profile?.isDj && (
-                        <span className="px-2 py-0.5 rounded bg-secondary-container text-on-secondary-container text-[9px] font-bold uppercase tracking-tighter">DJ</span>
+                        <span className="px-2.5 py-0.5 rounded-full bg-purple-500/10 text-purple-600 text-[9px] font-bold uppercase tracking-tighter">DJ</span>
                       )}
                       {profile?.isServiceProvider && (
-                        <span className="px-2 py-0.5 rounded bg-tertiary-container text-on-tertiary-container text-[9px] font-bold uppercase tracking-tighter">{t('my.role_pro')}</span>
+                        <span className="px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-700 text-[9px] font-bold uppercase tracking-tighter">{t('my.role_pro')}</span>
                       )}
                     </div>
                   </div>
-                  <p className="text-on-surface-variant font-medium text-xs md:text-sm line-clamp-1">
+                  <p className="text-slate-600 font-medium text-xs md:text-sm line-clamp-1">
                     {profile?.bio || t('my.default_bio')}
                   </p>
                 </div>
               </div>
 
-              {/* New Compact Edit Button In Hero Section */}
+              {/* Compact Edit Button In Hero Section */}
               <button 
                 onClick={() => setIsEditModalOpen(true)}
-                className="flex items-center justify-center gap-1.5 self-start sm:self-center px-4 py-2 bg-primary/10 hover:bg-primary/15 active:scale-95 text-primary text-xs font-black uppercase tracking-wider rounded-xl transition-all border border-primary/20 shrink-0"
+                className="relative z-10 flex items-center justify-center gap-1.5 self-start sm:self-center px-4 py-2.5 bg-[#007AFF] hover:bg-blue-600 active:scale-95 text-white text-xs font-bold uppercase tracking-wider rounded-xl transition-all shadow-sm shrink-0"
               >
                 <span className="material-symbols-outlined text-[16px]">edit_square</span>
                 <span>{t('my.modify_profile', 'Edit Profile')}</span>
@@ -535,14 +543,14 @@ function MyInfoPageContent() {
             {/* Info Bento Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Primary Identity Card */}
-              <div className="p-8 rounded-2xl bg-surface-container-lowest border border-surface-container shadow-sm hover:shadow-md transition-shadow">
+              <div className="p-8 rounded-2xl bg-white border border-[#e0e4e5] shadow-sm hover:shadow-md transition-shadow">
                 <div className="flex items-center gap-4 mb-6">
                   <div className="w-10 h-10 flex flex-shrink-0 items-center justify-center rounded-lg bg-primary-fixed text-on-primary-fixed">
                     <span className="material-symbols-outlined text-[24px]">account_circle</span>
                   </div>
                   <div>
                     <p className="text-xs font-bold text-outline uppercase tracking-widest">{t('my.login_method')}</p>
-                    <p className="text-on-surface font-medium">
+                    <p className="text-[#2d3435] font-medium">
                       {profile?.authMethod 
                         ? t(`my.auth_${profile.authMethod.toLowerCase()}`) 
                         : t('my.auth_google')}
@@ -555,7 +563,7 @@ function MyInfoPageContent() {
                   </div>
                   <div>
                     <p className="text-xs font-bold text-outline uppercase tracking-widest">{t('my.gender')}</p>
-                    <p className="text-on-surface font-medium">
+                    <p className="text-[#2d3435] font-medium">
                       {profile?.gender 
                         ? t(`my.gender_${profile.gender.toLowerCase()}`) 
                         : t('my.gender_other')}
@@ -568,7 +576,7 @@ function MyInfoPageContent() {
                   </div>
                   <div>
                     <p className="text-xs font-bold text-outline uppercase tracking-widest">{t('my.email_address')}</p>
-                    <p className="text-on-surface font-medium truncate max-w-[200px]">{user?.email}</p>
+                    <p className="text-[#2d3435] font-medium truncate max-w-[200px]">{user?.email}</p>
                   </div>
                 </div>
                 <div className="flex gap-4 items-center mb-6">
@@ -578,8 +586,8 @@ function MyInfoPageContent() {
                   <div className="flex-grow">
                     <p className="text-xs font-bold text-outline uppercase tracking-widest">{t('my.cell_phone')}</p>
                     <div className="flex gap-2 items-center">
-                      <span className="text-on-surface font-medium">{profile?.countryCode}</span>
-                      <span className="text-on-surface font-medium">
+                      <span className="text-[#2d3435] font-medium">{profile?.countryCode}</span>
+                      <span className="text-[#2d3435] font-medium">
                         {profile?.phoneNumber 
                           ? formatLocalPhoneNumber(profile.phoneNumber, profile.countryCode || '+1 (US)') 
                           : t('my.not_linked')}
@@ -593,7 +601,7 @@ function MyInfoPageContent() {
                   </div>
                   <div className="flex-grow">
                     <p className="text-xs font-bold text-outline uppercase tracking-widest">{t('myinfo.career')}</p>
-                    <p className="text-on-surface font-medium">
+                    <p className="text-[#2d3435] font-medium">
                       {profile?.career 
                         ? calculateCareerDuration(profile.career, t) 
                         : t('my.not_linked')}
@@ -607,7 +615,7 @@ function MyInfoPageContent() {
                   </div>
                   <div className="flex-grow">
                     <p className="text-xs font-bold text-outline uppercase tracking-widest">{t('myinfo.allow_calls')}</p>
-                    <p className="text-on-surface font-medium">
+                    <p className="text-[#2d3435] font-medium">
                       {profile?.allowPhoneCalls !== false 
                         ? t('myinfo.allow_calls_on') 
                         : t('myinfo.allow_calls_off')}
@@ -625,25 +633,25 @@ function MyInfoPageContent() {
                     <p className="text-xs font-bold text-outline uppercase tracking-widest mb-2">Social Links</p>
                     <div className="flex flex-wrap gap-2">
                       {profile?.socialLinks?.facebook ? (
-                        <a href={profile.socialLinks.facebook} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 px-3 py-1.5 bg-surface-container rounded-full hover:bg-primary/10 transition-colors text-[13px] font-bold text-on-surface-variant hover:text-primary border border-outline-variant/30">
+                        <a href={profile.socialLinks.facebook} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 px-3 py-1.5 bg-[#f2f4f4] rounded-full hover:bg-primary/10 transition-colors text-[13px] font-bold text-[#596061] hover:text-primary border border-outline-variant/30">
                           <span className="material-symbols-outlined text-[16px]">face_nod</span>
                           Facebook
                         </a>
                       ) : null}
                       {profile?.socialLinks?.instagram ? (
-                        <a href={profile.socialLinks.instagram} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 px-3 py-1.5 bg-surface-container rounded-full hover:bg-primary/10 transition-colors text-[13px] font-bold text-on-surface-variant hover:text-primary border border-outline-variant/30">
+                        <a href={profile.socialLinks.instagram} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 px-3 py-1.5 bg-[#f2f4f4] rounded-full hover:bg-primary/10 transition-colors text-[13px] font-bold text-[#596061] hover:text-primary border border-outline-variant/30">
                           <span className="material-symbols-outlined text-[16px]">photo_camera</span>
                           Instagram
                         </a>
                       ) : null}
                       {profile?.socialLinks?.whatsapp ? (
-                        <a href={profile.socialLinks.whatsapp} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 px-3 py-1.5 bg-surface-container rounded-full hover:bg-primary/10 transition-colors text-[13px] font-bold text-on-surface-variant hover:text-primary border border-outline-variant/30">
+                        <a href={profile.socialLinks.whatsapp} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 px-3 py-1.5 bg-[#f2f4f4] rounded-full hover:bg-primary/10 transition-colors text-[13px] font-bold text-[#596061] hover:text-primary border border-outline-variant/30">
                           <span className="material-symbols-outlined text-[16px]">chat</span>
                           WhatsApp
                         </a>
                       ) : null}
                       {(!profile?.socialLinks?.facebook && !profile?.socialLinks?.instagram && !profile?.socialLinks?.whatsapp) && (
-                        <p className="text-on-surface-variant/70 font-medium text-sm mt-1">{t('my.not_linked', '연결 안됨')}</p>
+                        <p className="text-[#596061]/70 font-medium text-sm mt-1">{t('my.not_linked', '연결 안됨')}</p>
                       )}
                     </div>
                   </div>
@@ -672,13 +680,13 @@ function MyInfoPageContent() {
               </div>
 
               {/* Preferences & Support Bento Card (Unified Settings Hub) */}
-              <div className="p-8 rounded-2xl bg-surface-container-lowest border border-surface-container shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between gap-6">
+              <div className="p-8 rounded-2xl bg-white border border-[#e0e4e5] shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between gap-6">
                 <div>
                   <div className="flex items-center gap-2 mb-2">
                     <span className="material-symbols-outlined text-[20px] text-primary">settings</span>
                     <h3 className="text-xs font-black text-outline uppercase tracking-widest">{language === 'KR' ? '설정 및 고객지원' : 'PREFERENCES & SUPPORT'}</h3>
                   </div>
-                  <p className="text-xs text-on-surface-variant leading-relaxed">
+                  <p className="text-xs text-[#596061] leading-relaxed">
                     {language === 'KR' 
                       ? '다국어 환경을 제어하고 AI 고객지원 서비스를 실시간으로 이용할 수 있습니다.' 
                       : 'Manage language preferences and get immediate AI assistant support.'}
@@ -690,36 +698,36 @@ function MyInfoPageContent() {
                   {/* Row 1: AI Helpdesk Route */}
                   <div 
                     onClick={() => router.push('/helpdesk')}
-                    className="flex items-center justify-between p-3.5 bg-surface-container/50 hover:bg-surface-container hover:border-primary/20 border border-transparent rounded-xl cursor-pointer active:scale-98 transition-all duration-200 group/item"
+                    className="flex items-center justify-between p-3.5 bg-[#f2f4f4]/50 hover:bg-[#f2f4f4] hover:border-primary/20 border border-transparent rounded-xl cursor-pointer active:scale-98 transition-all duration-200 group/item"
                   >
                     <div className="flex items-center gap-3">
                       <div className="w-9 h-9 flex items-center justify-center rounded-lg bg-primary/10 text-primary group-hover/item:scale-105 transition-transform shrink-0">
                         <span className="material-symbols-outlined text-[20px]">support_agent</span>
                       </div>
                       <div>
-                        <h4 className="text-xs font-black text-on-surface tracking-tight">{t('header.help_desk', 'HELP DESK')}</h4>
-                        <p className="text-[10px] text-on-surface-variant font-medium mt-0.5">{language === 'KR' ? 'AI 상담원과 1:1 채팅 문의' : '1:1 chat support with AI agent'}</p>
+                        <h4 className="text-xs font-black text-[#2d3435] tracking-tight">{t('header.help_desk', 'HELP DESK')}</h4>
+                        <p className="text-[10px] text-[#596061] font-medium mt-0.5">{language === 'KR' ? 'AI 상담원과 1:1 채팅 문의' : '1:1 chat support with AI agent'}</p>
                       </div>
                     </div>
                     <span className="material-symbols-outlined text-[16px] text-outline group-hover/item:translate-x-0.5 transition-transform">arrow_forward_ios</span>
                   </div>
 
                   {/* Row 2: One-touch Language Toggle */}
-                  <div className="flex items-center justify-between p-3.5 bg-surface-container/50 border border-transparent rounded-xl">
+                  <div className="flex items-center justify-between p-3.5 bg-[#f2f4f4]/50 border border-transparent rounded-xl">
                     <div className="flex items-center gap-3">
                       <div className="w-9 h-9 flex items-center justify-center rounded-lg bg-secondary/10 text-secondary shrink-0">
                         <span className="material-symbols-outlined text-[20px]">translate</span>
                       </div>
                       <div>
-                        <h4 className="text-xs font-black text-on-surface tracking-tight">{language === 'KR' ? '앱 언어 설정' : 'Application Language'}</h4>
-                        <p className="text-[10px] text-on-surface-variant font-medium mt-0.5">{language === 'KR' ? '한글 / 영어 원터치 전환' : 'One-touch language switch'}</p>
+                        <h4 className="text-xs font-black text-[#2d3435] tracking-tight">{language === 'KR' ? '앱 언어 설정' : 'Application Language'}</h4>
+                        <p className="text-[10px] text-[#596061] font-medium mt-0.5">{language === 'KR' ? '한글 / 영어 원터치 전환' : 'One-touch language switch'}</p>
                       </div>
                     </div>
                     
                     {/* Premium Sliding Toggle Pill */}
                     <div 
                       onClick={toggleLanguage}
-                      className="flex items-center p-0.5 bg-surface-container rounded-full border border-outline/10 w-24 shrink-0 shadow-inner relative h-7 cursor-pointer hover:border-outline/20 transition-colors"
+                      className="flex items-center p-0.5 bg-[#f2f4f4] rounded-full border border-outline/10 w-24 shrink-0 shadow-inner relative h-7 cursor-pointer hover:border-outline/20 transition-colors"
                     >
                       {/* Active Underlay */}
                       <div 
@@ -727,10 +735,10 @@ function MyInfoPageContent() {
                           language === 'KR' ? 'left-0.5 w-[45px]' : 'left-[46.5px] w-[45px]'
                         }`} 
                       />
-                      <div className={`relative z-10 w-1/2 text-center text-[9px] font-black tracking-tight leading-6 transition-colors ${language === 'KR' ? 'text-white' : 'text-on-surface-variant'}`}>
+                      <div className={`relative z-10 w-1/2 text-center text-[9px] font-black tracking-tight leading-6 transition-colors ${language === 'KR' ? 'text-white' : 'text-[#596061]'}`}>
                         KR
                       </div>
-                      <div className={`relative z-10 w-1/2 text-center text-[9px] font-black tracking-tight leading-6 transition-colors ${language === 'EN' ? 'text-white' : 'text-on-surface-variant'}`}>
+                      <div className={`relative z-10 w-1/2 text-center text-[9px] font-black tracking-tight leading-6 transition-colors ${language === 'EN' ? 'text-white' : 'text-[#596061]'}`}>
                         EN
                       </div>
                     </div>
@@ -740,24 +748,24 @@ function MyInfoPageContent() {
             </div>
 
             {/* Role Description Section */}
-            <div className="mt-16 border-t border-surface-container pt-12">
-              <h2 className="text-xl font-bold text-on-surface mb-8 font-headline">{t('my.access_rights')}</h2>
+            <div className="mt-16 border-t border-[#e0e4e5] pt-12">
+              <h2 className="text-xl font-bold text-[#2d3435] mb-8 font-headline">{t('my.access_rights')}</h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                 <div className="space-y-3">
                   <p className="text-xs font-bold text-on-primary-fixed-variant uppercase">{t('my.role_instructor')}</p>
-                  <p className="text-sm text-on-surface-variant leading-relaxed">{t('my.instructor_desc')}</p>
+                  <p className="text-sm text-[#596061] leading-relaxed">{t('my.instructor_desc')}</p>
                 </div>
                 <div className="space-y-3">
                   <p className="text-xs font-bold text-on-primary-fixed-variant uppercase">{t('my.role_organizer')}</p>
-                  <p className="text-sm text-on-surface-variant leading-relaxed">{t('my.organizer_desc')}</p>
+                  <p className="text-sm text-[#596061] leading-relaxed">{t('my.organizer_desc')}</p>
                 </div>
                 <div className="space-y-3">
                   <p className="text-xs font-bold text-on-primary-fixed-variant uppercase">{t('my.role_dj')}</p>
-                  <p className="text-sm text-on-surface-variant leading-relaxed">{t('my.dj_desc')}</p>
+                  <p className="text-sm text-[#596061] leading-relaxed">{t('my.dj_desc')}</p>
                 </div>
                 <div className="space-y-3">
                   <p className="text-xs font-bold text-on-primary-fixed-variant uppercase">{t('my.role_pro')}</p>
-                  <p className="text-sm text-on-surface-variant leading-relaxed">{t('my.pro_desc')}</p>
+                  <p className="text-sm text-[#596061] leading-relaxed">{t('my.pro_desc')}</p>
                 </div>
               </div>
             </div>
@@ -773,7 +781,7 @@ function MyInfoPageContent() {
               </button>
               <button 
                 onClick={() => router.push('/account-deletion')}
-                className="flex items-center gap-2 px-6 py-3 rounded-full text-on-surface-variant font-bold hover:bg-surface-container transition-colors border border-outline-variant/30 text-xs"
+                className="flex items-center gap-2 px-6 py-3 rounded-full text-[#596061] font-bold hover:bg-[#f2f4f4] transition-colors border border-outline-variant/30 text-xs"
               >
                 <span className="material-symbols-outlined !text-[18px]">no_accounts</span>
                 {language === 'KR' ? '계정 및 데이터 탈퇴' : 'Delete Account & Data'}
@@ -782,7 +790,7 @@ function MyInfoPageContent() {
 
             {/* Admin Section (Slimmer, flatter, elegant panel) */}
             {profile?.isAdmin && (
-              <div className="mt-4 mb-8 border-t border-dashed border-surface-container pt-6">
+              <div className="mt-4 mb-8 border-t border-dashed border-[#e0e4e5] pt-6">
                 <div className="flex items-center gap-2 mb-4">
                   <span className="material-symbols-outlined !text-[16px] text-error/60">admin_panel_settings</span>
                   <span className="text-[10px] font-black tracking-[0.25em] uppercase text-error/60">Admin Controls</span>
@@ -796,14 +804,14 @@ function MyInfoPageContent() {
                           href={item.href}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="flex items-center gap-3 p-3.5 rounded-xl bg-surface-container-lowest border border-surface-container hover:border-error/20 hover:shadow-sm transition-all active:scale-98 text-left"
+                          className="flex items-center gap-3 p-3.5 rounded-xl bg-white border border-[#e0e4e5] hover:border-error/20 hover:shadow-sm transition-all active:scale-98 text-left"
                         >
                           <div className="w-8 h-8 rounded-lg bg-error/5 flex items-center justify-center shrink-0">
                             <span className="material-symbols-outlined !text-[16px] text-error/70">{item.icon}</span>
                           </div>
                           <div className="min-w-0 flex-1">
-                            <span className="text-[11px] font-black text-on-surface uppercase tracking-tight block truncate">{item.label}</span>
-                            <span className="text-[9px] text-on-surface-variant font-medium block uppercase tracking-tighter mt-0.5">
+                            <span className="text-[11px] font-black text-[#2d3435] uppercase tracking-tight block truncate">{item.label}</span>
+                            <span className="text-[9px] text-[#596061] font-medium block uppercase tracking-tighter mt-0.5">
                               {language === 'KR' ? item.labelKo : 'Manage Tools'}
                             </span>
                           </div>
@@ -814,14 +822,14 @@ function MyInfoPageContent() {
                       <button
                         key={item.href}
                         onClick={() => setAdminPopupHref(item.href)}
-                        className="flex items-center gap-3 p-3.5 rounded-xl bg-surface-container-lowest border border-surface-container hover:border-error/20 hover:shadow-sm transition-all active:scale-98 text-left w-full"
+                        className="flex items-center gap-3 p-3.5 rounded-xl bg-white border border-[#e0e4e5] hover:border-error/20 hover:shadow-sm transition-all active:scale-98 text-left w-full"
                       >
                         <div className="w-8 h-8 rounded-lg bg-error/5 flex items-center justify-center shrink-0">
                           <span className="material-symbols-outlined !text-[16px] text-error/70">{item.icon}</span>
                         </div>
                         <div className="min-w-0 flex-1">
-                          <span className="text-[11px] font-black text-on-surface uppercase tracking-tight block truncate">{item.label}</span>
-                          <span className="text-[9px] text-on-surface-variant font-medium block uppercase tracking-tighter mt-0.5">
+                          <span className="text-[11px] font-black text-[#2d3435] uppercase tracking-tight block truncate">{item.label}</span>
+                          <span className="text-[9px] text-[#596061] font-medium block uppercase tracking-tighter mt-0.5">
                             {language === 'KR' ? item.labelKo : 'Manage Tools'}
                           </span>
                         </div>
@@ -837,7 +845,7 @@ function MyInfoPageContent() {
         {tab === 'schedule' && (
           <div className="space-y-6">
             {/* Schedule Header / Selector */}
-            <div className="flex flex-row items-center justify-between gap-2 sm:gap-4 bg-surface-container-lowest p-4 sm:p-6 rounded-2xl border border-surface-container shadow-sm">
+            <div className="flex flex-row items-center justify-between gap-2 sm:gap-4 bg-white p-4 sm:p-6 rounded-2xl border border-[#e0e4e5] shadow-sm">
               <div className="flex items-center gap-4">
                 <button 
                   onClick={() => {
@@ -848,11 +856,11 @@ function MyInfoPageContent() {
                       setCurrentMonth(prev => prev - 1);
                     }
                   }}
-                  className="w-10 h-10 flex items-center justify-center rounded-full bg-surface-container hover:bg-surface-container-high text-on-surface transition-colors"
+                  className="w-10 h-10 flex items-center justify-center rounded-full bg-[#f2f4f4] hover:bg-[#e8eaeb] text-[#2d3435] transition-colors"
                 >
                   <span className="material-symbols-rounded">chevron_left</span>
                 </button>
-                <h2 className="text-lg font-black text-on-surface tracking-tight min-w-[100px] text-center">
+                <h2 className="text-lg font-black text-[#2d3435] tracking-tight min-w-[100px] text-center">
                   {currentYear}. {String(currentMonth + 1).padStart(2, '0')}
                 </h2>
                 <button 
@@ -864,26 +872,16 @@ function MyInfoPageContent() {
                       setCurrentMonth(prev => prev + 1);
                     }
                   }}
-                  className="w-10 h-10 flex items-center justify-center rounded-full bg-surface-container hover:bg-surface-container-high text-on-surface transition-colors"
+                  className="w-10 h-10 flex items-center justify-center rounded-full bg-[#f2f4f4] hover:bg-[#e8eaeb] text-[#2d3435] transition-colors"
                 >
                   <span className="material-symbols-rounded">chevron_right</span>
                 </button>
               </div>
-
-              {(profile?.isDj || profile?.isAdmin || profile?.systemRole === 'admin') && (
-                <button 
-                  onClick={() => setIsDjModalOpen(true)}
-                  className="flex items-center justify-center gap-1 px-3 py-1.5 bg-primary/10 hover:bg-primary/20 active:scale-95 text-primary text-[10px] font-bold uppercase tracking-wider rounded-lg transition-all border border-primary/20 shrink-0"
-                >
-                  <span className="material-symbols-rounded text-[14px]">headphones</span>
-                  <span>{t('myinfo.dj_schedule_add')}</span>
-                </button>
-              )}
             </div>
 
             {/* Schedule List */}
             {sortedDates.length === 0 ? (
-              <div className="py-16 text-center border border-dashed border-surface-container rounded-2xl bg-surface-container-lowest">
+              <div className="py-16 text-center border border-dashed border-[#e0e4e5] rounded-2xl bg-white">
                 <span className="material-symbols-rounded text-4xl text-outline mb-2">calendar_today</span>
                 <p className="text-sm font-bold text-outline">{t('myinfo.no_schedules')}</p>
               </div>
@@ -900,15 +898,15 @@ function MyInfoPageContent() {
                   return (
                     <div key={dateStr} className="flex gap-4 items-start animate-in fade-in duration-200">
                       {/* Date Badge */}
-                      <div className="flex flex-col items-center justify-center w-14 shrink-0 bg-surface-container p-2.5 rounded-xl border border-surface-container-high shadow-sm">
-                        <span className="text-lg font-black text-on-surface">{dayNum}</span>
+                      <div className="flex flex-col items-center justify-center w-14 shrink-0 bg-[#f2f4f4] p-2.5 rounded-xl border border-[#e0e4e5] shadow-sm">
+                        <span className="text-lg font-black text-[#2d3435]">{dayNum}</span>
                         <span className="text-[10px] font-black text-outline uppercase tracking-wider mt-0.5">{weekdayStr}</span>
                       </div>
 
                       {/* Items */}
                       <div className="flex-1 space-y-2 min-w-0">
                         {currentMonthSchedules[dateStr].map(item => (
-                          <div key={item.id} className="p-4 rounded-xl bg-surface-container-lowest border border-surface-container flex items-center justify-between shadow-sm hover:shadow-md transition-shadow">
+                          <div key={item.id} className="p-4 rounded-xl bg-white border border-[#e0e4e5] flex items-center justify-between shadow-sm hover:shadow-md transition-shadow">
                             <div className="flex items-center gap-3 min-w-0 flex-1">
                               <span className={`material-symbols-outlined rounded-full p-2 text-sm shrink-0 ${
                                 item.type === 'dj_schedule' ? 'bg-purple-100 text-purple-700' :
@@ -924,7 +922,7 @@ function MyInfoPageContent() {
                                  'festival'}
                               </span>
                               <div className="min-w-0">
-                                <p className="text-sm font-bold text-on-surface truncate">{item.title}</p>
+                                <p className="text-sm font-bold text-[#2d3435] truncate">{item.title}</p>
                                 <div className="flex flex-wrap items-center gap-x-2 text-[10px] text-outline font-medium mt-0.5">
                                   {item.time && <span className="flex items-center gap-0.5">⏰ {item.time}</span>}
                                   {item.location && <span className="flex items-center gap-0.5">📍 {item.location}</span>}
@@ -959,7 +957,7 @@ function MyInfoPageContent() {
           <div className="flex items-center justify-between px-5 h-14 bg-white border-b border-slate-100 shrink-0">
             <div className="flex items-center gap-2">
               <span className="material-symbols-outlined !text-[18px] text-error/60">admin_panel_settings</span>
-              <span className="text-sm font-bold text-on-surface uppercase tracking-wide">
+              <span className="text-sm font-bold text-[#2d3435] uppercase tracking-wide">
                 {ADMIN_ITEMS.find(a => a.href === adminPopupHref)?.label || 'Admin'}
               </span>
             </div>
@@ -967,7 +965,7 @@ function MyInfoPageContent() {
               onClick={() => setAdminPopupHref(null)}
               className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition-colors"
             >
-              <span className="material-symbols-outlined !text-[18px] text-on-surface">close</span>
+              <span className="material-symbols-outlined !text-[18px] text-[#2d3435]">close</span>
             </button>
           </div>
           {/* Popup Content ??iframe to admin page */}

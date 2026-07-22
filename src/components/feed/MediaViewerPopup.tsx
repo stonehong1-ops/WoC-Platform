@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { Capacitor } from '@capacitor/core';
 import Portal from '@/components/common/Portal';
 
 interface MediaData {
@@ -128,7 +129,10 @@ export default function MediaViewerPopup({ isOpen, onClose, media, initialIndex 
         onTouchEnd={handleTouchEnd}
       >
         {/* 상단 헤더 */}
-        <header className="absolute top-0 w-full z-10 flex items-center justify-between p-4 bg-gradient-to-b from-black/60 to-transparent pointer-events-none">
+        <header 
+          className="absolute top-0 w-full z-10 flex items-center justify-between pb-4 px-4 bg-gradient-to-b from-black/60 to-transparent pointer-events-none"
+          style={{ paddingTop: Capacitor.isNativePlatform() ? 'calc(16px + env(safe-area-inset-top))' : '16px' }}
+        >
           <div className="text-white font-bold text-sm tracking-widest bg-black/40 px-3 py-1 rounded-full backdrop-blur-md pointer-events-auto">
             {currentIndex + 1} / {media.length}
           </div>

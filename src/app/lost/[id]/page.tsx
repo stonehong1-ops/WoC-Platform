@@ -224,7 +224,7 @@ export default function LostFoundDetailPage() {
         <button onClick={() => router.back()} className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${isScrolled ? 'bg-slate-100 text-[#2d3435]' : 'bg-black/20 backdrop-blur-sm text-white'}`}>
           <span className="material-symbols-rounded text-xl">arrow_back</span>
         </button>
-        <div className={`text-sm font-bold truncate max-w-[180px] transition-opacity ${isScrolled ? 'opacity-100 text-[#2d3435]' : 'opacity-0'}`}>{item.title}</div>
+        <div className={`text-base font-bold truncate max-w-[180px] transition-opacity ${isScrolled ? 'opacity-100 text-[#2d3435]' : 'opacity-0'}`}>{item.title}</div>
         <div className="flex items-center gap-2 relative">
           {user?.uid === item.authorId ? (
             <button onClick={() => router.push(`/lost-found/register?edit=${item.id}`)}

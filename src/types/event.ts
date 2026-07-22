@@ -176,4 +176,5 @@ export interface Event {
   registrationUrl?: string;       // 외부 등록 폼 (tally.so 등)
   bankInfo?: string;              // 입금 계좌 정보
   tag?: string;                   // 피드/라이브용 태그 정보 (예: 특정 아티스트나 그룹 식별자)
+  isDatesUnconfirmed?: boolean;   // 일정 미확정 여부 플래그
 }

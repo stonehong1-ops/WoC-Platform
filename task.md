@@ -1,25 +1,18 @@
-# AI Partner Match Task List
+# 작업 관리 (TODO)
 
-- [x] 1. 프로필 화면 수정
-  - [x] src/app/profile/page.tsx 수정 (파트너십 정보 렌더링 제거)
-  - [x] src/components/profile/MyInfoBottomSheet.tsx 수정 (파트너 상태 설정 폼 제거)
-- [x] 2. 다국어 사전 및 내비게이션 활성화
-  - [x] src/i18n/kr.ts / en.ts 에 ai_partner.* 번역 키 추가
-  - [x] src/components/layout/GlobalNavigation.tsx 에서 partner_match의 comingSoon: true 제거
-- [x] 3. AI 파트너 매칭 페이지 및 컴포넌트 생성
-  - [x] src/app/lab/match/page.tsx 신규 작성
-  - [x] src/components/partner/AiPartnerMatch.tsx 신규 작성 (설정 입력 폼, 저장, 추천 목록 렌더링, 페이징, 1:1 채팅 연결 연동)
-- [x] 4. 추천 API 구현
-  - [x] src/app/api/ai-partner-match/recommend/route.ts 신규 작성 (후보 유저 필터링, 유사도 Scoring, 커서 기반 페이징)
-- [x] 진단 로그 작성 및 세션 유지 결함 원인 분석
-- [x] 성별(Gender) Optional화 및 가입 폼 유효성 제거
-- [x] 로그인/가입 진입 전 EULA 필수 동의 체크박스 추가
-- [x] Groups/Chat 세션 로딩 타이밍 결함 근본 교정
-- [x] 기존 기능 검증 (UGC 필터링, 신고, 차단, 연락처, 계정 탈퇴)
-- [x] 로컬 빌드 및 다국어 검사 스캔
-- [x] 최종 배포 및 결과 보고
-- [x] 5. 무결성 검증 및 빌드
-  - [x] node scripts/validate-i18n.mjs 실행
-  - [x] npm run build 실행
-- [x] 6. 프로덕션 배포
-  - [x] Vercel 프로덕션 배포 실행 및 성공 확인
+## 📌 PWA 접속 차단 및 네이티브 알림 권한 해결
+
+- `[ ]` 1단계: 종속성 및 번역 키 추가
+  - `[ ]` `package.json` 에 `@capacitor/push-notifications` 라이브러리 추가
+  - `[ ]` `src/i18n/kr.ts` 및 `en.ts` 에 모바일 웹 브라우저 차단 및 강제 업데이트 번역 문구 추가
+- `[ ]` 2단계: 모바일 웹 브라우저 전면 차단 및 네이티브 푸시 권한 요청 구현
+  - `[ ]` `AuthProvider.tsx` 에 모바일 웹 접속 감지 및 전면 차단 오버레이 뷰 마운트
+  - `[ ]` `AuthProvider.tsx` 에 모바일 앱 구동 시 네이티브 푸시 알림 동의 팝업 요청 및 토큰 수집 로직 구현
+  - `[ ]` `AuthProvider.tsx` 에 `App.getInfo()` 및 Firestore `configs/app_version` 을 대조하는 강제 업데이트 체크 및 오버레이 뷰 구현
+  - `[ ]` `src/app/app/route.ts` 서버 측 초고속 QR 리다이렉트 API 라우터 신설
+- `[ ]` 3단계: 무결성 검증 및 패키징 빌드 배포
+  - `[ ]` `npm run build` 로컬 빌드 및 다국어 스캔 무결성 통과
+  - `[ ]` `npx cap sync android` 자산 안드로이드 싱크 동기화 실행
+  - `[ ]` `android/app/build.gradle` 버전 코드를 `versionCode 12` 로 상향
+  - `[ ]` `.\gradlew.bat clean` 캐시 소거 및 `.\gradlew.bat bundleRelease` 최종 AAB 빌드 완료
+  - `[ ]` 배포 파일 내 60% 크기 픽셀 스캔 교차 검증 통과

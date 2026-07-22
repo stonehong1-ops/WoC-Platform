@@ -231,11 +231,9 @@ export function useGroupsData() {
     if (selectedGroup) {
       handleGroupClose();
     } else if (selectedCategory) {
-      if (window.history.length <= 1) {
-        router.replace(pathname);
-      } else {
-        router.back();
-      }
+      // router.back() 대신 replace 사용 — back()은 popstate를 유발하여
+      // useBackButtonClose 스택과 충돌하므로 URL 파라미터만 직접 제거
+      router.replace(pathname, { scroll: false });
     } else if (isCreateOpen) {
       handleCreateClose();
     }

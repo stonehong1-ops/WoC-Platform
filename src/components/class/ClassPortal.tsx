@@ -21,12 +21,17 @@ import UnifiedCheckoutModal from '@/components/common/UnifiedCheckoutModal';
 import { useBlockedUsers } from '@/hooks/useBlockedUsers';
 import Portal from '@/components/common/Portal';
 import GroupClassAddEditor from '@/components/groups/GroupClassAddEditor';
+import ClassAddEditor from '@/components/class/ClassAddEditor';
 import { safeDate } from '@/lib/utils/safeDate';
 import BottomSheet from '@/components/common/BottomSheet';
 import { bookingService } from '@/lib/firebase/bookingService';
 import { BaseBooking } from '@/types/booking';
 import { chatService } from '@/lib/firebase/chatService';
 import { useBackButtonClose } from '@/hooks/useBackButtonClose';
+import { WocClass } from '@/types/class';
+import { wocClassService } from '@/lib/firebase/wocClassService';
+import { isGroupManager, getManageableGroups } from '@/lib/utils/groupPermissions';
+import { groupCrudService } from '@/lib/firebase/groupService/groupCrudService';
 
 // 공통 UI 컴포넌트 임포트
 import SearchHeader from '@/components/common/SearchHeader';
@@ -38,6 +43,34 @@ const ChatRoomComponent = dynamic(() => import('../chat/ChatRoom'));
 import UserBadge from '@/components/common/UserBadge';
 import { formatInstructorNames } from "@/app/social/constants/seoulRegions";
 import { toast } from 'sonner';
+
+export const ensureLegacySchedule = (cls: any) => {
+  if (!cls) return cls;
+  if (cls.schedule && !Array.isArray(cls.schedule)) {
+    const s = cls.schedule;
+    let legacySchedule: any[] = [];
+    if (cls.sessions && cls.sessions.length > 0) {
+      legacySchedule = cls.sessions.map((sess: any, idx: number) => ({
+        week: idx + 1,
+        date: sess.date || null,
+        timeSlot: sess.startTime && sess.endTime ? `${sess.startTime} - ${sess.endTime}` : (s.startTime && s.endTime ? `${s.startTime} - ${s.endTime}` : "시간 조율"),
+        content: ""
+      }));
+    } else {
+      legacySchedule = [{
+        week: 1,
+        date: s.startDate || null,
+        timeSlot: s.startTime && s.endTime ? `${s.startTime} - ${s.endTime}` : "시간 조율",
+        content: ""
+      }];
+    }
+    return {
+      ...cls,
+      schedule: legacySchedule
+    };
+  }
+  return cls;
+};
 
 
 export default function ClassPortal() {
@@ -70,11 +103,18 @@ export default function ClassPortal() {
       const cached = sessionStorage.getItem('woc_class_portal_data');
       if (cached) {
         try {
-          return JSON.parse(cached);
-    } catch (e) {
-      reportError(e, 'classPortal.parseCachedData');
-      console.error('Failed to parse cached class portal data:', e);
-    }
+          const parsed = JSON.parse(cached);
+          if (parsed.allClasses && Array.isArray(parsed.allClasses)) {
+            parsed.allClasses = parsed.allClasses.map(ensureLegacySchedule);
+          }
+          if (parsed.specialClasses && Array.isArray(parsed.specialClasses)) {
+            parsed.specialClasses = parsed.specialClasses.map(ensureLegacySchedule);
+          }
+          return parsed;
+        } catch (e) {
+          reportError(e, 'classPortal.parseCachedData');
+          console.error('Failed to parse cached class portal data:', e);
+        }
       }
     }
     return null;
@@ -105,6 +145,18 @@ export default function ClassPortal() {
   const [allDiscountsGlobal, setAllDiscountsGlobal] = useState<ClassDiscount[]>(cachedPortal?.allDiscountsGlobal || []);
   
   const { user, profile } = useAuth();
+
+  // WocClass organizerType/organizerId 또는 기존 GroupClass group.ownerId에서 hostId 결정
+  const resolveHostId = useCallback((cls: any): string => {
+    if ('organizerType' in cls && cls.organizerType) {
+      if (cls.organizerType === 'group') {
+        const orgGroup = groups.find((g: Group) => g.id === cls.organizerId);
+        return orgGroup?.ownerId || cls.organizerId;
+      }
+      return cls.organizerId;
+    }
+    return cls.group?.ownerId || '';
+  }, [groups]);
   
   const isAdminOrOwner = useMemo(() => {
     return !!user && (profile?.systemRole === 'admin' || profile?.isAdmin || groups.some(g => g.ownerId === user.uid));
@@ -151,23 +203,38 @@ export default function ClassPortal() {
   const [selectedGroupForAdd, setSelectedGroupForAdd] = useState<Group | null>(null);
   const [showGroupSelector, setShowGroupSelector] = useState(false);
 
+  // Phase 2-2: 새 ClassAddEditor 관련 state
+  const [isAddingClass, setIsAddingClass] = useState(false);
+  const [addingClassType, setAddingClassType] = useState<'regular' | 'special'>('regular');
+  const [showClassTypeSelector, setShowClassTypeSelector] = useState(false);
+
   const { createBooking, reportPayment, isLoading: isBooking } = useBookingEngine();
   
   const [selectedDetailClass, setSelectedDetailClass] = useState<GroupClass | null>(null);
   const [chatOverlayRoomId, setChatOverlayRoomId] = useState<string | null>(null);
   const [portalImageErrors, setPortalImageErrors] = useState<Record<string, boolean>>({});
 
+  // 그룹 공유 모달 상태
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [shareTargetClassId, setShareTargetClassId] = useState('');
+
   const closeCapacityModal = useCallback(() => setCapacityModalOpen(false), []);
   const closeCheckoutModal = useCallback(() => setCheckoutModalOpen(false), []);
   const closeAddSpecialClass = useCallback(() => setIsAddingSpecialClass(false), []);
   const closeGroupSelector = useCallback(() => setShowGroupSelector(false), []);
+  const closeAddClass = useCallback(() => setIsAddingClass(false), []);
+  const closeClassTypeSelector = useCallback(() => setShowClassTypeSelector(false), []);
   const closeChatOverlay = useCallback(() => setChatOverlayRoomId(null), []);
 
   useBackButtonClose(capacityModalOpen, closeCapacityModal);
   useBackButtonClose(checkoutModalOpen, closeCheckoutModal);
   useBackButtonClose(isAddingSpecialClass, closeAddSpecialClass);
   useBackButtonClose(showGroupSelector, closeGroupSelector);
+  useBackButtonClose(isAddingClass, closeAddClass);
+  useBackButtonClose(showClassTypeSelector, closeClassTypeSelector);
   useBackButtonClose(!!chatOverlayRoomId, closeChatOverlay);
+  const closeShareModal = useCallback(() => setShowShareModal(false), []);
+  useBackButtonClose(showShareModal, closeShareModal);
 
   const [userBookings, setUserBookings] = useState<BaseBooking[]>(() => {
     if (typeof window !== 'undefined' && user) {
@@ -264,9 +331,24 @@ export default function ClassPortal() {
 
   // 2. 특강 데이터 가공 (목데이터 폴백 내장)
   const specialClassesData = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayTime = today.getTime();
+
     let list = specialClasses.filter(cls => {
       const group = groups.find(g => g.id === cls.groupId);
-      return isLocationMatch(cls.location, group?.address || group?.name || group?.city);
+      const isLocMatch = isLocationMatch(cls.location, group?.address || group?.name || group?.city);
+      if (!isLocMatch) return false;
+
+      // 다가오는 세션이 하나라도 있는지 확인
+      if (cls.schedule && Array.isArray(cls.schedule) && cls.schedule.length > 0) {
+        return cls.schedule.some((s: any) => {
+          if (!s.date) return false;
+          const sessionDate = safeDate(s.date);
+          return sessionDate && sessionDate.getTime() >= todayTime;
+        });
+      }
+      return true;
     });
 
     if (searchTerm.trim()) {
@@ -279,6 +361,13 @@ export default function ClassPortal() {
         return hasInst || hasTitle || hasLocation;
       });
     }
+
+    // 날짜 오름차순 정렬 (가장 가까운 일정 우선 노출)
+    list.sort((a, b) => {
+      const dateA = a.schedule?.[0]?.date ? safeDate(a.schedule[0].date)?.getTime() || 9999999999999 : 9999999999999;
+      const dateB = b.schedule?.[0]?.date ? safeDate(b.schedule[0].date)?.getTime() || 9999999999999 : 9999999999999;
+      return dateA - dateB;
+    });
 
     if (specialClasses.length === 0) {
       return [
@@ -422,17 +511,53 @@ export default function ClassPortal() {
         setLoading(true);
       }
       try {
-        const [groupsData, allData, specialData, venuesData, discountsData] = await Promise.all([
+        const [groupsData, legacyAllData, legacySpecialData, wocClassesData, venuesData, discountsData] = await Promise.all([
           groupService.getGroups(),
           groupService.getGlobalClassesAll(),
           groupService.getGlobalSpecialClasses(),
+          wocClassService.getAllClasses(),
           venueService.getVenues(),
           groupService.getGlobalDiscountsAll()
         ]);
         
+        const wocClassesMapped = wocClassesData.map(wcRaw => {
+          const wc = groupCrudService._convertTimestamps(wcRaw);
+          const matchedGroup = wc.organizerType === 'group' ? groupsData.find(g => g.id === wc.organizerId) : null;
+          
+          let legacySchedule: any[] = [];
+          if (wc.sessions && wc.sessions.length > 0) {
+            legacySchedule = wc.sessions.map((s: any, idx: number) => ({
+              week: idx + 1,
+              date: s.date || null,
+              timeSlot: s.startTime && s.endTime ? `${s.startTime} - ${s.endTime}` : (wc.schedule?.startTime && wc.schedule?.endTime ? `${wc.schedule.startTime} - ${wc.schedule.endTime}` : "시간 조율"),
+              content: ""
+            }));
+          } else if (wc.schedule) {
+            legacySchedule = [{
+              week: 1,
+              date: wc.schedule.startDate || null,
+              timeSlot: wc.schedule.startTime && wc.schedule.endTime ? `${wc.schedule.startTime} - ${wc.schedule.endTime}` : "시간 조율",
+              content: ""
+            }];
+          }
+
+          return {
+            ...wc,
+            groupId: wc.organizerType === 'group' ? wc.organizerId : '',
+            group: matchedGroup || undefined,
+            schedule: legacySchedule as any
+          };
+        });
+
+        const legacyAllMapped = legacyAllData.map(ensureLegacySchedule);
+        const legacySpecialMapped = legacySpecialData.map(ensureLegacySchedule);
+
+        const mergedAll = [...legacyAllMapped, ...wocClassesMapped];
+        const mergedSpecial = [...legacySpecialMapped, ...wocClassesMapped.filter(wc => wc.type === 'special')];
+
         setGroups(groupsData);
-        setRawAllClasses(allData);
-        setRawSpecialClasses(specialData);
+        setRawAllClasses(mergedAll);
+        setRawSpecialClasses(mergedSpecial);
         setVenues(venuesData || []);
         setAllDiscountsGlobal(discountsData);
         setLoading(false);
@@ -440,8 +565,8 @@ export default function ClassPortal() {
         if (typeof window !== 'undefined') {
           sessionStorage.setItem('woc_class_portal_data', JSON.stringify({
             groups: groupsData,
-            allClasses: allData,
-            specialClasses: specialData,
+            allClasses: mergedAll,
+            specialClasses: mergedSpecial,
             venues: venuesData || [],
             allDiscountsGlobal: discountsData
           }));
@@ -943,6 +1068,7 @@ export default function ClassPortal() {
     }
   };
 
+  // (레거시) 기존 그룹 선택 → GroupClassAddEditor 흐름 유지
   const handleAddSpecialClick = () => {
     if (!user) return;
     const isAdminOrOwner = profile?.systemRole === 'admin' || profile?.isAdmin || groups.some(g => g.ownerId === user.uid);
@@ -953,20 +1079,33 @@ export default function ClassPortal() {
     setShowGroupSelector(true);
   };
 
+  // Phase 2-2: 새 클래스 등록 흐름 — 바텀시트 없이 바로 에디터 오픈
+  const handleAddClassClick = () => {
+    if (!user) return;
+    if (!isAdminOrOwner) {
+      toast.error(t('create_btn.group_instructor_only', '그룹에서 오너 또는 강사만 등록 가능합니다'));
+      return;
+    }
+    setIsAddingClass(true);
+  };
+
   const createSpecialParam = searchParams.get('createSpecial');
 
   useEffect(() => {
     if (createSpecialParam === 'true' && user) {
       if (isAdminOrOwner) {
-        handleAddSpecialClick();
+        handleAddClassClick();
       } else {
         toast.error(t('create_btn.group_instructor_only', '그룹에서 오너 또는 강사만 등록 가능합니다'));
       }
-      const params = new URLSearchParams(window.location.search);
-      params.delete('createSpecial');
-      router.replace(`/class?${params.toString()}`);
+      if (typeof window !== 'undefined') {
+        const params = new URLSearchParams(window.location.search);
+        params.delete('createSpecial');
+        const newSearch = params.toString();
+        window.history.replaceState({}, '', `/class${newSearch ? `?${newSearch}` : ''}`);
+      }
     }
-  }, [createSpecialParam, user, isAdminOrOwner, router, t]);
+  }, [createSpecialParam, user, isAdminOrOwner, t]);
 
   const handleCheckoutClick = (cls: GroupClass & { group?: Group }, isSpecial: boolean = false) => {
     let group = cls.group;
@@ -1045,7 +1184,7 @@ export default function ClassPortal() {
       }
       
       if (booking.status === 'BANK_TRANSFERRED') {
-        const hostId = cls.group?.ownerId || '';
+        const hostId = resolveHostId(cls);
         return (
           <div className={`${isSpecial ? 'flex items-end justify-between w-full' : 'px-4 py-3 bg-slate-50/80 border-t border-slate-100 flex items-center justify-between'}`}>
             <div className="flex flex-col">
@@ -1115,6 +1254,14 @@ export default function ClassPortal() {
             >
               {isPast ? t('class.closed') : t('class.book_now')}
             </button>
+              {isAdminOrOwner && !isPast && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); setShareTargetClassId(cls.id); setShowShareModal(true); }}
+                  className="flex items-center gap-1 text-[11px] font-bold px-3 py-2 rounded-full border border-blue-200 text-blue-600 hover:bg-blue-50 transition-all active:scale-95"
+                >
+                  {t('class.share_to_group')}
+                </button>
+              )}
           </div>
         </div>
       );
@@ -1132,13 +1279,16 @@ export default function ClassPortal() {
         itemName: checkoutClass.title + (checkoutClass.isSpecial ? ' (Special)' : ' (Daily)'),
         itemImageUrl: checkoutClass.imageUrl || checkoutClass.group?.coverImage || '',
         itemId: checkoutClass.id,
-        hostId: checkoutClass.group?.ownerId || '',
+        hostId: resolveHostId(checkoutClass),
         totalAmount: price,
         currency: 'KRW',
         payload: {
           role: checkoutRole,
           classDate: new Date().toISOString(),
-          partnerName: checkoutPartnerName.trim() !== '' ? checkoutPartnerName : undefined
+          partnerName: checkoutPartnerName.trim() !== '' ? checkoutPartnerName : undefined,
+          groupId: (checkoutClass as any).organizerType === 'group' 
+            ? (checkoutClass as any).organizerId 
+            : (checkoutClass.groupId || checkoutClass.group?.id || '')
         }
       });
       return orderId;
@@ -1146,6 +1296,27 @@ export default function ClassPortal() {
       const errMsg = err instanceof Error ? err.message : 'Booking failed';
       alert(errMsg);
       throw err;
+    }
+  };
+
+  // 그룹 공유 처리 핸들러
+  const handleShareToGroup = async (classId: string, groupId: string) => {
+    if (!user) return;
+    try {
+      const targetGroup = groups.find(g => g.id === groupId);
+      const isManager = isGroupManager(targetGroup, user.uid, profile);
+      if (isManager) {
+        await wocClassService.approveConnectionImmediate(classId, groupId, user.uid, user.uid);
+        toast.success(t('class.share_success'));
+      } else {
+        await wocClassService.requestGroupConnection(classId, groupId, user.uid);
+        toast.success(t('class.share_requested'));
+      }
+      setShowShareModal(false);
+      setShareTargetClassId('');
+    } catch (err) {
+      console.error(err);
+      toast.error(t('common.error'));
     }
   };
 
@@ -1921,7 +2092,7 @@ export default function ClassPortal() {
                               e.stopPropagation();
                               if (cls.id.startsWith('mock')) return;
                               if (isDailyOpen) handleCheckoutClick(cls, false);
-                              else handleChatWithHost(cls.group?.ownerId || '');
+                              else handleChatWithHost(resolveHostId(cls));
                             }}
                             className={`px-4.5 py-1.5 rounded-full text-[10.5px] font-black border transition-all active:scale-95 ${
                               isDailyOpen 
@@ -2289,12 +2460,46 @@ export default function ClassPortal() {
                 setIsAddingSpecialClass(false);
                 setLoading(true);
                 try {
-                  const [allData, specialData] = await Promise.all([
+                  const [legacyAllData, legacySpecialData, wocClassesData] = await Promise.all([
                     groupService.getGlobalClassesAll(),
-                    groupService.getGlobalSpecialClasses()
+                    groupService.getGlobalSpecialClasses(),
+                    wocClassService.getAllClasses()
                   ]);
-                  setRawAllClasses(allData);
-                  setRawSpecialClasses(specialData);
+                  
+                  const wocClassesMapped = wocClassesData.map(wcRaw => {
+                    const wc = groupCrudService._convertTimestamps(wcRaw);
+                    const matchedGroup = wc.organizerType === 'group' ? groups.find(g => g.id === wc.organizerId) : null;
+                    
+                    let legacySchedule: any[] = [];
+                    if (wc.sessions && wc.sessions.length > 0) {
+                      legacySchedule = wc.sessions.map((s: any, idx: number) => ({
+                        week: idx + 1,
+                        date: s.date || null,
+                        timeSlot: s.startTime && s.endTime ? `${s.startTime} - ${s.endTime}` : (wc.schedule?.startTime && wc.schedule?.endTime ? `${wc.schedule.startTime} - ${wc.schedule.endTime}` : "시간 조율"),
+                        content: ""
+                      }));
+                    } else if (wc.schedule) {
+                      legacySchedule = [{
+                        week: 1,
+                        date: wc.schedule.startDate || null,
+                        timeSlot: wc.schedule.startTime && wc.schedule.endTime ? `${wc.schedule.startTime} - ${wc.schedule.endTime}` : "시간 조율",
+                        content: ""
+                      }];
+                    }
+
+                    return {
+                      ...wc,
+                      groupId: wc.organizerType === 'group' ? wc.organizerId : '',
+                      group: matchedGroup || undefined,
+                      schedule: legacySchedule as any
+                    };
+                  });
+
+                  const legacyAllMapped = legacyAllData.map(ensureLegacySchedule);
+                  const legacySpecialMapped = legacySpecialData.map(ensureLegacySchedule);
+
+                  setRawAllClasses([...legacyAllMapped, ...wocClassesMapped]);
+                  setRawSpecialClasses([...legacySpecialMapped, ...wocClassesMapped.filter(wc => wc.type === 'special')]);
                 } finally {
                   setLoading(false);
                 }
@@ -2354,6 +2559,106 @@ export default function ClassPortal() {
           setCapacityModalOpen(true);
         }}
       />
+
+      {/* 그룹 공유 모달 */}
+      {showShareModal && user && (
+        <Portal>
+          <div className="fixed inset-0 z-[9000] bg-black/40 flex items-end justify-center" onClick={() => setShowShareModal(false)}>
+            <div className="bg-white rounded-t-3xl w-full max-w-lg p-6 pb-10 animate-in slide-in-from-bottom-4" onClick={(e) => e.stopPropagation()}>
+              <h3 className="text-lg font-bold text-slate-800 mb-4">{t('class.share_to_group_title')}</h3>
+              <div className="space-y-2 max-h-[50vh] overflow-y-auto">
+                {getManageableGroups(groups, user.uid, profile).length === 0 ? (
+                  <p className="text-slate-400 text-sm text-center py-8">{t('class.no_manageable_groups')}</p>
+                ) : (
+                  getManageableGroups(groups, user.uid, profile).map(g => (
+                    <button
+                      key={g.id}
+                      onClick={() => handleShareToGroup(shareTargetClassId, g.id)}
+                      className="w-full flex items-center gap-3 p-4 bg-slate-50 hover:bg-slate-100 rounded-2xl transition-colors"
+                    >
+                      <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-sm">
+                        {g.name?.charAt(0) || 'G'}
+                      </div>
+                      <div className="text-left">
+                        <p className="font-bold text-slate-800 text-sm">{g.name}</p>
+                        <p className="text-xs text-slate-400">{g.city || g.address || ''}</p>
+                      </div>
+                    </button>
+                  ))
+                )}
+              </div>
+              <button
+                onClick={() => setShowShareModal(false)}
+                className="mt-4 w-full py-3 bg-slate-100 text-slate-500 font-bold text-[14px] rounded-2xl hover:bg-slate-200 transition-colors"
+              >
+                {t('common.cancel')}
+              </button>
+            </div>
+          </div>
+        </Portal>
+      )}
+
+      {/* Phase 2-2: 새 ClassAddEditor 모달 */}
+      {isAddingClass && (
+        <Portal>
+          <div className="fixed inset-0 z-[1000] bg-white overflow-y-auto">
+            <ClassAddEditor
+              initialType={addingClassType}
+              onClose={() => setIsAddingClass(false)}
+              onSave={async () => {
+                setIsAddingClass(false);
+                setLoading(true);
+                try {
+                  const [legacyAllData, legacySpecialData, wocClassesData] = await Promise.all([
+                    groupService.getGlobalClassesAll(),
+                    groupService.getGlobalSpecialClasses(),
+                    wocClassService.getAllClasses()
+                  ]);
+                  
+                  const wocClassesMapped = wocClassesData.map(wcRaw => {
+                    const wc = groupCrudService._convertTimestamps(wcRaw);
+                    const matchedGroup = wc.organizerType === 'group' ? groups.find(g => g.id === wc.organizerId) : null;
+                    
+                    let legacySchedule: any[] = [];
+                    if (wc.sessions && wc.sessions.length > 0) {
+                      legacySchedule = wc.sessions.map((s: any, idx: number) => ({
+                        week: idx + 1,
+                        date: s.date || null,
+                        timeSlot: s.startTime && s.endTime ? `${s.startTime} - ${s.endTime}` : (wc.schedule?.startTime && wc.schedule?.endTime ? `${wc.schedule.startTime} - ${wc.schedule.endTime}` : "시간 조율"),
+                        content: ""
+                      }));
+                    } else if (wc.schedule) {
+                      legacySchedule = [{
+                        week: 1,
+                        date: wc.schedule.startDate || null,
+                        timeSlot: wc.schedule.startTime && wc.schedule.endTime ? `${wc.schedule.startTime} - ${wc.schedule.endTime}` : "시간 조율",
+                        content: ""
+                      }];
+                    }
+
+                    return {
+                      ...wc,
+                      groupId: wc.organizerType === 'group' ? wc.organizerId : '',
+                      group: matchedGroup || undefined,
+                      schedule: legacySchedule as any
+                    };
+                  });
+
+                  const legacyAllMapped = legacyAllData.map(ensureLegacySchedule);
+                  const legacySpecialMapped = legacySpecialData.map(ensureLegacySchedule);
+
+                  setRawAllClasses([...legacyAllMapped, ...wocClassesMapped]);
+                  setRawSpecialClasses([...legacySpecialMapped, ...wocClassesMapped.filter(wc => wc.type === 'special')]);
+                } finally {
+                  setLoading(false);
+                }
+              }}
+            />
+          </div>
+        </Portal>
+      )}
+
+
 
       {/* Chat Overlay - 관리자와 채팅을 현재 페이지 위에 오버레이로 표시 */}
       {chatOverlayRoomId && (

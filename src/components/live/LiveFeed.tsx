@@ -2,6 +2,7 @@
 
 import '../../app/live/live.css';
 import React, { useState, useEffect, useRef } from 'react';
+import { Capacitor } from '@capacitor/core';
 import Link from 'next/link';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -1229,7 +1230,8 @@ const GalleryCard = ({
         <motion.div
           key="top-header"
           initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}
-          className={`absolute top-0 left-0 right-0 p-4 ${isImmersive ? 'pt-safe' : 'pt-4'} bg-gradient-to-b from-black/60 via-black/30 to-transparent z-10 flex justify-between items-start pointer-events-none gap-2`}
+          className="absolute top-0 left-0 right-0 pb-4 px-4 bg-gradient-to-b from-black/60 via-black/30 to-transparent z-10 flex justify-between items-start pointer-events-none gap-2"
+          style={{ paddingTop: Capacitor.isNativePlatform() ? 'calc(16px + env(safe-area-inset-top))' : '16px' }}
         >
           <div className="flex items-center gap-3 pointer-events-auto min-w-0">
             {post.authorPhoto && post.authorPhoto !== '/default-avatar.png' ? (
@@ -1314,7 +1316,8 @@ const GalleryCard = ({
         <motion.div
           key="bottom-info"
           initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}
-          className={`absolute left-0 right-0 p-4 pr-16 bg-gradient-to-t from-black/80 via-black/40 to-transparent z-10 flex flex-col justify-end text-white transition-all duration-300 pointer-events-none ${isImmersive ? 'bottom-0 pb-safe' : 'bottom-0 pb-4 md:pb-8'}`}
+          className="absolute left-0 right-0 pt-4 pr-16 bg-gradient-to-t from-black/80 via-black/40 to-transparent z-10 flex flex-col justify-end text-white transition-all duration-300 pointer-events-none bottom-0"
+          style={{ paddingBottom: Capacitor.isNativePlatform() ? 'calc(16px + env(safe-area-inset-bottom))' : '16px' }}
         >
           {(Array.isArray(post.media) && post.media.length > 1) && (
             <div className="flex gap-1.5 mb-2 pointer-events-auto">
@@ -1394,7 +1397,8 @@ const GalleryCard = ({
         <motion.div
           key="right-actions"
           initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}
-          className={`absolute right-2 flex flex-col items-center gap-4 z-20 transition-all duration-300 pointer-events-auto ${isImmersive ? 'bottom-12 pb-safe' : 'bottom-12 md:bottom-16'}`}
+          className="absolute right-2 flex flex-col items-center gap-4 z-20 transition-all duration-300 pointer-events-auto"
+          style={{ bottom: Capacitor.isNativePlatform() ? 'calc(48px + env(safe-area-inset-bottom))' : '48px' }}
         >
 
 

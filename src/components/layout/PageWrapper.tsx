@@ -5,6 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { App } from '@capacitor/app';
 import { Capacitor } from '@capacitor/core';
+import { hasOpenModals } from '@/hooks/useBackButtonClose';
 
 export default function PageWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -40,9 +41,9 @@ export default function PageWrapper({ children }: { children: React.ReactNode })
     if (typeof window === 'undefined' || !Capacitor.isNativePlatform()) return;
 
     const backButtonHandler = App.addListener('backButton', ({ canGoBack }) => {
-      // useBackButtonClose 훅이 pushState로 히스토리를 추가한 상태이므로
-      // history.back()을 호출하면 popstate 이벤트가 발생하여 모달이 닫힘
-      if (canGoBack) {
+      // 모달이 열려있으면 canGoBack과 무관하게 history.back() 호출
+      // (Android WebView에서 pushState가 canGoBack에 반영 안 되는 케이스 대응)
+      if (hasOpenModals() || canGoBack) {
         window.history.back();
       } else {
         // 더 이상 뒤로갈 곳이 없으면 앱 최소화
@@ -58,9 +59,6 @@ export default function PageWrapper({ children }: { children: React.ReactNode })
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    // Strict PWA Standalone Mode Check
-    const isGatewayPath = pathname === '/' || pathname === '/login' || pathname === '/app';
-
     if (!loading && !isPublic && (!user || !profile?.isRegistered)) {
       setShowLogin(true);
     }
@@ -72,4 +70,3 @@ export default function PageWrapper({ children }: { children: React.ReactNode })
     </>
   );
 }
-

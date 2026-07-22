@@ -255,7 +255,7 @@ export default function LostFoundDetail({ id, onClose }: LostFoundDetailProps) {
           {item.reward && item.reward > 0 ? (
             <div className="flex items-center gap-1 text-[#1A73E8]">
               <span className="material-symbols-rounded text-sm">payments</span>
-              <span className="text-xs font-bold">{t('lost.reward')}: ${item.reward.toLocaleString()}</span>
+              <span className="text-xs font-bold">{t('lost.reward')}: {item.currency || 'KRW'} {item.reward.toLocaleString()}</span>
             </div>
           ) : null}
         </div>
@@ -300,7 +300,10 @@ export default function LostFoundDetail({ id, onClose }: LostFoundDetailProps) {
       </div>
 
       {/* ━━━ Fixed Bottom Bar (compact) ━━━ */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-100 px-4 py-2.5 flex items-center gap-3 max-w-md mx-auto">
+      <div 
+        className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-100 px-4 pt-2.5 flex items-center gap-3 max-w-md mx-auto"
+        style={{ paddingBottom: Capacitor.isNativePlatform() ? 'calc(10px + env(safe-area-inset-bottom))' : '10px' }}
+      >
         <div className="flex-1 min-w-0">
           <div className="flex items-center">
             <UserBadge

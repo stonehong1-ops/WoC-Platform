@@ -52,7 +52,7 @@ async function main() {
     allClasses.forEach(cls => {
       if (cls.classType === "special") return;
 
-      cls.schedule?.forEach(s => {
+      (Array.isArray(cls.schedule) ? cls.schedule : (cls.schedule ? [{ date: cls.schedule.startDate, timeSlot: cls.schedule.startTime && cls.schedule.endTime ? (cls.schedule.startTime + ' - ' + cls.schedule.endTime) : 'ì‹œê°„ ì¡°ìœ¨' }] : [])).forEach(s => {
         if (!s.date) return;
         const dObj = safeDate(s.date);
         if (dObj && dObj >= targetWeekStart && dObj <= targetWeekEnd) {
@@ -65,7 +65,7 @@ async function main() {
     console.log(`\n* Week Offset ${offset} (${targetWeekStart.toLocaleDateString("ko-KR")} ~ ${targetWeekEnd.toLocaleDateString("ko-KR")}) Count: ${weekClasses.length}`);
     weekClasses.forEach(c => {
       if (c.groupId === "juni-yujin-tango") {
-        console.log(`  - [${c.groupId}] ${c.title} | ³¯Â¥: ${c.scheduleEntry.date} | ½Ã°£: ${c.scheduleEntry.timeSlot} | Àå¼Ò: ${c.location}`);
+        console.log(`  - [${c.groupId}] ${c.title} | ï¿½ï¿½Â¥: ${c.scheduleEntry.date} | ï¿½Ã°ï¿½: ${c.scheduleEntry.timeSlot} | ï¿½ï¿½ï¿½: ${c.location}`);
       }
     });
   }

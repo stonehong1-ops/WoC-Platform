@@ -58,6 +58,51 @@ export default function FysAdminTable({ registrations, onSelectRegistration }: F
     }
   };
 
+  const renderPricingBadge = (reg: FysRegistration) => {
+    let type = reg.pricingSnapshot?.pricingType;
+    if (!type && reg.createdAt?.toDate) {
+      const createdTime = reg.createdAt.toDate().getTime();
+      const superDeadline = new Date("2026-07-15T23:59:59+09:00").getTime();
+      const earlyDeadline = new Date("2026-08-05T23:59:59+09:00").getTime();
+      if (createdTime <= superDeadline) type = "superEarlyBird";
+      else if (createdTime <= earlyDeadline) type = "earlyBird";
+      else type = "regular";
+    }
+
+    switch (type) {
+      case "superEarlyBird":
+        return (
+          <span className="px-2 py-0.5 text-[10px] font-bold rounded bg-purple-100 text-purple-700 border border-purple-200">
+            Super
+          </span>
+        );
+      case "earlyBird":
+        return (
+          <span className="px-2 py-0.5 text-[10px] font-bold rounded bg-blue-100 text-blue-700 border border-blue-200">
+            얼리
+          </span>
+        );
+      case "dayPack":
+        return (
+          <span className="px-2 py-0.5 text-[10px] font-bold rounded bg-emerald-100 text-emerald-700 border border-emerald-200">
+            DayPack
+          </span>
+        );
+      case "mixed":
+        return (
+          <span className="px-2 py-0.5 text-[10px] font-bold rounded bg-amber-100 text-amber-700 border border-amber-200">
+            조합
+          </span>
+        );
+      default:
+        return (
+          <span className="px-2 py-0.5 text-[10px] font-bold rounded bg-gray-100 text-gray-600 border border-gray-200">
+            일반
+          </span>
+        );
+    }
+  };
+
   return (
     <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
       {/* 검색 */}
@@ -83,6 +128,7 @@ export default function FysAdminTable({ registrations, onSelectRegistration }: F
             <tr className="bg-gray-50 text-gray-500 font-bold border-b border-gray-200">
               <th className="px-3 py-3 text-xs">날짜</th>
               <th className="px-3 py-3 text-xs">닉네임</th>
+              <th className="px-2 py-3 text-xs text-center">구분</th>
               <th className="px-3 py-3 text-xs text-center">클래스</th>
               <th className="px-3 py-3 text-xs text-right">금액</th>
               <th className="px-2 py-3 text-xs text-center w-10">✓</th>
@@ -117,6 +163,9 @@ export default function FysAdminTable({ registrations, onSelectRegistration }: F
                         </a>
                       )}
                     </div>
+                  </td>
+                  <td className="px-2 py-3 text-center">
+                    {renderPricingBadge(reg)}
                   </td>
                   <td className="px-3 py-3 text-center font-bold text-gray-600 text-sm">
                     {reg.selectedClassIds?.length || 0}

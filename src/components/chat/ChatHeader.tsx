@@ -1,4 +1,5 @@
 import React from 'react';
+import { Capacitor } from '@capacitor/core';
 import UserBadge from '../common/UserBadge';
 import type { ChatRoom } from '@/types/chat';
 import { UserProfile } from '@/types/user';
@@ -27,7 +28,13 @@ export default function ChatHeader({
   if (isPrivate) {
     const otherParticipantId = room?.participants.find(p => p !== user?.uid) || '';
     return (
-      <div className="px-4.5 py-2.5 border-b border-gray-100/50 flex items-center justify-between bg-white/80 backdrop-blur-xl z-20 sticky top-0">
+      <div 
+        className="px-4.5 border-b border-gray-100/50 flex items-center justify-between bg-white/80 backdrop-blur-xl z-20 sticky top-0"
+        style={{
+          paddingTop: Capacitor.isNativePlatform() ? 'calc(10px + env(safe-area-inset-top))' : '10px',
+          paddingBottom: '10px'
+        }}
+      >
         <div className="flex items-center gap-4.5">
           <button onClick={onBack} className="md:hidden w-8.5 h-8.5 rounded-full flex items-center justify-center bg-gray-50 hover:bg-gray-100 transition-all text-gray-500">
             <span className="material-symbols-outlined text-[18px]">arrow_back_ios_new</span>
@@ -64,7 +71,13 @@ export default function ChatHeader({
   const roomName = room?.name || otherUsers.map(u => u.nickname || u.displayName).join(', ') || t('chatroom.room_chat');
 
   return (
-    <div className="px-4.5 py-2.5 border-b border-gray-100/50 flex items-center justify-between bg-white z-20 sticky top-0">
+    <div 
+      className="px-4.5 border-b border-gray-100/50 flex items-center justify-between bg-white z-20 sticky top-0"
+      style={{
+        paddingTop: Capacitor.isNativePlatform() ? 'calc(10px + env(safe-area-inset-top))' : '10px',
+        paddingBottom: '10px'
+      }}
+    >
       <div className="flex items-center gap-4.5">
         <button onClick={onBack} className="md:hidden w-8.5 h-8.5 rounded-full flex items-center justify-center bg-gray-50 hover:bg-gray-100 transition-all text-gray-500">
           <span className="material-symbols-outlined text-[18px]">arrow_back_ios_new</span>

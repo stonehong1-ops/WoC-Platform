@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import { Capacitor } from '@capacitor/core';
 import { Event } from "@/types/event";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { eventService } from "@/lib/firebase/eventService";
@@ -73,6 +74,7 @@ export default function EventViewer({ event: initialEvent, onClose }: EventViewe
   } = useModalNavigation("imageModal");
 
   const showImageModal = imageModal === "true";
+  const [showMenu, setShowMenu] = useState(false);
 
   // Permission: Host, Staff, or Admin can edit
   const canEdit = user && (
@@ -162,7 +164,10 @@ export default function EventViewer({ event: initialEvent, onClose }: EventViewe
       <style dangerouslySetInnerHTML={{ __html: `.detail-scrollbar::-webkit-scrollbar{display:none}.detail-scrollbar{-ms-overflow-style:none;scrollbar-width:none}` }} />
 
       {/* Header */}
-      <div className={`fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4 py-3 transition-all duration-300 ${isScrolled ? "bg-white/95 backdrop-blur-md shadow-sm" : "bg-gradient-to-b from-black/30 to-transparent"}`}>
+      <div 
+        className={`fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4 pb-3 transition-all duration-300 ${isScrolled ? "bg-white/95 backdrop-blur-md shadow-sm" : "bg-gradient-to-b from-black/30 to-transparent"}`}
+        style={{ paddingTop: 'calc(12px + env(safe-area-inset-top, 0px))' }}
+      >
         <button onClick={onClose} className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${isScrolled ? "bg-slate-100 text-[#2d3435]" : "bg-black/20 backdrop-blur-sm text-white"}`}>
           <span className="material-symbols-rounded text-xl">arrow_back</span>
         </button>
@@ -173,26 +178,47 @@ export default function EventViewer({ event: initialEvent, onClose }: EventViewe
           {event.titleNative && language !== 'KR' && <div className={`text-[10px] font-bold truncate w-full text-center ${isScrolled ? "text-[#acb3b4]" : "text-white/90 drop-shadow-md"}`}>{event.titleNative}</div>}
         </div>
         <div className="flex items-center gap-1">
-          {canEdit && (
-            <>
-              <button onClick={() => setShowEdit(true)}
-                className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${isScrolled ? "bg-slate-100 text-primary" : "bg-black/20 backdrop-blur-sm text-white"}`}>
-                <span className="material-symbols-rounded text-xl">edit</span>
-              </button>
-              <button onClick={handleDelete}
-                className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${isScrolled ? "bg-slate-100 text-red-500" : "bg-black/20 backdrop-blur-sm text-white"}`}>
-                <span className="material-symbols-rounded text-xl">delete</span>
-              </button>
-            </>
-          )}
-          <button onClick={() => setIsReportModalOpen(true)}
-            className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${isScrolled ? "bg-slate-100" : "bg-black/20 backdrop-blur-sm"} active:scale-90`}>
-            <span className="text-base">🚨</span>
-          </button>
           <button onClick={() => navigator.share ? navigator.share({ title: event.title, url: window.location.href }).catch(console.error) : alert(t('event.share_not_supported'))}
             className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${isScrolled ? "bg-slate-100 text-[#2d3435]" : "bg-black/20 backdrop-blur-sm text-white"}`}>
             <span className="material-symbols-rounded text-xl">share</span>
           </button>
+          <div className="relative">
+            <button 
+              onClick={() => setShowMenu(!showMenu)}
+              className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${isScrolled ? "bg-slate-100 text-[#2d3435]" : "bg-black/20 backdrop-blur-sm text-white"}`}
+            >
+              <span className="material-symbols-rounded text-xl">more_vert</span>
+            </button>
+            {showMenu && (
+              <div className="absolute right-0 mt-2 z-[120] bg-white border border-slate-100 shadow-xl rounded-2xl py-1 w-28 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                {canEdit && (
+                  <>
+                    <button 
+                      onClick={() => { setShowMenu(false); setShowEdit(true); }}
+                      className="w-full px-4 py-2.5 text-left text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors flex items-center gap-2"
+                    >
+                      <span className="material-symbols-rounded text-base text-slate-400">edit</span>
+                      {t('common.edit') || '수정'}
+                    </button>
+                    <button 
+                      onClick={() => { setShowMenu(false); handleDelete(); }}
+                      className="w-full px-4 py-2.5 text-left text-xs font-bold text-red-600 hover:bg-red-50 transition-colors flex items-center gap-2"
+                    >
+                      <span className="material-symbols-rounded text-base text-red-400">delete</span>
+                      {t('common.delete') || '삭제'}
+                    </button>
+                  </>
+                )}
+                <button 
+                  onClick={() => { setShowMenu(false); setIsReportModalOpen(true); }}
+                  className="w-full px-4 py-2.5 text-left text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors flex items-center gap-2"
+                >
+                  <span className="material-symbols-rounded text-base text-slate-400">report</span>
+                  {t('common.report') || '신고'}
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -206,11 +232,11 @@ export default function EventViewer({ event: initialEvent, onClose }: EventViewe
       {/* Scrollable Content */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto detail-scrollbar pb-[80px]">
         {/* Image */}
-        <div className="relative w-full bg-black">
+        <div className={`relative w-full ${images.length === 0 ? 'aspect-[16/9] bg-slate-900' : 'bg-black'}`}>
           {images.length === 0 && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center text-[#c4cacc]">
-              <span className="material-symbols-rounded text-5xl mb-1">local_activity</span>
-              <span className="text-[10px] font-bold tracking-wider uppercase">{t('event.no_image')}</span>
+            <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-500">
+              <span className="material-symbols-rounded text-4xl mb-1">local_activity</span>
+              <span className="text-[9px] font-black tracking-wider uppercase">{t('event.no_image') || 'IMAGE NOT AVAILABLE'}</span>
             </div>
           )}
           {images.length > 0 && (

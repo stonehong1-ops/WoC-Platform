@@ -1,6 +1,6 @@
 {
   "name": "woc",
-  "version": "2026-07-14-001",
+  "version": "2026-07-20-001",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -15,9 +15,10 @@
   },
   "dependencies": {
     "@capacitor/android": "^8.4.0",
-    "@capacitor/ios": "^8.4.0",
     "@capacitor/app": "^8.1.0",
     "@capacitor/core": "^8.4.0",
+    "@capacitor/ios": "^8.4.0",
+    "@capacitor/push-notifications": "^8.1.2",
     "@google/genai": "^2.9.0",
     "@react-google-maps/api": "^2.20.8",
     "@sparticuz/chromium": "^149.0.0",
@@ -31,7 +32,9 @@
     "framer-motion": "^12.38.0",
     "html-to-image": "^1.11.13",
     "html2canvas-pro": "^2.0.2",
+    "jpeg-js": "^0.4.4",
     "jspdf": "^4.2.1",
+    "jsqr": "^1.4.0",
     "lucide-react": "^0.577.0",
     "next": "^16.2.1",
     "puppeteer-core": "^25.1.0",

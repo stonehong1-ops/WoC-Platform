@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Capacitor } from '@capacitor/core';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { socialService } from '@/lib/firebase/socialService';
 import { Social } from '@/types/social';
@@ -205,6 +206,7 @@ export default function DJScheduleModal({ isOpen, onClose, djId, djName, onSucce
             exit={{ y: '100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
             className="fixed bottom-0 left-0 right-0 z-[210] bg-white rounded-t-3xl shadow-2xl flex flex-col max-h-[85vh]"
+            style={{ paddingBottom: Capacitor.isNativePlatform() ? 'env(safe-area-inset-bottom)' : '0px' }}
           >
             {/* Header */}
             <div className="flex items-center justify-between px-6 py-5 border-b border-[#f2f4f4] shrink-0">

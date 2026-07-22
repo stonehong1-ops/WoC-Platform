@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Capacitor } from '@capacitor/core';
@@ -85,8 +85,25 @@ export default function GlobalNavigation(props: { children: React.ReactNode }) {
   const router = useRouter();
   const { user, profile } = useAuth();
 
+  // + 버튼 동적 표시/숨김 (등록 기능 없는 페이지에서 숨김)
+  const showCreateButton = useMemo(() => {
+    if (pathname === '/home' || pathname === '/') return false;
+    if (pathname.startsWith('/pics')) return false;
+    if (pathname.startsWith('/explore')) return false;
+    if (pathname.startsWith('/wallet')) return false;
+    if (pathname.startsWith('/profile/ai-tryon')) return false;
+    if (pathname.startsWith('/notification')) return false;
+    if (pathname.startsWith('/chat')) return false;
+    if (pathname.startsWith('/profile')) {
+      const tab = searchParams.get('tab');
+      if (!tab || tab === 'profile') return false;
+    }
+    return true;
+  }, [pathname, searchParams]);
+
   // + 버튼 페이지별 분기 핸들러
   const handleCreatePress = useCallback(() => {
+    console.log(`[SOCIAL CREATE 1] handleCreatePress CALLED | user: ${user ? user.uid : 'null'} | profile: ${profile ? 'exists' : 'null'} | pathname: ${pathname}`);
     if (!user) {
       toast(t('create_menu.no_permission', '로그인이 필요합니다'));
       return;
@@ -104,17 +121,18 @@ export default function GlobalNavigation(props: { children: React.ReactNode }) {
     if (pathname.startsWith('/profile/ai-tryon')) { toast(t('create_btn.no_register', '등록 기능이 없습니다')); return; }
     if (pathname.startsWith('/live')) { router.push('/live/create?source=live'); return; }
 
-    // 선택 바텀시트 (밀롱가 / 쁘락띠까)
+    // 선택 바텀시트를 우회하고 즉시 소셜 등록창으로 직행
     if (pathname.startsWith('/today') || pathname.startsWith('/social')) {
-      setIsSocialSelectOpen(true);
+      console.log(`[SOCIAL CREATE 1] PLUS CLICK | pathname: ${pathname} | target: /social?createSocial=true`);
+      router.push('/social?createSocial=true');
       return;
     }
 
     // 토스트 (등록 불가 안내)
     if (pathname.startsWith('/home')) { toast(t('create_btn.admin_only', '관리자만 설정 가능합니다')); return; }
-    if (pathname.startsWith('/shop')) { toast(t('create_btn.group_owner_only', '그룹에서 오너만 등록 가능합니다')); return; }
-    if (pathname.startsWith('/rental')) { toast(t('create_btn.group_owner_setting', '그룹에서 오너만 설정 가능합니다')); return; }
-    if (pathname.startsWith('/stay')) { toast(t('create_btn.group_owner_setting', '그룹에서 오너만 설정 가능합니다')); return; }
+    if (pathname.startsWith('/shop')) { router.push('/shop?create=true'); return; }
+    if (pathname.startsWith('/rental')) { router.push('/rental?compose=true'); return; }
+    if (pathname.startsWith('/stay')) { router.push('/stay?create=true'); return; }
     if (pathname.startsWith('/class')) { router.push('/class?view=special&createSpecial=true'); return; }
     if (pathname.startsWith('/pics')) { toast(t('create_btn.ai_photos_only', '시스템에서 AI가 생성한 사진만 등록됩니다')); return; }
     if (pathname.startsWith('/hub')) { toast(t('create_btn.hub_admin_only', '물품입고는 WoC 관리자만 등록 가능합니다')); return; }
@@ -122,7 +140,7 @@ export default function GlobalNavigation(props: { children: React.ReactNode }) {
     if (pathname.startsWith('/wallet')) { toast(t('create_btn.no_register', '등록 기능이 없습니다')); return; }
     if (pathname.startsWith('/profile')) {
       const params = new URLSearchParams(window.location.search);
-      if (params.get('tab') === 'schedule') { toast(t('create_btn.in_development', '개발진행중')); return; }
+      if (params.get('tab') === 'schedule') { router.push('/profile/activity-register'); return; }
       toast(t('create_btn.admin_only', '관리자만 설정 가능합니다'));
       return;
     }
@@ -145,6 +163,20 @@ export default function GlobalNavigation(props: { children: React.ReactNode }) {
   const lastScrollY = React.useRef(0);
   const accumulatedScrollUp = React.useRef(0);
   const lastSentVisibility = React.useRef<boolean | null>(null);
+  const [measuredHeaderHeight, setMeasuredHeaderHeight] = useState<number>(0);
+
+  useEffect(() => {
+    if (!headerRef.current) return;
+    const updateHeight = () => {
+      if (headerRef.current) {
+        setMeasuredHeaderHeight(headerRef.current.offsetHeight);
+      }
+    };
+    updateHeight();
+    const observer = new ResizeObserver(updateHeight);
+    observer.observe(headerRef.current);
+    return () => observer.disconnect();
+  }, [subHeader, subHeaderHeight]);
 
 
   const { unreadCount: notiUnreadCount } = useNotification();
@@ -270,7 +302,9 @@ export default function GlobalNavigation(props: { children: React.ReactNode }) {
       <div 
         className="w-full flex-shrink-0 transition-all duration-200" 
         style={{ 
-          height: `${effectiveIsGlobalNavHidden ? 0 : placeholderHeight}px`,
+          height: effectiveIsGlobalNavHidden 
+            ? '0px' 
+            : `${measuredHeaderHeight || (subHeader ? 60 + subHeaderHeight : 60)}px`,
           visibility: effectiveIsGlobalNavHidden ? 'hidden' : 'visible',
           opacity: effectiveIsGlobalNavHidden ? 0 : 1
         }} 
@@ -286,7 +320,7 @@ export default function GlobalNavigation(props: { children: React.ReactNode }) {
         } ${effectiveIsGlobalNavHidden ? 'opacity-0 pointer-events-none invisible translate-y-[-100px]' : 'opacity-100 translate-y-0'}`}
         style={{ 
           transition: 'transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.2s, visibility 0.2s',
-          paddingTop: Capacitor.isNativePlatform() ? 'env(safe-area-inset-top)' : '0px'
+          paddingTop: 'env(safe-area-inset-top, 0px)'
         }}
       >
         {/* Exact Image Replication: Header Top Row */}
@@ -368,19 +402,21 @@ export default function GlobalNavigation(props: { children: React.ReactNode }) {
                 </span>
               </Link>
 
-              {/* Create (+) Button - 강조 */}
-              <button
-                onClick={handleCreatePress}
-                className="w-[32px] h-[32px] rounded-full flex items-center justify-center active:scale-90 transition-all bg-[#007AFF] text-white hover:bg-[#0066DD] shadow-sm shadow-blue-200"
-                title={t('nav.create', '등록')}
-              >
-                <span 
-                  className="material-symbols-outlined !text-[20px]"
-                  style={{ fontVariationSettings: "'FILL' 1, 'wght' 600" }}
+              {/* Create (+) Button - 등록 기능 있는 페이지에서만 표시 */}
+              {showCreateButton && (
+                <button
+                  onClick={handleCreatePress}
+                  className="w-[32px] h-[32px] rounded-full flex items-center justify-center active:scale-90 transition-all bg-[#007AFF] text-white hover:bg-[#0066DD] shadow-sm shadow-blue-200"
+                  title={t('nav.create', '등록')}
                 >
-                  add
-                </span>
-              </button>
+                  <span 
+                    className="material-symbols-outlined !text-[20px]"
+                    style={{ fontVariationSettings: "'FILL' 1, 'wght' 600" }}
+                  >
+                    add
+                  </span>
+                </button>
+              )}
             </div>
           </div>
 
@@ -396,14 +432,12 @@ export default function GlobalNavigation(props: { children: React.ReactNode }) {
       <main 
         className="flex-1 w-full relative bg-[#faf8ff]"
         style={{
-          paddingTop: effectiveIsGlobalNavHidden ? '0px' : (Capacitor.isNativePlatform() ? 'env(safe-area-inset-top)' : '0px'),
-          paddingBottom: effectiveIsGlobalNavHidden ? '0px' : (pathname === '/venues' || pathname.startsWith('/chat') || pathname.startsWith('/notification') || pathname.startsWith('/search') ? '0px' : (Capacitor.isNativePlatform() ? 'calc(120px + env(safe-area-inset-bottom))' : '120px'))
+          paddingTop: '0px',
+          paddingBottom: effectiveIsGlobalNavHidden ? '0px' : (pathname === '/venues' || pathname.startsWith('/chat') || pathname.startsWith('/notification') || pathname.startsWith('/search') ? '0px' : 'calc(120px + env(safe-area-inset-bottom, 0px))')
         }}
       >
         {children}
       </main>
-
-
 
       {/* Bottom Navigation Bar - 그룹별 세로 구조(위:라벨, 아래:아이콘+텍스트) */}
       <footer 
@@ -412,8 +446,8 @@ export default function GlobalNavigation(props: { children: React.ReactNode }) {
           effectiveIsGlobalNavHidden ? 'opacity-0 pointer-events-none invisible translate-y-[100px]' : 'opacity-100 translate-y-0'
         }`}
         style={{ 
-          height: Capacitor.isNativePlatform() ? 'calc(76px + env(safe-area-inset-bottom))' : '76px',
-          paddingBottom: Capacitor.isNativePlatform() ? 'env(safe-area-inset-bottom)' : '0px',
+          height: 'calc(76px + env(safe-area-inset-bottom, 0px))',
+          paddingBottom: 'env(safe-area-inset-bottom, 0px)',
           transition: 'transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.2s, visibility 0.2s'
         }}
       >

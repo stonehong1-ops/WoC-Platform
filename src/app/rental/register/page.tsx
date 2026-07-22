@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect, Suspense } from 'react';
+import { Capacitor } from '@capacitor/core';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useNavigation } from '@/components/providers/NavigationProvider';
 import { useAuth } from '@/components/providers/AuthProvider';
@@ -153,20 +154,30 @@ function RegisterPageContent() {
   return (
     <main className="max-w-md mx-auto h-[100dvh] bg-white flex flex-col overflow-hidden relative">
       {/* Header */}
-      <div className="flex-shrink-0 bg-white border-b border-slate-100 px-4 h-14 flex items-center justify-between z-50">
-        <button type="button" onClick={() => router.back()} className="w-10 h-10 flex items-center justify-center -ml-2 active:scale-95 transition-transform text-slate-700">
+      <div 
+        className="flex-shrink-0 bg-white border-b border-slate-100 px-4 flex items-center justify-between z-50"
+        style={{
+          height: Capacitor.isNativePlatform() ? 'calc(56px + env(safe-area-inset-top))' : '56px',
+          paddingTop: Capacitor.isNativePlatform() ? 'env(safe-area-inset-top)' : '0px'
+        }}
+      >
+        <button type="button" onClick={() => {
+          if (title.trim() || location.trim() || address.trim()) {
+            if (confirm(t('common.confirm_discard', '작성 중인 내용이 사라집니다. 나가시겠습니까?'))) router.back();
+          } else {
+            router.back();
+          }
+        }} className="w-10 h-10 flex items-center justify-center -ml-2 active:scale-95 transition-transform text-slate-700">
           <span className="material-symbols-rounded text-2xl">arrow_back</span>
         </button>
         <h1 className="text-[16px] font-bold text-slate-800">
           {editId ? t('rental.register.button_update') : t('rental.register.button_register')}
         </h1>
-        <button type="button" onClick={handleSubmit} disabled={isSubmitting}
-          className="px-5 py-2 rounded-full bg-[#007AFF] text-white text-[14px] font-bold disabled:opacity-50 active:scale-95 transition-all">
-          {isSubmitting ? (uploadProgress !== null ? `${uploadProgress}%` : (editId ? t('rental.register.status_updating') : t('rental.register.status_registering'))) : (editId ? t('rental.register.button_update') : t('rental.register.button_register'))}
-        </button>
+        <div className="w-10" />
+
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4 mt-4 space-y-6 pb-6 no-scrollbar">
+      <div className="flex-1 overflow-y-auto px-4 mt-4 space-y-6 pb-28 no-scrollbar">
         
         {/* Category Toggle */}
         <div className="flex bg-[#f2f4f4] rounded-xl p-1">
@@ -186,7 +197,7 @@ function RegisterPageContent() {
 
         {/* Images */}
         <div>
-          <label className="block text-[14px] font-bold text-[#596061] mb-2">
+          <label className="block text-xs font-bold text-slate-700 mb-1.5">
             {t('rental.register.upload_photos').replace('{count}', (images.length + existingImages.length).toString())}
           </label>
           <div className="flex gap-3 overflow-x-auto pb-2 no-scrollbar">
@@ -219,63 +230,82 @@ function RegisterPageContent() {
         {/* Details */}
         <div className="space-y-4">
           <div>
-            <label className="block text-[14px] font-bold text-[#596061] mb-1.5">{t('rental.register.label_title')} <span className="text-red-400">*</span></label>
+            <label className="block text-xs font-bold text-slate-700 mb-1.5">{t('rental.register.label_title')} <span className="text-red-500">*</span></label>
             <input required type="text" value={title} onChange={e => setTitle(e.target.value)} placeholder={t('rental.register.placeholder_title')}
-              className="w-full bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-4 py-3 text-[16px] focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all" />
+              className="w-full bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-4 py-3 text-sm font-bold focus:border-[#007AFF] focus:ring-2 focus:ring-[#007AFF]/20 placeholder:text-[#acb3b4] placeholder:font-normal outline-none transition-all" />
           </div>
 
           <div className="flex gap-3">
             <div className="flex-1">
-              <label className="block text-[14px] font-bold text-[#596061] mb-1.5">{t('rental.register.label_location')} <span className="text-red-400">*</span></label>
+              <label className="block text-xs font-bold text-slate-700 mb-1.5">{t('rental.register.label_location')} <span className="text-red-500">*</span></label>
               <input required type="text" value={location} onChange={e => setLocation(e.target.value)} placeholder={t('rental.register.placeholder_location')}
-                className="w-full bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-4 py-3 text-[16px] focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all" />
+                className="w-full bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-4 py-3 text-sm font-bold focus:border-[#007AFF] focus:ring-2 focus:ring-[#007AFF]/20 placeholder:text-[#acb3b4] placeholder:font-normal outline-none transition-all" />
             </div>
             <div className="flex-1">
-              <label className="block text-[14px] font-bold text-[#596061] mb-1.5">{t('rental.register.label_address')} <span className="text-red-400">*</span></label>
+              <label className="block text-xs font-bold text-slate-700 mb-1.5">{t('rental.register.label_address')} <span className="text-red-500">*</span></label>
               <input required type="text" value={address} onChange={e => setAddress(e.target.value)} placeholder={t('rental.register.placeholder_address')}
-                className="w-full bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-4 py-3 text-[16px] focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all" />
+                className="w-full bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-4 py-3 text-sm font-bold focus:border-[#007AFF] focus:ring-2 focus:ring-[#007AFF]/20 placeholder:text-[#acb3b4] placeholder:font-normal outline-none transition-all" />
             </div>
           </div>
 
           <div className="flex gap-3">
             <div className="flex-1">
-              <label className="block text-[14px] font-bold text-[#596061] mb-1.5">{t('rental.register.label_price')} <span className="text-red-400">*</span></label>
+              <label className="block text-xs font-bold text-slate-700 mb-1.5">{t('rental.register.label_price')} <span className="text-red-500">*</span></label>
               <div className="relative">
                 <span className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-[#acb3b4]">₩</span>
                 <input required type="number" min="0" value={pricePerHour} onChange={e => setPricePerHour(e.target.value ? Number(e.target.value) : '')} placeholder="10000"
-                  className="w-full bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl pl-9 pr-4 py-3 text-[16px] focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all" />
+                  className="w-full bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl pl-9 pr-4 py-3 text-sm font-bold focus:border-[#007AFF] focus:ring-2 focus:ring-[#007AFF]/20 placeholder:text-[#acb3b4] placeholder:font-normal outline-none transition-all" />
               </div>
             </div>
             <div className="flex-1">
-              <label className="block text-[14px] font-bold text-[#596061] mb-1.5">{t('rental.register.label_min_hours')} <span className="text-red-400">*</span></label>
+              <label className="block text-xs font-bold text-slate-700 mb-1.5">{t('rental.register.label_min_hours')} <span className="text-red-500">*</span></label>
               <div className="relative">
                 <input required type="number" min="1" value={minHours} onChange={e => setMinHours(e.target.value ? Number(e.target.value) : '')} placeholder="1"
-                  className="w-full bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-4 py-3 text-[16px] focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all text-right pr-12" />
+                  className="w-full bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-4 py-3 text-sm font-bold focus:border-[#007AFF] focus:ring-2 focus:ring-[#007AFF]/20 placeholder:text-[#acb3b4] placeholder:font-normal outline-none transition-all text-right pr-12" />
                 <span className="absolute right-4 top-1/2 -translate-y-1/2 font-bold text-[#acb3b4]">hrs</span>
               </div>
             </div>
           </div>
 
           <div>
-            <label className="block text-[14px] font-bold text-[#596061] mb-1.5">{t('rental.register.label_facilities')}</label>
+            <label className="block text-xs font-bold text-slate-700 mb-1.5">{t('rental.register.label_facilities')}</label>
             <input type="text" value={facilitiesInput} onChange={e => setFacilitiesInput(e.target.value)} placeholder={t('rental.register.placeholder_facilities')}
-              className="w-full bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-4 py-3 text-[16px] focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all" />
+              className="w-full bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-4 py-3 text-sm font-bold focus:border-[#007AFF] focus:ring-2 focus:ring-[#007AFF]/20 placeholder:text-[#acb3b4] placeholder:font-normal outline-none transition-all" />
           </div>
 
           <div>
-            <label className="block text-[14px] font-bold text-[#596061] mb-1.5">{t('rental.register.label_description')}</label>
+            <label className="block text-xs font-bold text-slate-700 mb-1.5">{t('rental.register.label_description')}</label>
             <textarea rows={5} value={description} onChange={e => setDescription(e.target.value)} placeholder={t('rental.register.placeholder_description')}
-              className="w-full bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-4 py-3 text-[16px] focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all resize-none" />
+              className="w-full bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-4 py-3 text-sm font-bold focus:border-[#007AFF] focus:ring-2 focus:ring-[#007AFF]/20 placeholder:text-[#acb3b4] placeholder:font-normal outline-none transition-all resize-none" />
           </div>
 
           <div>
-            <label className="block text-[14px] font-bold text-[#596061] mb-1.5">{t('rental.register.label_rules')}</label>
+            <label className="block text-xs font-bold text-slate-700 mb-1.5">{t('rental.register.label_rules')}</label>
             <textarea rows={4} value={rules} onChange={e => setRules(e.target.value)} placeholder={t('rental.register.placeholder_rules')}
-              className="w-full bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-4 py-3 text-[16px] focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all resize-none" />
+              className="w-full bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-4 py-3 text-sm font-bold focus:border-[#007AFF] focus:ring-2 focus:ring-[#007AFF]/20 placeholder:text-[#acb3b4] placeholder:font-normal outline-none transition-all resize-none" />
           </div>
         </div>
 
       </div>
+
+      {/* Fixed Bottom Action Bar */}
+      <footer 
+        className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-100 px-4 flex gap-3 items-center justify-between shadow-lg z-[100010]"
+        style={{
+          paddingTop: '16px',
+          paddingBottom: 'calc(16px + env(safe-area-inset-bottom, 0px))',
+          height: 'calc(76px + env(safe-area-inset-bottom, 0px))'
+        }}
+      >
+        <button
+          type="button"
+          onClick={handleSubmit}
+          disabled={isSubmitting}
+          className="flex-1 py-3.5 rounded-full bg-[#007AFF] text-white text-sm font-bold active:scale-95 transition-all disabled:opacity-50"
+        >
+          {isSubmitting ? (uploadProgress !== null ? `${uploadProgress}%` : (editId ? t('rental.register.status_updating') : t('rental.register.status_registering'))) : (editId ? t('rental.register.button_update') : t('rental.register.button_register'))}
+        </button>
+      </footer>
     </main>
   );
 }

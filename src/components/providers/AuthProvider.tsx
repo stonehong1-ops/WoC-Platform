@@ -47,6 +47,7 @@ interface UserProfile {
     instagram?: string;
     whatsapp?: string;
   };
+  platform?: string;
 }
 
 interface AuthContextType {
@@ -227,23 +228,51 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  // Push Notification Permission Prompt (Option 1)
+  // 기기 플랫폼 감지 및 프로필 자동 갱신 (Legacy 소급 적용)
   useEffect(() => {
-    if (user && typeof window !== 'undefined' && 'Notification' in window) {
-      // 네이티브 앱에서는 웹 FCM 권한 요청 불필요 (Capacitor 푸시 플러그인이 별도 처리)
-      let isNativeApp = false;
-      try { const { Capacitor } = require('@capacitor/core'); isNativeApp = Capacitor.isNativePlatform(); } catch {}
-      if (isNativeApp) return;
+    if (user && profile) {
+      // 이미 platform 정보가 저장되어 있다면 스킵
+      if (profile.platform) return;
 
-      // PWA 앱(standalone) 환경에서만 알림 권한을 요청
-      const isStandalone =
-        window.matchMedia('(display-mode: standalone)').matches ||
-        (window.navigator as any).standalone === true;
-      if (isStandalone) {
-        fcmService.requestPermissionAndGetToken(user.uid).catch(console.error);
-      }
+      const updatePlatform = async () => {
+        try {
+          const { doc, updateDoc } = await import('firebase/firestore');
+          const { db } = await import('@/lib/firebase/clientApp');
+          
+          let platform = 'web';
+          if (typeof window !== 'undefined') {
+            const ua = navigator.userAgent || navigator.vendor || (window as any).opera;
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+            const isAndroid = /Android/i.test(ua);
+
+            // Capacitor Native 플랫폼 확인
+            try {
+              const { Capacitor } = require('@capacitor/core');
+              if (Capacitor.isNativePlatform()) {
+                const nativePlatform = Capacitor.getPlatform();
+                if (nativePlatform === 'android') platform = 'android';
+                else if (nativePlatform === 'ios') platform = 'ios';
+              } else {
+                if (isAndroid) platform = 'android';
+                else if (isIOS) platform = 'ios';
+              }
+            } catch {
+              if (isAndroid) platform = 'android';
+              else if (isIOS) platform = 'ios';
+            }
+          }
+
+          const userRef = doc(db, 'users', user.uid);
+          await updateDoc(userRef, { platform });
+          console.log(`[Platform Sync] User platform updated to: ${platform}`);
+        } catch (error) {
+          console.error('기기 플랫폼 갱신 오류:', error);
+        }
+      };
+
+      updatePlatform();
     }
-  }, [user]);
+  }, [user, profile]);
 
   // Foreground FCM Listener with In-App Banner Popup
   useEffect(() => {

@@ -514,7 +514,7 @@ export const socialService = {
   },
 
   // DJ 추가 (양방향 연동)
-  addDjToSocial: async (socialId: string, djId: string, djName: string, date: string): Promise<void> => {
+  addDjToSocial: async (socialId: string, djId: string, djName: string, date: string, djNativeName?: string): Promise<void> => {
     const socialRef = doc(db, SOCIALS_COLLECTION, socialId);
     const snap = await getDoc(socialRef);
     if (!snap.exists()) throw new Error('Social not found');
@@ -528,7 +528,8 @@ export const socialService = {
       id: randomId,
       date,
       djId,
-      djName
+      djName,
+      djNativeName: djNativeName || djName,
     };
     
     const updatedDjs = [...djs, newDj].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());

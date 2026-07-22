@@ -6,6 +6,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { galleryService, GalleryPost } from '@/lib/firebase/galleryService';
 import { getSafeStorageUrl } from '@/lib/utils/storageUtils';
 import SectionHeader from '@/components/common/SectionHeader';
+import { tabCache } from '@/lib/utils/tabCache';
 
 export default function LivePortalHome() {
   const { t } = useLanguage();
@@ -19,20 +20,38 @@ export default function LivePortalHome() {
     setMounted(true);
   }, []);
 
-  // 실시간 라이브 피드 데이터 구독
+  // Telemetry 첫 렌더 완료(T1) 기록
   useEffect(() => {
+    tabCache.logTransitionTime('Live', 'render');
+  }, []);
+
+  // 실시간 라이브 피드 데이터 구독 (Cache-First + SWR)
+  useEffect(() => {
+    const cached = tabCache.getStale('live:latest');
+    if (cached) {
+      setPosts(cached);
+      setLoading(false);
+    }
+
     const unsubscribe = galleryService.subscribeFeed((fetchedPosts) => {
-      // 최신순 시간순 정렬
       const sorted = [...fetchedPosts].sort((a, b) => {
         const timeA = typeof a.createdAt === 'number' ? a.createdAt : (a.createdAt?.toMillis?.() || 0);
         const timeB = typeof b.createdAt === 'number' ? b.createdAt : (b.createdAt?.toMillis?.() || 0);
         return timeB - timeA;
       });
+      tabCache.set('live:latest', sorted.slice(0, 15));
       setPosts(sorted);
       setLoading(false);
     });
     return () => unsubscribe();
   }, []);
+
+  // Telemetry 데이터 완료(T2) 감지기
+  useEffect(() => {
+    if (!loading && posts.length > 0) {
+      tabCache.logTransitionTime('Live', 'data');
+    }
+  }, [loading, posts]);
 
   const handleEnterLive = () => {
     // 입장 및 재생 클릭 시 기존 풀스크린 비디오 피드로 네비게이션

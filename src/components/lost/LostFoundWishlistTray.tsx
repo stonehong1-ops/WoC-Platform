@@ -90,7 +90,14 @@ export default function LostFoundWishlistTray({ likes, userId, onItemClick }: Lo
 
   return (
     <>
-      <div className="fixed bottom-14 inset-x-0 z-[60] px-6 w-full max-w-sm mx-auto pointer-events-none flex justify-center">
+      <div 
+        className="fixed inset-x-0 z-[60] px-6 w-full max-w-sm mx-auto pointer-events-none flex justify-center"
+        style={{ 
+          bottom: 'calc(76px + env(safe-area-inset-bottom, 0px) + 3mm)',
+          transform: 'translateY(var(--woc-bottom-nav-y, 0px))',
+          transition: 'transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1)'
+        }}
+      >
         <motion.div 
           animate={{ 
             height: isExpanded ? 'auto' : '64px', 
@@ -259,7 +266,7 @@ export default function LostFoundWishlistTray({ likes, userId, onItemClick }: Lo
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => setTrayState('COLLAPSED')}
-            className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-[45]"
+            className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-30"
           />
         )}
       </AnimatePresence>

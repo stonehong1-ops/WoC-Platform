@@ -446,11 +446,10 @@ function StayPageContent() {
         />
       )}
 
-      {activeCreateOpen && (
+      {showCreateModal && (
         <CreateStay 
-          isOpen={activeCreateOpen}
+          isOpen={showCreateModal}
           onClose={closeCreate}
-          isExiting={isCreateExiting}
         />
       )}
 

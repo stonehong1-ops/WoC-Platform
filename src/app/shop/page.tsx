@@ -89,7 +89,7 @@ function ShopPageContent() {
   } = useModalNavigation('create');
 
   useBackButtonClose(isDetailOpen, handleCloseDetail);
-  useBackButtonClose(isCreateOpen, closeCreate);
+  // Note: CreateProduct manages its own useBackButtonClose(isOpen, handleHeaderBack) for step-by-step back navigation.
 
   // Listen to global compose event
   useEffect(() => {

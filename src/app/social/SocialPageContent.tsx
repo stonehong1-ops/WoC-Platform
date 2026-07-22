@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSocialData } from './hooks/useSocialData';
 import EditSocialEvent from '@/components/social/EditSocialEvent';
+import SocialCreateModalTrigger from './components/SocialCreateModalTrigger';
 import SocialViewer from '@/components/social/SocialViewer';
 import SocialHeroCard, { DualText, getSocialDisplayTitle } from '@/components/social/SocialHeroCard';
 import { 
@@ -375,7 +376,7 @@ export default function SocialPageContent() {
 
   return (
     <main className="w-full relative pb-32 bg-slate-50/30 overflow-x-hidden">
-      <div className="px-4 space-y-6 pt-4">
+      <div className="px-4 space-y-6 pt-0">
 
         {/* WEEKLY VIEW (요일별 한눈에 보기 세로 타임라인) */}
         <section className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300 text-left pb-10">
@@ -496,14 +497,9 @@ export default function SocialPageContent() {
         />
       )}
 
-      {isCreateOpen && (
-        <EditSocialEvent
-          onClose={handleCloseCreate}
-          onSuccess={(id) => {
-            router.push(`/create-success?type=social&id=${id || ''}`);
-          }}
-        />
-      )}
+      <Suspense fallback={null}>
+        <SocialCreateModalTrigger />
+      </Suspense>
     </main>
   );
 }

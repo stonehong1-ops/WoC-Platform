@@ -22,7 +22,7 @@ const MAX_PHOTOS = 20;
 
 export default function CreateResaleItem({ isOpen, onClose, onSuccess, itemToEdit }: CreateResaleItemProps) {
   const { user } = useAuth();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { location } = useLocation();
   const router = useRouter();
   
@@ -172,233 +172,316 @@ export default function CreateResaleItem({ isOpen, onClose, onSuccess, itemToEdi
     }
   };
 
-  const isValid = !!(title && price && (existingUrls.length + mediaFiles.length) > 0 && region);
+  const [step, setStep] = useState(1);
+  const TOTAL_STEPS = 2;
+
+  const isStep1Valid = !!(title.trim() && (existingUrls.length + mediaFiles.length) > 0);
+  const isStep2Valid = !!(price.trim() && parseInt(price, 10) > 0 && region);
+
+  const handleNextOrSave = () => {
+    if (step === 1) {
+      if (!title.trim()) {
+        alert(t('resale.title_placeholder') || '상품명을 입력해 주세요.');
+        return;
+      }
+      if (existingUrls.length + mediaFiles.length === 0) {
+        alert(t('shop.msg_upload_photo') || '최소 1장의 사진을 등록해 주세요.');
+        return;
+      }
+      setStep(2);
+    } else {
+      if (!price.trim()) {
+        alert(t('shop.msg_enter_price') || '올바른 가격을 입력해 주세요.');
+        return;
+      }
+      handleSubmit();
+    }
+  };
+
+  const modalTitle = itemToEdit
+    ? (t('resale.edit_title') || '중고상품 수정')
+    : (t('resale.create_title') || '중고상품 등록');
+
+  const stepCategoryTitle = step === 1
+    ? (t('shop.product_details') || '상품 기본정보')
+    : (t('shop.price_and_location') || '가격 및 위치');
+
+  const hasDraftContent = Boolean(title.trim() || price.trim() || description.trim() || mediaFiles.length > 0);
 
   return (
     <FullScreenRegistration
       id="resale"
       isOpen={isOpen}
       onClose={onClose}
-      title={itemToEdit ? (t('resale.edit_title') || 'EDIT RESALE') : (t('resale.create_title') || 'CREATE RESALE')}
-      submitLabel="SAVE"
-      submittingLabel={`${t('resale.posting') || 'UPLOADING'} ${uploadProgress}%`}
-      onSubmit={handleSubmit}
+      title={modalTitle}
+      submitLabel={isSubmitting ? `${uploadProgress}%` : (step < TOTAL_STEPS ? t('common.next_step') : (itemToEdit ? (language === 'KR' ? '저장' : 'Save') : (language === 'KR' ? '등록' : 'Register')))}
+      submittingLabel={`${uploadProgress}%`}
+      onSubmit={handleNextOrSave}
       isSubmitting={isSubmitting}
-      isValid={isValid}
+      isValid={step === 1 ? isStep1Valid : isStep2Valid}
+      hasDraftContent={hasDraftContent}
     >
-      <div className="space-y-10 pt-4">
-        
-        {/* Photo Upload Area */}
-        <div className="space-y-3">
-          <div className="flex items-center justify-between ml-1">
-            <label className="text-[14px] font-bold text-gray-400">
-              {t('resale.add_photo') || 'PHOTOS'} <span className="text-primary">*</span>
-            </label>
-            <span className="text-[13px] font-bold text-gray-400">{previewUrls.length}/{MAX_PHOTOS}</span>
+      {/* Step Indicator Bar */}
+      <div className="w-full mb-6">
+        <div className="flex items-center justify-between border border-slate-100 bg-slate-50/80 backdrop-blur rounded-2xl px-4 py-3 shadow-sm">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-black text-slate-700">
+              Step {step} of {TOTAL_STEPS}
+            </span>
+            <span className="text-xs font-bold text-[#007AFF] bg-[#007AFF]/10 px-2.5 py-0.5 rounded-full">
+              {stepCategoryTitle}
+            </span>
           </div>
-          
-          <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2 items-center">
-            {mediaFiles.length < MAX_PHOTOS && (
-              <button 
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                className="shrink-0 w-24 h-24 rounded-2xl bg-gray-50 border-2 border-dashed border-gray-200 flex flex-col items-center justify-center hover:border-primary/40 hover:bg-primary/5 transition-all"
-              >
-                <span className="material-symbols-outlined text-gray-400 mb-1">add_a_photo</span>
-                <span className="text-[9px] font-black text-gray-400 uppercase">ADD</span>
-              </button>
-            )}
-            
-            {previewUrls.map((url, i) => (
-              <div key={i} className="shrink-0 relative w-24 h-24 rounded-2xl overflow-hidden group">
-                <img src={url} className="w-full h-full object-cover" alt={`Preview ${i}`} />
-                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                  <button 
-                    type="button"
-                    onClick={() => removePhoto(i)}
-                    className="w-8 h-8 rounded-full bg-white/20 hover:bg-white/40 flex items-center justify-center backdrop-blur-md transition-all"
-                  >
-                    <span className="material-symbols-outlined text-white text-[18px]">delete</span>
-                  </button>
-                </div>
-                {i === 0 && (
-                  <div className="absolute top-2 left-2 bg-primary px-2 py-0.5 rounded text-[8px] font-black text-white uppercase tracking-widest shadow-sm">
-                    Main
-                  </div>
-                )}
-              </div>
-            ))}
-            <input type="file" ref={fileInputRef} className="hidden" accept="image/*" multiple onChange={handleFileChange} />
-          </div>
-        </div>
-
-        {/* Title */}
-        <div className="space-y-2">
-          <label className="text-[14px] font-bold text-gray-400 ml-1">
-            {t('resale.what_sharing') || 'TITLE'} <span className="text-primary">*</span>
-          </label>
-          <input
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder={t('resale.title_placeholder') || 'What are you selling?'}
-            className="w-full text-[16px] font-bold border-none focus:ring-0 placeholder:text-gray-200 p-0 bg-transparent"
-            required
-          />
-        </div>
-
-        {/* Category */}
-        <div className="space-y-3">
-          <label className="text-[14px] font-bold text-gray-400 ml-1">
-            {t('resale.category') || 'CATEGORY'}
-          </label>
-          <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2">
-            {categories.map(c => (
-              <button
-                key={c}
-                type="button"
-                onClick={() => setCategory(c)}
-                className={`px-5 py-2.5 rounded-full text-xs font-bold whitespace-nowrap transition-all border ${
-                  category === c 
-                    ? 'bg-gray-900 text-white border-gray-900 shadow-md' 
-                    : 'bg-white text-gray-500 border-gray-200 hover:border-gray-300'
-                }`}
-              >
-                {t(`resale.cat_${c.toLowerCase()}`) || c}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Price & Currency & Negotiation */}
-        <div className="space-y-4">
-          <label className="text-[14px] font-bold text-gray-400 ml-1">
-            {t('resale.price') || 'PRICE'} <span className="text-primary">*</span>
-          </label>
-          
-          <div className="flex w-full items-center gap-3">
-            <select 
-              value={currency}
-              onChange={(e) => setCurrency(e.target.value)}
-              className="bg-gray-50 border-none rounded-2xl px-4 py-4 text-[16px] font-bold focus:ring-2 focus:ring-primary/10 w-[100px] shrink-0"
-            >
-              {CURRENCIES.map(curr => (
-                <option key={curr} value={curr}>{curr}</option>
-              ))}
-            </select>
-            <input
-              type="text"
-              value={formatPrice(price)}
-              onChange={handlePriceChange}
-              placeholder="0"
-              className="flex-1 min-w-0 bg-gray-50 border-none rounded-2xl px-5 py-4 text-[16px] font-bold focus:ring-2 focus:ring-primary/10 text-right overflow-hidden"
-              required
+          <div className="w-20 h-1.5 bg-slate-200 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-[#007AFF] transition-all duration-300"
+              style={{ width: `${(step / TOTAL_STEPS) * 100}%` }}
             />
           </div>
-
-          <div className="grid grid-cols-2 gap-3 mt-3">
-            <button 
-              type="button"
-              onClick={() => setCanNegotiate(false)}
-              className={`w-full py-3.5 rounded-2xl text-xs font-bold transition-all border-2 ${
-                !canNegotiate 
-                  ? 'border-gray-900 text-gray-900 bg-white' 
-                  : 'border-transparent text-gray-400 bg-gray-50 hover:bg-gray-100'
-              }`}
-            >
-              {t('resale.fixed_price') || 'Fixed Price'}
-            </button>
-            <button 
-              type="button"
-              onClick={() => setCanNegotiate(true)}
-              className={`w-full py-3.5 rounded-2xl text-xs font-bold transition-all border-2 ${
-                canNegotiate 
-                  ? 'border-primary text-primary bg-primary/5' 
-                  : 'border-transparent text-gray-400 bg-gray-50 hover:bg-gray-100'
-              }`}
-            >
-              {t('resale.negotiation_ok') || 'Negotiable'}
-            </button>
-          </div>
         </div>
+      </div>
 
-        {/* Location Region Selector */}
-        <div className="space-y-3">
-          <label className="text-[14px] font-bold text-gray-400 ml-1">
-            {t('resale.location') || 'LOCATION'} <span className="text-primary">*</span>
-          </label>
-          <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2">
-            {cityOptions.map(r => (
-              <button
-                key={r}
-                type="button"
-                onClick={() => setRegion(r)}
-                className={`px-5 py-2.5 rounded-full text-xs font-bold whitespace-nowrap transition-all border ${
-                  region === r 
-                    ? 'bg-primary text-white border-primary shadow-md' 
-                    : 'bg-white text-gray-500 border-gray-200 hover:border-gray-300'
-                }`}
-              >
-                {r}
-              </button>
-            ))}
-          </div>
-        </div>
+      <div className="space-y-6">
+        {step === 1 && (
+          <div className="space-y-6 animate-in fade-in duration-200">
+            {/* Photos Card */}
+            <div className="border border-[#e0e4e5] rounded-2xl bg-white shadow-sm overflow-hidden">
+              <div className="bg-[#f8f9fa] px-4 py-3 border-b border-[#e0e4e5] flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="material-symbols-rounded text-sm text-[#007AFF]">photo_library</span>
+                  <p className="text-[14px] font-bold text-[#007AFF]">
+                    {t('resale.add_photo') || 'PHOTOS'} <span className="text-red-500">*</span>
+                  </p>
+                </div>
+                <span className="text-xs font-bold text-slate-400">{previewUrls.length}/{MAX_PHOTOS}</span>
+              </div>
+              <div className="p-4">
+                <div className="flex gap-3 overflow-x-auto no-scrollbar py-1">
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="shrink-0 w-24 h-30 border-2 border-dashed border-[#e0e4e5] rounded-2xl flex flex-col items-center justify-center gap-1 hover:border-[#007AFF] hover:bg-blue-50/50 transition-colors"
+                  >
+                    <span className="material-symbols-rounded text-2xl text-[#007AFF]">add_a_photo</span>
+                    <span className="text-[11px] font-bold text-slate-500">Add Photo</span>
+                  </button>
+                  <input ref={fileInputRef} type="file" accept="image/*" multiple onChange={handleFileChange} className="hidden" />
 
-        {/* Condition Selector */}
-        <div className="space-y-3">
-           <label className="text-[14px] font-bold text-gray-400 ml-1">
-             {t('resale.condition') || 'CONDITION'}
-           </label>
-           <div className="grid grid-cols-4 gap-3">
-              {conditions.map(c => (
-                <button
-                  key={c.val}
-                  type="button"
-                  onClick={() => setCondition(c.val)}
-                  className={`py-3.5 rounded-2xl text-[12px] font-black transition-all border ${
-                    condition === c.val 
-                      ? 'border-gray-900 bg-gray-900 text-white' 
-                      : 'border-gray-100 bg-white text-gray-400 hover:border-gray-300'
-                  }`}
-                >
-                  <div className="text-lg leading-tight uppercase mb-0.5">{c.val}</div>
-                  <div className="text-[9px] opacity-80 uppercase tracking-widest">
-                    {t(`resale.cond_${c.val.toLowerCase()}`) || c.label}
+                  {previewUrls.map((url, idx) => (
+                    <div key={idx} className="relative shrink-0 w-24 h-30 border border-slate-200 rounded-2xl overflow-hidden shadow-sm group">
+                      <img src={url} alt={`Preview ${idx}`} className="w-full h-full object-cover" />
+                      {idx === 0 && (
+                        <div className="absolute top-1.5 left-1.5 bg-[#FF9500] text-white text-[9px] font-black tracking-wider px-1.5 py-0.5 rounded shadow-sm z-10">
+                          PRIMARY
+                        </div>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => removePhoto(idx)}
+                        className="absolute top-1.5 right-1.5 bg-black/60 text-white rounded-full p-1 hover:bg-red-500 transition-colors"
+                      >
+                        <span className="material-symbols-rounded text-[14px]">close</span>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Basic Details Card */}
+            <div className="border border-[#e0e4e5] rounded-2xl bg-white shadow-sm overflow-hidden space-y-4">
+              <div className="bg-[#f8f9fa] px-4 py-3 border-b border-[#e0e4e5] flex items-center gap-2">
+                <span className="material-symbols-rounded text-sm text-[#007AFF]">info</span>
+                <p className="text-[14px] font-bold text-[#007AFF]">Basic Info</p>
+              </div>
+              <div className="p-4 space-y-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                    {t('resale.what_sharing') || 'Title'} <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    placeholder={t('resale.title_placeholder') || 'e.g. Comme il Faut Tango Shoes Size 37'}
+                    className="w-full bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-4 py-3 text-sm font-bold focus:border-[#007AFF] focus:ring-1 focus:ring-[#007AFF] outline-none transition-all placeholder:text-[#acb3b4] placeholder:font-normal"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                    {t('resale.category') || 'Category'}
+                  </label>
+                  <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
+                    {categories.map((c) => (
+                      <button
+                        key={c}
+                        type="button"
+                        onClick={() => setCategory(c)}
+                        className={`px-4 py-2.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all border ${
+                          category === c
+                            ? 'bg-[#007AFF] text-white border-[#007AFF] shadow-sm'
+                            : 'bg-[#f8f9fa] text-slate-600 border-[#e0e4e5] hover:border-slate-300'
+                        }`}
+                      >
+                        {t(`resale.cat_${c.toLowerCase()}`) || c}
+                      </button>
+                    ))}
                   </div>
-                </button>
-              ))}
-           </div>
-        </div>
+                </div>
 
-        {/* Trade Options */}
-        <div className="space-y-3">
-          <label className="text-[14px] font-bold text-gray-400 ml-1">
-            {t('resale.trade_method') || 'TRADE METHOD'}
-          </label>
-          <select 
-            value={tradeMethod}
-            onChange={(e) => setTradeMethod(e.target.value as TradeMethod)}
-            className="w-full bg-gray-50 border-none rounded-2xl px-5 py-4 text-[16px] font-bold focus:ring-2 focus:ring-primary/10"
-          >
-            <option value="direct">{t('resale.trade_direct') || 'Direct'}</option>
-            <option value="delivery">{t('resale.trade_delivery') || 'Delivery'}</option>
-            <option value="both">{t('resale.trade_both') || 'Both'}</option>
-          </select>
-        </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                    {t('resale.condition') || 'Condition'}
+                  </label>
+                  <div className="grid grid-cols-4 gap-2">
+                    {conditions.map((c) => (
+                      <button
+                        key={c.val}
+                        type="button"
+                        onClick={() => setCondition(c.val)}
+                        className={`py-3 rounded-xl border text-center transition-all ${
+                          condition === c.val
+                            ? 'bg-[#007AFF] text-white border-[#007AFF] shadow-sm'
+                            : 'bg-[#f8f9fa] text-slate-600 border-[#e0e4e5] hover:border-slate-300'
+                        }`}
+                      >
+                        <div className="text-sm font-black uppercase">{c.val}</div>
+                        <div className="text-[10px] font-medium opacity-80">{c.label}</div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
 
-        {/* Description */}
-        <div className="space-y-3 pb-8">
-          <label className="text-[14px] font-bold text-gray-400 ml-1">
-            {t('resale.story') || 'DESCRIPTION'}
-          </label>
-          <textarea
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder={t('resale.story_placeholder') || 'Describe your item in detail...'}
-            className="w-full min-h-[160px] bg-gray-50 border-none rounded-[28px] px-6 py-5 text-[16px] font-medium focus:ring-2 focus:ring-primary/10 resize-y leading-relaxed"
-          />
-        </div>
-        
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                    {t('resale.story') || 'Description'}
+                  </label>
+                  <textarea
+                    rows={4}
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    placeholder={t('resale.story_placeholder') || 'Describe your item condition, usage history...'}
+                    className="w-full bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-4 py-3 text-sm font-bold focus:border-[#007AFF] focus:ring-1 focus:ring-[#007AFF] outline-none transition-all resize-none leading-relaxed placeholder:text-[#acb3b4] placeholder:font-normal"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {step === 2 && (
+          <div className="space-y-6 animate-in fade-in duration-200">
+            {/* Price Card */}
+            <div className="border border-[#e0e4e5] rounded-2xl bg-white shadow-sm overflow-hidden">
+              <div className="bg-[#f8f9fa] px-4 py-3 border-b border-[#e0e4e5] flex items-center gap-2">
+                <span className="material-symbols-rounded text-sm text-[#007AFF]">payments</span>
+                <p className="text-[14px] font-bold text-[#007AFF]">Pricing</p>
+              </div>
+              <div className="p-4 space-y-4">
+                <div className="flex gap-3">
+                  <div className="w-[100px] shrink-0">
+                    <label className="block text-xs font-bold text-slate-700 mb-1.5">Currency</label>
+                    <select
+                      value={currency}
+                      onChange={(e) => setCurrency(e.target.value)}
+                      className="w-full bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-3 py-3 text-sm font-bold focus:border-[#007AFF] outline-none"
+                    >
+                      {CURRENCIES.map(curr => (
+                        <option key={curr} value={curr}>{curr}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="flex-1">
+                    <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                      {t('resale.price') || 'Price'} <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={formatPrice(price)}
+                      onChange={handlePriceChange}
+                      placeholder="0"
+                      className="w-full bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-4 py-3 text-[16px] font-bold text-right focus:border-[#007AFF] outline-none placeholder:text-[#acb3b4] placeholder:font-normal"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex gap-3 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => setCanNegotiate(false)}
+                    className={`flex-1 py-3 rounded-xl text-xs font-bold transition-all border ${
+                      !canNegotiate
+                        ? 'bg-[#007AFF] text-white border-[#007AFF]'
+                        : 'bg-[#f8f9fa] text-slate-600 border-[#e0e4e5]'
+                    }`}
+                  >
+                    {t('resale.fixed_price') || 'Fixed Price'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCanNegotiate(true)}
+                    className={`flex-1 py-3 rounded-xl text-xs font-bold transition-all border ${
+                      canNegotiate
+                        ? 'bg-[#007AFF] text-white border-[#007AFF]'
+                        : 'bg-[#f8f9fa] text-slate-600 border-[#e0e4e5]'
+                    }`}
+                  >
+                    {t('resale.negotiation_ok') || 'Negotiable'}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Location & Trade Method Card */}
+            <div className="border border-[#e0e4e5] rounded-2xl bg-white shadow-sm overflow-hidden">
+              <div className="bg-[#f8f9fa] px-4 py-3 border-b border-[#e0e4e5] flex items-center gap-2">
+                <span className="material-symbols-rounded text-sm text-[#007AFF]">location_on</span>
+                <p className="text-[14px] font-bold text-[#007AFF]">Location & Trade Method</p>
+              </div>
+              <div className="p-4 space-y-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                    {t('resale.location') || 'Location'} <span className="text-red-500">*</span>
+                  </label>
+                  <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
+                    {cityOptions.map((r) => (
+                      <button
+                        key={r}
+                        type="button"
+                        onClick={() => setRegion(r)}
+                        className={`px-4 py-2.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all border ${
+                          region === r
+                            ? 'bg-[#007AFF] text-white border-[#007AFF] shadow-sm'
+                            : 'bg-[#f8f9fa] text-slate-600 border-[#e0e4e5] hover:border-slate-300'
+                        }`}
+                      >
+                        {r}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                    {t('resale.trade_method') || 'Trade Method'}
+                  </label>
+                  <select
+                    value={tradeMethod}
+                    onChange={(e) => setTradeMethod(e.target.value as TradeMethod)}
+                    className="w-full bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-4 py-3 text-sm font-bold focus:border-[#007AFF] outline-none"
+                  >
+                    <option value="direct">{t('resale.trade_direct') || 'Direct'}</option>
+                    <option value="delivery">{t('resale.trade_delivery') || 'Delivery'}</option>
+                    <option value="both">{t('resale.trade_both') || 'Both'}</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </FullScreenRegistration>
   );
