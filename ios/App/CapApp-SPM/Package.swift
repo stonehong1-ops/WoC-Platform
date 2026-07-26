@@ -2,7 +2,6 @@
 import PackageDescription
 
 // DO NOT MODIFY THIS FILE - managed by Capacitor CLI commands
-// Firebase는 project.pbxproj에서 XCRemoteSwiftPackageReference로 관리됨
 let package = Package(
     name: "CapApp-SPM",
     platforms: [.iOS(.v15)],
@@ -13,8 +12,8 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/ionic-team/capacitor-swift-pm.git", exact: "8.4.1"),
-        .package(name: "CapacitorApp", path: "../../../node_modules/@capacitor/app"),
-        .package(name: "CapacitorPushNotifications", path: "../../../node_modules/@capacitor/push-notifications")
+        .package(name: "CapacitorApp", path: "..\..\..\node_modules\@capacitor\app"),
+        .package(name: "CapacitorPushNotifications", path: "..\..\..\node_modules\@capacitor\push-notifications")
     ],
     targets: [
         .target(

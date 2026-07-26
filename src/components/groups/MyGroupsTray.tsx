@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useRef } from 'react';
+import { useBackButtonClose } from '@/hooks/useBackButtonClose';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { Group } from '@/types/group';
@@ -50,7 +51,6 @@ export default function MyGroupsTray({ groups, onGroupSelect }: MyGroupsTrayProp
 
   const isExpanded = trayState === 'EXPANDED';
 
-  const { useBackButtonClose } = require('@/hooks/useBackButtonClose');
   useBackButtonClose(isExpanded, () => setTrayState('COLLAPSED'));
 
   // Hide tray when no groups

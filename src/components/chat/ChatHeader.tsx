@@ -23,15 +23,15 @@ export default function ChatHeader({
   onBack,
   setIsSidebarOpen
 }: ChatHeaderProps) {
-  const isPrivate = room?.participants && room.participants.length <= 2;
+  const isPrivate = (room?.participants && room.participants.length <= 2) || !!otherUser || room?.type === 'private' || room?.type === 'personal';
 
   if (isPrivate) {
-    const otherParticipantId = room?.participants.find(p => p !== user?.uid) || '';
+    const otherParticipantId = room?.participants?.find(p => p !== user?.uid) || otherUser?.uid || '';
     return (
       <div 
         className="px-4.5 border-b border-gray-100/50 flex items-center justify-between bg-white/80 backdrop-blur-xl z-20 sticky top-0"
         style={{
-          paddingTop: Capacitor.isNativePlatform() ? 'calc(10px + env(safe-area-inset-top))' : '10px',
+          paddingTop: 'calc(10px + env(safe-area-inset-top, 0px))',
           paddingBottom: '10px'
         }}
       >
@@ -74,7 +74,7 @@ export default function ChatHeader({
     <div 
       className="px-4.5 border-b border-gray-100/50 flex items-center justify-between bg-white z-20 sticky top-0"
       style={{
-        paddingTop: Capacitor.isNativePlatform() ? 'calc(10px + env(safe-area-inset-top))' : '10px',
+        paddingTop: 'calc(10px + env(safe-area-inset-top, 0px))',
         paddingBottom: '10px'
       }}
     >
@@ -89,7 +89,7 @@ export default function ChatHeader({
           <div className="flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
             <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-              {room?.participants ? t('chatroom.members_count', { count: room.participants.length }) : t('chatroom.live_syncing')}
+              {room?.participants ? t('chatroom.members_count', { count: room.participants.length }) : t('chat.active_title', '실시간 대화')}
             </span>
           </div>
         </div>

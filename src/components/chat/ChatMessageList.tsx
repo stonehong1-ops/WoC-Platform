@@ -309,6 +309,7 @@ export default function ChatMessageList({
       const option = getVal(lines, ['Option', '옵션']);
       const amount = getVal(lines, ['Amount', '결제금액', '금액', '수량']);
       const image = getVal(lines, ['Image', '이미지']);
+      const memo = getVal(lines, ['Applicant Memo', '신청자 메모', '신청 메모', '입금자 메모', '메모', 'Memo', 'Notes', '요청사항']);
       
       return (
         <div className="flex flex-col gap-3 min-w-[240px]">
@@ -325,7 +326,13 @@ export default function ChatMessageList({
             <div className="flex-1 space-y-1 min-w-0 max-w-[calc(100%-4.5rem)]">
               <p className="text-[10px] opacity-60 font-bold uppercase tracking-tighter truncate">{t('chatroom.label_order_no')}: {orderNo}</p>
               <p className="text-sm font-black leading-tight whitespace-normal break-words">{product}</p>
-              <p className="text-[11px] font-bold opacity-80 whitespace-normal break-words">{option}</p>
+              {option && <p className="text-[11px] font-bold opacity-80 whitespace-normal break-words">{option}</p>}
+              {memo && (
+                <div className="bg-white/15 backdrop-blur-xs rounded-xl p-2 mt-1 border border-white/20">
+                  <span className="text-[9.5px] font-extrabold opacity-75 block mb-0.5">📝 {t('common.applicant_memo', '신청자 메모')}</span>
+                  <p className="text-[11.5px] font-black leading-snug whitespace-normal break-words">{memo}</p>
+                </div>
+              )}
             </div>
           </div>
           <div className="bg-white/10 rounded-xl p-3 flex justify-between items-center">
@@ -341,6 +348,7 @@ export default function ChatMessageList({
       const orderNo = getVal(lines, ['Order No', '주문번호', '주문 번호']);
       const productName = getVal(lines, ['Product', '상품명', 'Item', 'Title']);
       const depositor = getVal(lines, ['Depositor', '입금자명', '입금자']);
+      const memo = getVal(lines, ['Applicant Memo', 'Payment Memo', '신청자 메모', '신청 메모', '입금 메모', '입금자 메모', '메모', 'Memo', 'Notes', '요청사항']);
 
       return (
         <div className="flex flex-col gap-3 min-w-[240px]">
@@ -354,6 +362,12 @@ export default function ChatMessageList({
             )}
             <p className="text-[10px] opacity-60 font-bold uppercase tracking-tighter">{t('chatroom.label_order_no')}: {orderNo}</p>
             <p className="text-[12px] font-bold opacity-90">{t('chatroom.transfer_reported_by', { name: depositor })}</p>
+            {memo && (
+              <div className="bg-white/15 backdrop-blur-xs rounded-xl p-2 mt-1.5 border border-white/20">
+                <span className="text-[9.5px] font-extrabold opacity-75 block mb-0.5">📝 {t('common.applicant_memo', '신청자 메모')}</span>
+                <p className="text-[11.5px] font-black leading-snug whitespace-normal break-words">{memo}</p>
+              </div>
+            )}
           </div>
           <div className="text-[10px] bg-white/10 px-3 py-1.5 rounded-full font-bold uppercase self-start">
             {msg.metadata?.status === 'CONFIRMED' || msg.metadata?.status === 'SELLER_CONFIRMED' 

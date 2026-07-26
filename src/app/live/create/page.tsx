@@ -1,7 +1,11 @@
 'use client';
 
+export const dynamic = 'force-dynamic';
+
 import '../live.css';
-import React, { useState, useEffect, useRef, Suspense } from 'react';
+import React, { useState, useEffect, useRef, useCallback, Suspense } from 'react';
+import { useBackButtonClose } from '@/hooks/useBackButtonClose';
+import { useLocalBackClose } from '@/hooks/useLocalBackClose';
 import { Capacitor } from '@capacitor/core';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -44,11 +48,30 @@ const GalleryCreateContent = () => {
   const { user, profile } = useAuth();
   const { location } = useLocation();
   const searchParams = useSearchParams();
-  const editId = searchParams.get('edit');
-  const source = searchParams.get('source');
+  const editId = searchParams?.get('edit') || null;
+  const source = searchParams?.get('source') || null;
+  const returnTo = searchParams?.get('returnTo') || null;
   const isFromLive = source === 'live';
   const { language, t } = useLanguage();
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleSafeNavigateBack = useCallback(() => {
+    const groupIdParam = searchParams?.get('groupId') || null;
+    const safeReturnTo = (returnTo && groupIdParam && returnTo.startsWith(`/groups/${groupIdParam}`))
+      ? returnTo
+      : (groupIdParam ? `/groups/${groupIdParam}?tab=live` : null);
+
+    if (safeReturnTo) {
+      router.replace(safeReturnTo);
+    } else if (typeof window !== 'undefined' && window.history.length > 1) {
+      router.back();
+    } else {
+      router.push('/groups');
+    }
+  }, [returnTo, searchParams, router]);
+
+  // [스톤님 수술] Android 디바이스 백버튼 수술 — useLocalBackClose 로 0ms 안착
+  useLocalBackClose(true, handleSafeNavigateBack);
 
   // Media
   const [images, setImages] = useState<File[]>([]);
@@ -789,10 +812,14 @@ const GalleryCreateContent = () => {
 
       if (isEditMode && editId) {
         await galleryService.updatePost(editId, postData);
-        router.back();
+        handleSafeNavigateBack();
       } else {
         const newPost = await galleryService.createPost({ authorId: user.uid, authorName: user.displayName || profile?.nickname || 'Anonymous', authorPhoto: user.photoURL || '', ...postData });
-        router.replace('/create-success?type=live&id=' + (newPost || ''));
+        if (returnTo) {
+          router.replace(returnTo);
+        } else {
+          router.replace('/create-success?type=live&id=' + (newPost || ''));
+        }
       }
     } catch (err) {
       console.error(err);
@@ -813,10 +840,10 @@ const GalleryCreateContent = () => {
       const isDirty = caption || images.length > 0 || previews.length > 0;
       if (isDirty) {
         if (confirm(t('common.confirm_discard') || "작성 중인 내용이 있습니다. 정말 나가시겠습니까?")) {
-          router.back();
+          handleSafeNavigateBack();
         }
       } else {
-        router.back();
+        handleSafeNavigateBack();
       }
     }
   };
@@ -830,7 +857,7 @@ const GalleryCreateContent = () => {
   return (
     <div
       className="fixed inset-0 bg-white overflow-y-auto animate-in fade-in duration-300"
-      style={{ zIndex: 100000, paddingTop: Capacitor.isNativePlatform() ? 'calc(56px + env(safe-area-inset-top))' : '56px' }}
+      style={{ zIndex: 100000, paddingTop: 'calc(56px + env(safe-area-inset-top, 0px))' }}
     >
       <style dangerouslySetInnerHTML={{ __html: `.material-symbols-rounded { font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24; }` }} />
 
@@ -839,8 +866,8 @@ const GalleryCreateContent = () => {
         className="fixed top-0 left-0 w-full flex-shrink-0 bg-white border-b border-slate-100 px-4 flex items-center justify-between z-50"
         style={{
           zIndex: 100010,
-          paddingTop: Capacitor.isNativePlatform() ? 'env(safe-area-inset-top)' : '0px',
-          height: Capacitor.isNativePlatform() ? 'calc(56px + env(safe-area-inset-top))' : '56px'
+          paddingTop: 'env(safe-area-inset-top, 0px)',
+          height: 'calc(56px + env(safe-area-inset-top, 0px))'
         }}
       >
         <button
@@ -851,7 +878,7 @@ const GalleryCreateContent = () => {
           <span className="material-symbols-rounded text-2xl">arrow_back</span>
         </button>
         <h1 className="text-[16px] font-bold text-slate-800">
-          {isEditMode ? (t('gallery.edit_post') || '게시물 수정') : (t('gallery.new_post') || '새 게시물 작성')}
+          {isEditMode ? (t('gallery.edit_post') || '라이브 수정') : (t('gallery.new_post') || '새 라이브')}
         </h1>
         <div className="w-10" />
       </header>
@@ -1204,8 +1231,8 @@ const GalleryCreateContent = () => {
         style={{
           zIndex: 100010,
           paddingTop: '16px',
-          paddingBottom: Capacitor.isNativePlatform() ? 'calc(16px + env(safe-area-inset-bottom))' : '16px',
-          height: Capacitor.isNativePlatform() ? 'calc(76px + env(safe-area-inset-bottom))' : '76px'
+          paddingBottom: 'calc(16px + env(safe-area-inset-bottom, 0px))',
+          height: 'calc(76px + env(safe-area-inset-bottom, 0px))'
         }}
       >
         {step > 1 && (

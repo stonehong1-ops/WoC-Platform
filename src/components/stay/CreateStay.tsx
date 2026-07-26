@@ -13,6 +13,7 @@ import { REGIONS } from '@/components/layout/LocationSelector';
 import { CITY_COORDINATES } from '@/constants/locations';
 import { Stay, StayType } from '@/types/stay';
 import { Group } from '@/types/group';
+import { StandardImageUploader } from '@/components/common/StandardImageUploader';
 
 interface CreateStayProps {
   isOpen: boolean;
@@ -307,7 +308,7 @@ export default function CreateStay({
           <span className="material-symbols-rounded text-2xl">arrow_back</span>
         </button>
         <h1 className="text-[16px] font-bold text-slate-800 truncate">
-          {modalTitle}
+          {stayToEdit ? (t('stay.edit_stay') || '숙소 수정') : (t('stay.create_stay') || '새 숙소')}
         </h1>
         <div className="w-10" />
       </header>
@@ -492,42 +493,25 @@ export default function CreateStay({
               <div className="bg-[#f8f9fa] px-4 py-3 border-b border-[#e0e4e5] flex items-center gap-2">
                 <span className="material-symbols-rounded text-sm text-[#007AFF]">photo_library</span>
                 <p className="text-[14px] font-bold text-primary">
-                  {language === 'KR' ? '숙소 사진' : 'Stay Photos'} ({previewUrls.length}/{MAX_PHOTOS}) <span className="text-red-500">*</span>
+                  {language === 'KR' ? '숙소 사진' : 'Stay Photos'} <span className="text-red-500">*</span>
                 </p>
               </div>
               <div className="p-4">
-                <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2 items-center">
-                  {previewUrls.length < MAX_PHOTOS && (
-                    <button
-                      type="button"
-                      onClick={() => fileInputRef.current?.click()}
-                      className="shrink-0 w-24 h-24 rounded-2xl bg-slate-50 border-2 border-dashed border-slate-200 flex flex-col items-center justify-center hover:border-[#007AFF]/40 hover:bg-[#007AFF]/5 transition-all"
-                    >
-                      <span className="material-symbols-rounded text-slate-400 mb-1">add_a_photo</span>
-                      <span className="text-[10px] font-black text-slate-400 uppercase">ADD</span>
-                    </button>
-                  )}
-                  {previewUrls.map((url, i) => (
-                    <div key={i} className="shrink-0 relative w-24 h-24 rounded-2xl overflow-hidden group shadow-sm border border-slate-100">
-                      <img src={url} className="w-full h-full object-cover" alt={`Preview ${i}`} />
-                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                        <button
-                          type="button"
-                          onClick={() => removePhoto(i)}
-                          className="w-8 h-8 rounded-full bg-white/20 hover:bg-white/40 flex items-center justify-center backdrop-blur-md transition-all text-white"
-                        >
-                          <span className="material-symbols-rounded text-[18px]">delete</span>
-                        </button>
-                      </div>
-                      {i === 0 && (
-                        <div className="absolute top-2 left-2 bg-[#007AFF] px-2 py-0.5 rounded text-[8px] font-black text-white uppercase tracking-widest shadow-sm">
-                          Main
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                  <input type="file" ref={fileInputRef} className="hidden" accept="image/*" multiple onChange={handleFileChange} />
-                </div>
+                <StandardImageUploader
+                  mode="multiple"
+                  aspectRatio="1/1"
+                  maxCount={MAX_PHOTOS}
+                  storageFolderPath="stays"
+                  value={previewUrls}
+                  onChange={(urls) => {
+                    if (Array.isArray(urls)) {
+                      setPreviewUrls(urls);
+                      setExistingUrls(urls);
+                      setMediaFiles([]);
+                    }
+                  }}
+                  placeholder={language === 'KR' ? '숙소 사진 추가' : 'Add Stay Photos'}
+                />
               </div>
             </div>
 

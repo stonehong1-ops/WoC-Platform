@@ -5,7 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { App } from '@capacitor/app';
 import { Capacitor } from '@capacitor/core';
-import { hasOpenModals } from '@/hooks/useBackButtonClose';
+import { closeTopModal } from '@/hooks/useLocalBackClose';
 
 export default function PageWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -24,8 +24,9 @@ export default function PageWrapper({ children }: { children: React.ReactNode })
   const isPlaza = pathname.startsWith('/plaza');
   const isExplore = pathname.startsWith('/explore');
   const isNation = pathname.startsWith('/class') || pathname.startsWith('/shop') || pathname.startsWith('/resale') || pathname.startsWith('/stay') || pathname.startsWith('/lost') || pathname.startsWith('/hub');
+  const isGroups = pathname.startsWith('/groups');
   
-  const isPublic = isLanding || isLogin || isApp || isLive || isVenues || isEvents || isSocial || isPlaza || isExplore || isNation || isHome || pathname.startsWith('/yedamche') || pathname.startsWith('/pt') || pathname.startsWith('/fys') || pathname.startsWith('/support') || pathname.startsWith('/privacy') || pathname.startsWith('/child-safety') || pathname.startsWith('/account-deletion');
+  const isPublic = isLanding || isLogin || isApp || isLive || isVenues || isEvents || isSocial || isPlaza || isExplore || isNation || isHome || isGroups || pathname.startsWith('/yedamche') || pathname.startsWith('/pt') || pathname.startsWith('/fys') || pathname.startsWith('/support') || pathname.startsWith('/privacy') || pathname.startsWith('/child-safety') || pathname.startsWith('/account-deletion');
 
   // 플랫폼 클래스 주입 (iOS / Android / Web)
   useEffect(() => {
@@ -41,9 +42,12 @@ export default function PageWrapper({ children }: { children: React.ReactNode })
     if (typeof window === 'undefined' || !Capacitor.isNativePlatform()) return;
 
     const backButtonHandler = App.addListener('backButton', ({ canGoBack }) => {
-      // 모달이 열려있으면 canGoBack과 무관하게 history.back() 호출
-      // (Android WebView에서 pushState가 canGoBack에 반영 안 되는 케이스 대응)
-      if (hasOpenModals() || canGoBack) {
+      // 1. 등록창/Local Overlay가 열려있으면 history 건드리지 않고 0ms 즉시 모달만 닫음
+      if (closeTopModal()) {
+        return;
+      }
+      // 2. Local Overlay가 없고 이전 페이지가 있으면 정상 history.back()
+      if (canGoBack) {
         window.history.back();
       } else {
         // 더 이상 뒤로갈 곳이 없으면 앱 최소화

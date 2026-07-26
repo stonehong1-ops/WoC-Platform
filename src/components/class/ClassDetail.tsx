@@ -21,6 +21,7 @@ import { useBlockedUsers } from '@/hooks/useBlockedUsers';
 import ReportModal from '@/components/common/ReportModal';
 import { doc, setDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase/clientApp';
+import DetailHeader from '@/components/common/DetailHeader';
 
 interface ClassDetailProps {
   groupId: string;
@@ -30,9 +31,10 @@ interface ClassDetailProps {
   itemDetail?: GroupClass | ClassDiscount | null;
   isModal?: boolean;
   onManage?: (item: GroupClass) => void;
+  onApplyClick?: (itemId?: string) => void;
 }
 
-export default function ClassDetail({ groupId, onClose, isOpen, itemId, itemDetail: propItemDetail, onManage }: ClassDetailProps) {
+export default function ClassDetail({ groupId, onClose, isOpen, itemId, itemDetail: propItemDetail, onManage, onApplyClick }: ClassDetailProps) {
   const { language, t } = useLanguage();
   const { user, profile } = useAuth();
   const [itemDetail, setItemDetail] = useState<GroupClass | ClassDiscount | any | null>(() => {
@@ -352,55 +354,61 @@ export default function ClassDetail({ groupId, onClose, isOpen, itemId, itemDeta
   if (!isOpen) return null;
 
   const contentLayout = (
-    <div className="fixed inset-0 z-[9999] bg-white flex flex-col antialiased animate-in slide-in-from-bottom duration-300">
+    <div className="fixed inset-0 z-[9990] bg-white flex flex-col w-full h-full antialiased animate-in slide-in-from-bottom duration-300">
       <style dangerouslySetInnerHTML={{ __html: `
         .detail-scrollbar::-webkit-scrollbar { display: none; }
         .detail-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
       `}} />
 
       {/* Header */}
-      <header 
-        className={`fixed top-0 left-0 right-0 z-[260] flex items-center justify-between px-4 pb-3 transition-all duration-300 ${isScrolled ? 'bg-white/95 backdrop-blur-md shadow-sm border-b border-[#f2f4f4]' : 'bg-gradient-to-b from-black/30 to-transparent'}`}
-        style={{ paddingTop: Capacitor.isNativePlatform() ? 'max(env(safe-area-inset-top), 12px)' : '12px' }}
-      >
-        <button 
-          onClick={handleClose} 
-          className={`w-10 h-10 rounded-full flex items-center justify-center transition-all active:scale-95 ${isScrolled ? 'bg-slate-100 text-[#2d3435]' : 'bg-black/20 backdrop-blur-sm text-white'}`}
-        >
-          <span className="material-symbols-outlined text-xl">arrow_back</span>
-        </button>
-        <h1 className={`text-sm font-bold truncate max-w-[180px] transition-opacity ${isScrolled ? 'opacity-100 text-[#2d3435]' : 'opacity-0'}`}>
-          {itemDetail ? itemDetail.title : 'Detail'}
-        </h1>
-        <div className="relative">
-          <button
-            onClick={() => {
-              if (hasManagePermission) {
-                setIsManageMenuOpen(true);
-              } else {
-                setShowDropdown(!showDropdown);
-              }
-            }}
-            className={`w-10 h-10 rounded-full flex items-center justify-center transition-all active:scale-95 ${isScrolled ? 'bg-slate-100 text-[#2d3435]' : 'bg-black/20 backdrop-blur-sm text-white'}`}
-          >
-            <span className="material-symbols-outlined text-xl">more_vert</span>
-          </button>
-          {showDropdown && !hasManagePermission && (
-            <div className="absolute right-0 top-12 w-40 bg-white border border-gray-100 rounded-xl shadow-lg py-1.5 z-[270] text-gray-800 animate-in fade-in duration-200">
-              <button onClick={() => { setShowDropdown(false); setIsReportModalOpen(true); }}
-                className="w-full px-4 py-2.5 text-left text-xs font-bold text-gray-700 hover:bg-gray-50 flex items-center gap-2">
-                <span className="material-symbols-rounded text-base text-red-500">campaign</span>
-                {t('plaza.report') || '신고하기'}
-              </button>
-              <button onClick={() => { setShowDropdown(false); handleBlockToggle(); }}
-                className="w-full px-4 py-2.5 text-left text-xs font-bold text-gray-700 hover:bg-gray-50 flex items-center gap-2">
-                <span className="material-symbols-rounded text-base text-gray-500">block</span>
-                {isBlocked ? (t('block.unblock') || '차단 해제') : (t('block.button') || '차단하기')}
-              </button>
-            </div>
-          )}
-        </div>
-      </header>
+      <DetailHeader
+        title={itemDetail ? itemDetail.title : 'Detail'}
+        onClose={handleClose}
+        isScrolled={isScrolled}
+        rightActions={
+          <div className="relative">
+            <button
+              onClick={() => {
+                if (hasManagePermission) {
+                  setIsManageMenuOpen(true);
+                } else {
+                  setShowDropdown(!showDropdown);
+                }
+              }}
+              aria-label="More options"
+              className={`w-10 h-10 rounded-full flex items-center justify-center transition-all active:scale-95 ${
+                isScrolled ? 'bg-slate-100 text-[#2d3435]' : 'bg-black/20 backdrop-blur-sm text-white'
+              }`}
+            >
+              <span className="material-symbols-rounded text-xl">more_vert</span>
+            </button>
+            {showDropdown && !hasManagePermission && (
+              <div className="absolute right-0 top-12 w-40 bg-white border border-gray-100 rounded-xl shadow-lg py-1.5 z-[270] text-gray-800 animate-in fade-in duration-200">
+                <button
+                  onClick={() => {
+                    setShowDropdown(false);
+                    setIsReportModalOpen(true);
+                  }}
+                  className="w-full px-4 py-2.5 text-left text-xs font-bold text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                >
+                  <span className="material-symbols-rounded text-base text-red-500">campaign</span>
+                  {t('plaza.report') || '신고하기'}
+                </button>
+                <button
+                  onClick={() => {
+                    setShowDropdown(false);
+                    handleBlockToggle();
+                  }}
+                  className="w-full px-4 py-2.5 text-left text-xs font-bold text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                >
+                  <span className="material-symbols-rounded text-base text-gray-500">block</span>
+                  {isBlocked ? (t('block.unblock') || '차단 해제') : (t('block.button') || '차단하기')}
+                </button>
+              </div>
+            )}
+          </div>
+        }
+      />
 
       {/* Scrollable Content */}
       <div 
@@ -675,12 +683,19 @@ export default function ClassDetail({ groupId, onClose, isOpen, itemId, itemDeta
               {itemDetail.amount?.toLocaleString()} <span className="text-xs uppercase font-bold">{itemDetail.currency || 'KRW'}</span>
             </span>
           </div>
-          <button 
-            onClick={handleClose}
-            className="bg-[#f2f4f4] text-[#596061] px-8 py-3 rounded-full text-xs font-black tracking-wide active:scale-95 transition-all"
-          >
-            {language === 'KR' ? '닫기' : 'CLOSE'}
-          </button>
+          <div className="flex items-center gap-2">
+            {onApplyClick && (
+              <button 
+                onClick={() => {
+                  handleClose();
+                  onApplyClick(itemDetail.id);
+                }}
+                className="bg-[#0057bd] text-white px-6 py-3 rounded-full text-xs font-black tracking-wide active:scale-95 transition-all shadow-md shadow-[#0057bd]/20 hover:bg-[#004bb4]"
+              >
+                {language === 'KR' ? '수강 신청' : 'Apply Now'}
+              </button>
+            )}
+          </div>
         </div>
       )}
       {/* Map selector bottomsheet integration */}

@@ -117,7 +117,8 @@ export const chatMessageService = {
         }
 
         // 대상자들의 FCM 토큰 수집 (N+1 쿼리 루프 병렬 비동기 개선)
-        const tokens: string[] = [];
+        const targets: Array<{ userId: string; tokens: string[]; unreadCount: number }> = [];
+
         if (targetUserIds.length > 0) {
           const userDocs = await Promise.all(
             targetUserIds.map(pId => getDoc(doc(db, USERS_COLLECTION, pId)))
@@ -125,6 +126,7 @@ export const chatMessageService = {
           
           for (const pDoc of userDocs) {
             if (pDoc.exists()) {
+              const pId = pDoc.id;
               const pData = pDoc.data();
 
               if (pData.notificationSnoozedUntil) {
@@ -133,21 +135,25 @@ export const chatMessageService = {
                   continue;
                 }
               }
-              if (pData.fcmTokens && Array.isArray(pData.fcmTokens)) {
-                tokens.push(...pData.fcmTokens);
+              const userTokens = (pData.fcmTokens && Array.isArray(pData.fcmTokens)) ? pData.fcmTokens : [];
+              if (userTokens.length > 0) {
+                const chatUnread = (roomData.unreadCounts?.[pId] || 0) + 1;
+                targets.push({
+                  userId: pId,
+                  tokens: Array.from(new Set(userTokens)),
+                  unreadCount: chatUnread
+                });
               }
             }
           }
         }
 
-        const uniqueTokens = Array.from(new Set(tokens));
-
-        if (uniqueTokens.length > 0) {
+        if (targets.length > 0) {
           await fetch('/api/notifications', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              tokens: uniqueTokens,
+              targets: targets,
               title: roomData.type === 'private' ? senderName : (roomData.name || senderName),
               message: message.type === 'text' ? message.text : (message.type === 'sticker' ? '이모티콘' : '📷 Photo'),
               data: {

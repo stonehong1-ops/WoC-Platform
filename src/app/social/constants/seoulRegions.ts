@@ -332,21 +332,25 @@ export function formatInstructorNames(instructorStr: string, locale: string): st
   const hasKorean = /[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(instructorStr);
   if (hasKorean && locale === "KR") return instructorStr;
 
-  if (locale !== "KR") {
-    return instructorStr.split(/[,&/]/).map(part => {
+  if (locale === "KR") {
+    // 한글 사전 변환 시도
+    const parts = instructorStr.split(/[,&/]/);
+    const formattedParts = parts.map(part => {
       const trimmed = part.trim();
       if (!trimmed) return "";
+      if (/[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(trimmed)) return trimmed;
       
-      const lowerKey = trimmed.toLowerCase();
-      // Reverse lookup
-      for (const [en, ko] of Object.entries(INSTRUCTOR_NAME_MAP)) {
-        if (ko.toLowerCase() === lowerKey || ko === trimmed) {
-          return en.charAt(0).toUpperCase() + en.slice(1);
-        }
+      const key = trimmed.toLowerCase();
+      if (INSTRUCTOR_NAME_MAP[key]) {
+        return INSTRUCTOR_NAME_MAP[key];
       }
-      
+      const firstWord = key.split(/\s+/)[0];
+      if (INSTRUCTOR_NAME_MAP[firstWord]) {
+        return INSTRUCTOR_NAME_MAP[firstWord];
+      }
       return trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
-    }).filter(Boolean).join(", ");
+    }).filter(Boolean);
+    return formattedParts.join(", ");
   }
 
   const parts = instructorStr.split(/[,&/]/);

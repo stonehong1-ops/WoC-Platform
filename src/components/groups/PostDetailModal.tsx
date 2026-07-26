@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useBackButtonClose } from '@/hooks/useBackButtonClose';
 import { Post, Comment } from '@/types/group';
 import { motion, AnimatePresence } from 'framer-motion';
 import { groupService } from '@/lib/firebase/groupService';
@@ -14,15 +15,21 @@ import ReportModal from '@/components/common/ReportModal';
 import { doc, setDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase/clientApp';
 
+import Portal from '@/components/common/Portal';
+import { Group } from '@/types/group';
+
 interface PostDetailModalProps {
-  groupId: string;
+  group?: Group;
+  groupId?: string;
   post: Post | null;
   isOpen: boolean;
   onClose: () => void;
-  onEdit: (post: Post) => void;
+  onEditPost?: (post: Post) => void;
+  onEdit?: (post: Post) => void;
 }
 
-export default function PostDetailModal({ groupId, post, isOpen, onClose, onEdit }: PostDetailModalProps) {
+export default function PostDetailModal({ group, groupId: propGroupId, post, isOpen, onClose, onEditPost, onEdit }: PostDetailModalProps) {
+  const groupId = group?.id || propGroupId || '';
   const { user, profile, setShowLogin } = useAuth();
   const { t, formatDate } = useLanguage();
   const [comments, setComments] = useState<Comment[]>([]);
@@ -38,6 +45,10 @@ export default function PostDetailModal({ groupId, post, isOpen, onClose, onEdit
   const [showMenu, setShowMenu] = useState(false);
   const { blockedUsers } = useBlockedUsers();
   const isBlocked = post ? blockedUsers.includes(post.author.id || '') : false;
+
+  // 스톤님 지침 3: 드롭다운 2단 Android Back 수술 (드롭다운 닫힘 -> 모달 닫힘)
+  useBackButtonClose(showMenu, () => setShowMenu(false));
+  useBackButtonClose(isOpen && !showMenu, onClose);
 
   const handleBlockToggle = async () => {
     if (!user) {
@@ -383,103 +394,91 @@ export default function PostDetailModal({ groupId, post, isOpen, onClose, onEdit
     );
   };
 
-  return (
+  const content = (
     <AnimatePresence>
-      {isOpen && (
-        <motion.div 
-          initial={{ opacity: 0, y: '100%' }}
+      {isOpen && post && (
+        <motion.div
+          initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: '100%' }}
-          transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+          exit={{ opacity: 0, y: 40 }}
+          transition={{ type: "spring", damping: 30, stiffness: 300 }}
           onScroll={handleScroll}
-          className="fixed inset-0 z-[120] bg-surface text-on-surface overflow-y-auto w-full h-full"
+          className="fixed inset-0 z-[9990] bg-white text-slate-800 flex flex-col w-full h-full"
         >
-          {/* 럭셔리 투명-반투명 반응형 탑 바 (Top App Bar) */}
-          <header className={`fixed top-0 left-0 right-0 z-50 flex justify-between items-center h-20 px-6 md:px-12 transition-all duration-300 ${
-            isScrolled 
-              ? 'bg-surface/95 backdrop-blur-md shadow-xs border-b border-outline-variant/15 text-on-surface' 
-              : 'bg-transparent text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]'
-          }`}>
+          {/* 탑 바 (Top App Bar) */}
+          <header
+            className="w-full shrink-0 z-50 flex justify-between items-center bg-white border-b border-slate-200 px-4 md:px-8 text-slate-800"
+            style={{
+              paddingTop: 'env(safe-area-inset-top, 0px)',
+              height: 'calc(56px + env(safe-area-inset-top, 0px))'
+            }}
+          >
             <button 
               onClick={onClose}
               aria-label="Go back" 
-              className={`flex items-center justify-center p-2.5 rounded-full transition-colors active:scale-95 group ${
-                isScrolled ? 'hover:bg-surface-container-high text-on-surface-variant' : 'hover:bg-white/10 text-white'
-              }`}
+              className="flex items-center justify-center p-2.5 rounded-full transition-colors active:scale-95 group hover:bg-slate-100 text-slate-800"
             >
               <span className="material-symbols-outlined group-hover:-translate-x-1 transition-transform" data-icon="arrow_back">arrow_back</span>
             </button>
 
             {/* 스크롤 시 헤더 정중앙에 아티클 제목을 표시하는 shop 기준 규격 적용 (크기 격상 및 2줄 정렬) */}
             {isScrolled && (
-              <div className="absolute left-1/2 -translate-x-1/2 max-w-[65%] line-clamp-2 text-center font-headline text-base md:text-lg font-black tracking-tight text-on-surface leading-tight animate-in fade-in slide-in-from-top-2 duration-300">
+              <div className="absolute left-1/2 -translate-x-1/2 max-w-[65%] line-clamp-2 text-center font-headline text-base md:text-lg font-black tracking-tight text-slate-800 leading-tight animate-in fade-in slide-in-from-top-2 duration-300">
                 {post.title}
               </div>
             )}
 
-            <div className="flex items-center gap-4 relative">
-              {isAuthor ? (
-                <>
-                  <button 
-                    onClick={() => onEdit(post)} 
-                    aria-label="Edit" 
-                    className={`flex items-center justify-center p-2.5 rounded-full transition-colors active:scale-95 ${
-                      isScrolled ? 'hover:bg-surface-container-high text-on-surface-variant' : 'hover:bg-white/10 text-white'
-                    }`}
-                  >
-                    <span className="material-symbols-outlined">edit</span>
+            <div className="flex items-center gap-2 relative">
+              <button 
+                onClick={() => setShowMenu(!showMenu)}
+                aria-label="More options" 
+                className="flex items-center justify-center p-2.5 rounded-full transition-colors active:scale-95 hover:bg-slate-100 text-slate-800"
+              >
+                <span className="material-symbols-outlined">more_vert</span>
+              </button>
+
+              {showMenu && (
+                <div className="absolute right-0 top-12 w-44 bg-white border border-slate-200 rounded-2xl shadow-xl py-1.5 z-[9995] text-slate-800 animate-in fade-in duration-200">
+                  <button onClick={() => { setShowMenu(false); handleShareClick(); }}
+                    className="w-full px-4 py-2.5 text-left text-xs font-bold text-slate-700 hover:bg-slate-50 flex items-center gap-2.5 transition-colors">
+                    <span className="material-symbols-rounded text-base text-slate-600">share</span>
+                    {t('common.share') || '공유하기'}
                   </button>
-                  <button 
-                    onClick={handleDeletePost} 
-                    aria-label="Delete" 
-                    className={`flex items-center justify-center p-2.5 rounded-full transition-colors active:scale-95 ${
-                      isScrolled ? 'hover:bg-surface-container-high text-error' : 'hover:bg-white/10 text-red-400'
-                    }`}
-                  >
-                    <span className="material-symbols-outlined">delete</span>
-                  </button>
-                </>
-              ) : (
-                <>
-                  <button 
-                    onClick={() => setShowMenu(!showMenu)}
-                    aria-label="More options" 
-                    className={`flex items-center justify-center p-2.5 rounded-full transition-colors active:scale-95 ${
-                      isScrolled ? 'hover:bg-surface-container-high text-on-surface-variant' : 'hover:bg-white/10 text-white'
-                    }`}
-                  >
-                    <span className="material-symbols-outlined">more_vert</span>
-                  </button>
-                  {showMenu && (
-                    <div className="absolute right-0 top-12 w-40 bg-white border border-gray-150 rounded-xl shadow-lg py-1.5 z-[130] text-gray-800 animate-in fade-in duration-200">
+
+                  {isAuthor ? (
+                    <>
+                      <button onClick={() => { setShowMenu(false); (onEditPost || onEdit)?.(post); }}
+                        className="w-full px-4 py-2.5 text-left text-xs font-bold text-slate-700 hover:bg-slate-50 flex items-center gap-2.5 transition-colors">
+                        <span className="material-symbols-rounded text-base text-blue-600">edit</span>
+                        {t('common.edit') || '수정하기'}
+                      </button>
+                      <button onClick={() => { setShowMenu(false); handleDeletePost(); }}
+                        className="w-full px-4 py-2.5 text-left text-xs font-bold text-red-600 hover:bg-red-50 flex items-center gap-2.5 transition-colors">
+                        <span className="material-symbols-rounded text-base text-red-500">delete</span>
+                        {t('common.delete') || '삭제하기'}
+                      </button>
+                    </>
+                  ) : (
+                    <>
                       <button onClick={() => { setShowMenu(false); setIsReportModalOpen(true); }}
-                        className="w-full px-4 py-2.5 text-left text-xs font-bold text-gray-700 hover:bg-gray-50 flex items-center gap-2">
+                        className="w-full px-4 py-2.5 text-left text-xs font-bold text-slate-700 hover:bg-slate-50 flex items-center gap-2.5 transition-colors">
                         <span className="material-symbols-rounded text-base text-red-500">campaign</span>
                         {t('plaza.report') || '신고하기'}
                       </button>
                       <button onClick={() => { setShowMenu(false); handleBlockToggle(); }}
-                        className="w-full px-4 py-2.5 text-left text-xs font-bold text-gray-700 hover:bg-gray-50 flex items-center gap-2">
-                        <span className="material-symbols-rounded text-base text-gray-500">block</span>
+                        className="w-full px-4 py-2.5 text-left text-xs font-bold text-slate-700 hover:bg-slate-50 flex items-center gap-2.5 transition-colors">
+                        <span className="material-symbols-rounded text-base text-slate-500">block</span>
                         {isBlocked ? (t('block.unblock') || '차단 해제') : (t('block.button') || '차단하기')}
                       </button>
-                    </div>
+                    </>
                   )}
-                </>
+                </div>
               )}
-              <button 
-                onClick={handleShareClick}
-                aria-label="Share" 
-                className={`flex items-center justify-center p-2.5 rounded-full transition-colors active:scale-95 ${
-                  isScrolled ? 'hover:bg-surface-container-high text-on-surface-variant' : 'hover:bg-white/10 text-white'
-                }`}
-              >
-                <span className="material-symbols-outlined" data-icon="share">share</span>
-              </button>
             </div>
           </header>
 
           {/* 메인 캔버스 영역 */}
-          <main className="w-full pb-32">
+          <main className="flex-1 overflow-y-auto w-full pb-32">
             
             {/* 시네마틱 풀-히어로 이미지 및 타이틀 섹션 */}
             <section className="relative h-[65vh] md:h-[80vh] w-full overflow-hidden bg-surface-container-low border-b border-outline-variant/10">
@@ -736,4 +735,6 @@ export default function PostDetailModal({ groupId, post, isOpen, onClose, onEdit
       )}
     </AnimatePresence>
   );
+
+  return <Portal>{content}</Portal>;
 }

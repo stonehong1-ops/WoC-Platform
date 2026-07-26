@@ -28,12 +28,22 @@ export function useChatMembers({ roomId, user, messages, t }: UseChatMembersProp
   }, [roomId]);
 
   // Subscribe to Room Info & Typing Status
+  // Subscribe to Room Info & Typing Status with fail-safe fallback
   useEffect(() => {
     if (!user || !roomId) return;
 
+    let isMounted = true;
+
+    // Direct getDoc fallback check for fast initial rendering
+    chatService.getChatRoom(roomId).then(r => {
+      if (isMounted && r) {
+        setRoom(prev => prev || r);
+      }
+    }).catch(() => {});
+
     const roomRef = doc(db, 'chat_rooms', roomId);
     const unsubRoom = onSnapshot(roomRef, (docSnap) => {
-      if (docSnap.exists()) {
+      if (isMounted && docSnap.exists()) {
         const data = docSnap.data() as any;
         setRoom({ id: docSnap.id, ...data } as ChatRoom);
         
@@ -45,6 +55,7 @@ export function useChatMembers({ roomId, user, messages, t }: UseChatMembersProp
     });
 
     return () => {
+      isMounted = false;
       unsubRoom();
     };
   }, [roomId, user]);

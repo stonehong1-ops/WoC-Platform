@@ -349,7 +349,12 @@ export default function ChatInputBar({
       )}
 
       {/* Input Bar */}
-      <div className="px-3.5 py-2.5 flex items-center gap-2 bg-white relative">
+      <div 
+        className="px-3.5 pt-2.5 flex items-center gap-2 bg-white relative border-t border-gray-100/50"
+        style={{
+          paddingBottom: 'calc(10px + env(safe-area-inset-bottom, 0px))'
+        }}
+      >
         {/* Hidden inputs */}
         <input ref={fileInputRef} type="file" multiple onChange={(e) => e.target.files && handleFileUpload(e.target.files)} className="hidden" accept="image/*,video/*" />
         <input ref={cameraInputRef} type="file" capture={true} onChange={(e) => e.target.files?.[0] && handleFileUpload(e.target.files[0])} className="hidden" accept="image/*" />
@@ -378,7 +383,7 @@ export default function ChatInputBar({
         </button>
 
         {/* Custom Textarea Input */}
-        <div className="flex-1 relative flex items-end border border-gray-100 rounded-[22px] bg-gray-50 px-3.5 py-1.5 focus-within:bg-white focus-within:border-primary/20 transition-all min-h-[40px] max-h-[140px] overflow-hidden">
+        <div className="flex-1 relative flex items-center justify-center border border-gray-100 rounded-[22px] bg-gray-50 px-3.5 py-1.5 focus-within:bg-white focus-within:border-primary/20 transition-all min-h-[40px] max-h-[140px] overflow-hidden">
           <textarea
             ref={textareaRef}
             rows={1}
@@ -386,7 +391,7 @@ export default function ChatInputBar({
             onChange={(e) => handleInputChange(e.target.value)}
             onKeyDown={handleKeyPress}
             placeholder={t('chatroom.placeholder_input', '메시지를 입력해 주세요...')}
-            className="w-full text-[14.5px] leading-relaxed bg-transparent border-0 focus:ring-0 focus:outline-hidden p-0 resize-none max-h-[120px] overflow-y-auto no-scrollbar font-medium text-gray-800 placeholder:text-gray-300"
+            className="w-full text-[14.5px] leading-normal my-auto bg-transparent border-0 focus:ring-0 focus:outline-hidden p-0 resize-none max-h-[120px] overflow-y-auto no-scrollbar font-medium text-gray-800 placeholder:text-gray-300 flex items-center"
           />
 
           {/* Sticker button inside Input */}

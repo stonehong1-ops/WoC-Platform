@@ -16,6 +16,7 @@ import { useEffect, useRef } from 'react';
 interface ModalEntry {
   id: string;
   close: () => void;
+  markPopStateClosed: () => void;
 }
 
 const modalStack: ModalEntry[] = [];
@@ -36,6 +37,7 @@ function attachGlobalPopStateListener() {
     // 스택 최상단(= 가장 최근에 열린 모달)만 닫기
     const top = modalStack.pop();
     if (top) {
+      top.markPopStateClosed();
       top.close();
     }
   });
@@ -49,6 +51,7 @@ export function hasOpenModals(): boolean {
 export function useBackButtonClose(isOpen: boolean, onClose: () => void) {
   const onCloseRef = useRef(onClose);
   const entryIdRef = useRef<string | null>(null);
+  const isPopClosedRef = useRef(false);
 
   useEffect(() => {
     onCloseRef.current = onClose;
@@ -57,6 +60,7 @@ export function useBackButtonClose(isOpen: boolean, onClose: () => void) {
   useEffect(() => {
     if (!isOpen || typeof window === 'undefined') return;
 
+    isPopClosedRef.current = false;
     attachGlobalPopStateListener();
 
     // 고유 ID 생성 후 히스토리 항목 추가
@@ -65,7 +69,11 @@ export function useBackButtonClose(isOpen: boolean, onClose: () => void) {
     window.history.pushState({ modal: id }, '');
 
     // 스택에 등록
-    modalStack.push({ id, close: () => onCloseRef.current() });
+    modalStack.push({
+      id,
+      close: () => onCloseRef.current(),
+      markPopStateClosed: () => { isPopClosedRef.current = true; }
+    });
 
     return () => {
       // 스택에서 이 엔트리 제거
@@ -74,9 +82,9 @@ export function useBackButtonClose(isOpen: boolean, onClose: () => void) {
         modalStack.splice(idx, 1);
       }
 
-      // X 버튼 등으로 직접 닫힌 경우(popstate가 아닌 경우)
-      // pushState로 추가한 히스토리 항목을 정리
-      if (window.history.state?.modal === id) {
+      // popstate로 닫힌 것이 아니면서(UI X버튼 클릭 등)
+      // pushState로 추가한 히스토리 항목이 여전히 남은 경우만 정리
+      if (!isPopClosedRef.current && window.history.state?.modal === id) {
         skipNextPop = true;
         window.history.back();
       }

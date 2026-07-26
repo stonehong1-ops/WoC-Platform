@@ -20,9 +20,86 @@ export function DualText({ text, subText, primaryClassName, secondaryClassName, 
   );
 }
 
+import { useRef, useEffect } from 'react';
+import { videoSoundManager } from '@/lib/utils/videoSoundManager';
+
 export function SocialCardImage({ imageUrl, title }: { imageUrl?: string; title?: string }) {
   const [imageError, setImageError] = useState(false);
+  const [isMuted, setIsMuted] = useState(true);
+  const [isNearViewport, setIsNearViewport] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const firstLetter = (title || '').trim().charAt(0).toUpperCase() || '?';
+
+  useEffect(() => {
+    if (!imageUrl || !isVideoUrl(imageUrl)) return;
+
+    const containerEl = containerRef.current;
+    if (!containerEl) return;
+
+    // 1차 근접 감지 (rootMargin: 200px) - 화면 200px 근처에 올 때만 video 태그 및 src 생성
+    const nearObserver = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setIsNearViewport(true);
+          }
+        });
+      },
+      { rootMargin: '200px 0px' }
+    );
+
+    // 2차 실제 Viewport 감지 (threshold: 0.5) - 화면 50% 진입 시 play, 이탈 시 pause
+    const playObserver = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          const videoEl = videoRef.current;
+          if (!videoEl) return;
+
+          if (entry.isIntersecting) {
+            videoEl.play().catch(() => {});
+          } else {
+            videoEl.pause();
+          }
+        });
+      },
+      { threshold: 0.5 }
+    );
+
+    nearObserver.observe(containerEl);
+    playObserver.observe(containerEl);
+
+    return () => {
+      nearObserver.disconnect();
+      playObserver.disconnect();
+      if (imageUrl) {
+        videoSoundManager.unregisterVideo(imageUrl);
+      }
+    };
+  }, [imageUrl]);
+
+  useEffect(() => {
+    if (isNearViewport && imageUrl && videoRef.current && containerRef.current) {
+      videoSoundManager.registerVideo(imageUrl, videoRef.current, containerRef.current, () => {
+        setIsMuted(true);
+      });
+    }
+  }, [isNearViewport, imageUrl]);
+
+  const toggleSound = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!imageUrl) return;
+
+    if (isMuted) {
+      setIsMuted(false);
+      videoSoundManager.setActiveAudible(imageUrl, () => {
+        setIsMuted(true);
+      });
+    } else {
+      setIsMuted(true);
+      videoSoundManager.releaseAudible(imageUrl);
+    }
+  };
 
   if (!imageUrl || imageUrl.trim() === '' || imageError) {
     return (
@@ -48,14 +125,36 @@ export function SocialCardImage({ imageUrl, title }: { imageUrl?: string; title?
 
   if (isVideoUrl(imageUrl)) {
     return (
-      <video
-        className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 md:group-hover:scale-110"
-        src={imageUrl}
-        muted
-        autoPlay
-        loop
-        playsInline
-      />
+      <div ref={containerRef} className="absolute inset-0 w-full h-full overflow-hidden">
+        {isNearViewport ? (
+          <>
+            <video
+              ref={videoRef}
+              className="w-full h-full object-cover transition-transform duration-700 md:group-hover:scale-110"
+              src={imageUrl}
+              muted={isMuted}
+              preload="metadata"
+              loop
+              playsInline
+            />
+            {/* Sound Toggle Button */}
+            <button
+              onClick={toggleSound}
+              className="absolute top-4 right-4 z-30 w-8 h-8 rounded-full bg-black/40 backdrop-blur-md border border-white/20 text-white flex items-center justify-center active:scale-90 transition-transform shadow-md"
+              title={isMuted ? 'Unmute' : 'Mute'}
+            >
+              <span className="material-symbols-outlined text-sm">
+                {isMuted ? 'volume_off' : 'volume_up'}
+              </span>
+            </button>
+          </>
+        ) : (
+          /* Viewport 200px 밖: MP4 다운로드를 100% 차단하고 Poster 썸네일만 표시 */
+          <div className="w-full h-full bg-slate-900 flex items-center justify-center relative">
+            <span className="material-symbols-outlined text-white/30 text-3xl">play_circle</span>
+          </div>
+        )}
+      </div>
     );
   }
 

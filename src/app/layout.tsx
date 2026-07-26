@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import GlobalNavigation from "@/components/layout/GlobalNavigation";
 import PageWrapper from "@/components/layout/PageWrapper";
-import SWRegister from "@/components/layout/SWRegister";
+import SWUnregister from "@/components/layout/SWUnregister";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { Inter, Plus_Jakarta_Sans, Manrope } from 'next/font/google';
 
@@ -32,11 +32,6 @@ export const metadata: Metadata = {
     apple: [
       { url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
     ],
-  },
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: "default",
-    title: "WoC",
   },
 };
 
@@ -92,7 +87,7 @@ export default function RootLayout({
                         <LocationProvider>
                           <NavigationProvider>
                             <ClassCartProvider>
-                              <SWRegister />
+                              <SWUnregister />
                               <GlobalNavigation>
                                 {/* Full Screen Menu */}
                                 <NavigationDrawer />

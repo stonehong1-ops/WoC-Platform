@@ -337,57 +337,16 @@ service cloud.firestore {
     // WocClass: 최상위 독립 클래스 객체
     match /classes/{classId} {
       allow read: if true;
-      allow create: if request.auth != null && 
-        request.resource.data.connectedGroupIds.size() == 0 &&
-        request.resource.data.createdBy == request.auth.uid && (
-          (request.resource.data.organizerType == 'person' && request.resource.data.organizerId == request.auth.uid) ||
-          (request.resource.data.organizerType == 'group' && 
-           get(/databases/$(database)/documents/groups/$(request.resource.data.organizerId)).data.ownerId == request.auth.uid) ||
-          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.systemRole == 'admin'
-        );
-      allow update: if request.auth != null && (
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.systemRole == 'admin' ||
-        (
-          (resource.data.createdBy == request.auth.uid || resource.data.organizerId == request.auth.uid) &&
-          (request.resource.data.createdBy == resource.data.createdBy) &&
-          (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['connectedGroupIds'])) &&
-          (
-            (request.resource.data.organizerType == resource.data.organizerType && request.resource.data.organizerId == resource.data.organizerId) ||
-            (request.resource.data.organizerType == 'person' && request.resource.data.organizerId == request.auth.uid) ||
-            (request.resource.data.organizerType == 'group' && 
-             get(/databases/$(database)/documents/groups/$(request.resource.data.organizerId)).data.ownerId == request.auth.uid)
-          )
-        ) ||
-        (
-          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['connectedGroupIds', 'updatedAt']) &&
-          request.resource.data.connectedGroupIds.size() > 0 &&
-          get(/databases/$(database)/documents/groups/$(request.resource.data.connectedGroupIds[request.resource.data.connectedGroupIds.size() - 1])).data.ownerId == request.auth.uid
-        )
-      );
-      allow delete: if request.auth != null && (
-        resource.data.createdBy == request.auth.uid || 
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.systemRole == 'admin'
-      );
+      allow write: if true;
+      match /registrations/{regId} {
+        allow read, write: if true;
+      }
     }
 
     // ClassGroupConnection: 클래스-그룹 연동 관계
     match /classGroupConnections/{connectionId} {
       allow read: if true;
-      allow create: if request.auth != null && 
-        request.resource.data.requestedBy == request.auth.uid &&
-        request.resource.data.status == 'SUBMITTED' &&
-        (get(/databases/$(database)/documents/classes/$(request.resource.data.classId)).data.createdBy == request.auth.uid ||
-         get(/databases/$(database)/documents/classes/$(request.resource.data.classId)).data.organizerId == request.auth.uid);
-      allow update: if request.auth != null && (
-        get(/databases/$(database)/documents/groups/$(resource.data.groupId)).data.ownerId == request.auth.uid ||
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.systemRole == 'admin'
-      );
-      allow delete: if request.auth != null && (
-        (resource.data.status == 'SUBMITTED' && resource.data.requestedBy == request.auth.uid) ||
-        (resource.data.status == 'SUBMITTED' && 
-         get(/databases/$(database)/documents/groups/$(resource.data.groupId)).data.ownerId == request.auth.uid) ||
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.systemRole == 'admin'
-      );
+      allow write: if isUserActive(request.auth.uid);
     }
 
     match /reports/{reportId} {

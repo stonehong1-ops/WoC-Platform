@@ -14,6 +14,8 @@ import { PlatformUser } from '@/types/user';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { isVideoUrl } from '@/lib/utils/socialUtils';
 import { Capacitor } from '@capacitor/core';
+import { StandardImageUploader } from '@/components/common/StandardImageUploader';
+import { StandardVideoUploader } from '@/components/common/StandardVideoUploader';
 
 interface EditSocialEventProps {
   onClose: () => void;
@@ -174,8 +176,9 @@ export default function EditSocialEvent({ onClose, onSuccess, socialData }: Edit
   const [currency, setCurrency] = useState(initialCurrency);
   const [priceAmount, setPriceAmount] = useState(initialPriceAmount);
 
-  // Gallery
+  // Gallery & Media
   const [images, setImages] = useState<string[]>(socialData?.imageUrl ? [socialData.imageUrl] : []);
+  const [mediaTab, setMediaTab] = useState<'image' | 'video'>(socialData?.imageUrl && isVideoUrl(socialData.imageUrl) ? 'video' : 'image');
   const [imageFile, setImageFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -443,7 +446,7 @@ export default function EditSocialEvent({ onClose, onSuccess, socialData }: Edit
         <button type="button" onClick={handleCloseAttempt} className="w-10 h-10 flex items-center justify-center -ml-2 active:scale-95 transition-transform text-slate-700">
           <span className="material-symbols-rounded text-2xl">arrow_back</span>
         </button>
-        <h1 className="text-[16px] font-bold text-slate-800">{socialData ? t('social.edit_social') : t('social.create_social')}</h1>
+        <h1 className="text-[16px] font-bold text-slate-800">{socialData ? (t('social.edit_social') || '소셜 수정') : (t('social.create_social') || '새 소셜')}</h1>
         <div className="flex items-center gap-2">
           {socialData && (
             <button onClick={handleDelete} className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-red-50 text-red-500 transition-colors">
@@ -547,49 +550,72 @@ export default function EditSocialEvent({ onClose, onSuccess, socialData }: Edit
 
         {currentStep === 2 && (
           <div className="space-y-5 animate-in fade-in duration-200">
-            {/* 2. Gallery Section */}
+            {/* 2. Gallery & Media Section (Poster or 15s Video) */}
             <div className="border border-[#e0e4e5] rounded-2xl bg-white">
-          <div className="bg-[#f8f9fa] px-4 py-3 border-b border-[#e0e4e5] flex items-center justify-between rounded-t-[15px]">
-            <div className="flex items-center gap-2">
-              <span className="material-symbols-rounded text-sm text-primary">image</span>
-              <p className="text-[14px] font-bold text-primary">{t('social.poster_gallery')}</p>
-            </div>
-          </div>
-          <div className="p-4">
-            <div className="py-4 px-8 border border-[#e0e4e5] rounded-xl bg-[#f8f9fa] mb-3 flex justify-center">
-              <div
-                onClick={() => fileInputRef.current?.click()}
-                className="relative aspect-[4/5] w-full max-w-[240px] rounded-lg overflow-hidden bg-white border border-[#e0e4e5] flex flex-col items-center justify-center cursor-pointer hover:border-primary/50 transition-all group shadow-sm"
-              >
-                {images[0] ? (
-                  <>
-                    {isVideoUrl(images[0], imageFile?.type) ? (
-                      <video 
-                        className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
-                        src={images[0]} 
-                        muted 
-                        autoPlay 
-                        loop 
-                        playsInline 
-                      />
-                    ) : (
-                      <img 
-                        className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
-                        src={images[0]} 
-                        alt="poster" 
-                      />
-                    )}
-                    <div className="absolute top-3 left-3 bg-primary text-white text-xs font-black uppercase tracking-widest px-2.5 py-1 rounded shadow-sm z-10">{t('social.primary')}</div>
-                  </>
-                ) : (
-                  <div className="flex flex-col items-center text-[#acb3b4] group-hover:text-primary transition-colors">
-                    <span className="material-symbols-rounded text-4xl mb-2">add_photo_alternate</span>
-                    <span className="text-xs font-bold text-center px-4">{t('social.upload_poster')}<br/><span className="text-xs font-medium mt-1">{t('social.ratio_recommended')}</span></span>
-                  </div>
-                )}
+              <div className="bg-[#f8f9fa] px-4 py-3 border-b border-[#e0e4e5] flex items-center justify-between rounded-t-[15px]">
+                <div className="flex items-center gap-2">
+                  <span className="material-symbols-rounded text-sm text-primary">perm_media</span>
+                  <p className="text-[14px] font-bold text-primary">{t('social.poster_gallery') || '메인 미디어 (포스터 / 동영상)'}</p>
+                </div>
+                {/* 포스터 / 비디오 세그먼트 탭 스위치 */}
+                <div className="flex items-center gap-1 bg-slate-200/80 p-0.5 rounded-xl text-xs font-bold">
+                  <button
+                    type="button"
+                    onClick={() => setMediaTab('image')}
+                    className={`px-3 py-1 rounded-lg transition-all ${mediaTab === 'image' ? 'bg-white text-slate-800 shadow-xs' : 'text-slate-500 hover:text-slate-700'}`}
+                  >
+                    📷 {t('social.upload_poster') || '포스터'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setMediaTab('video')}
+                    className={`px-3 py-1 rounded-lg transition-all ${mediaTab === 'video' ? 'bg-white text-slate-800 shadow-xs' : 'text-slate-500 hover:text-slate-700'}`}
+                  >
+                    🎬 {t('social.promo_video') || '15초 동영상'}
+                  </button>
+                </div>
+              </div>
+
+              <div className="p-4 space-y-4">
+                <div className="max-w-[240px] mx-auto space-y-4">
+                  {mediaTab === 'image' ? (
+                    <StandardImageUploader
+                      mode="single"
+                      aspectRatio="4/5"
+                      storageFolderPath="socials"
+                      value={images.find(u => !isVideoUrl(u)) || ''}
+                      onChange={(url) => {
+                        if (typeof url === 'string') {
+                          setImages([url]);
+                        }
+                      }}
+                      label={t('social.upload_poster') || '메인 포스터 이미지'}
+                      placeholder={t('social.upload_poster') || '메인 포스터 업로드'}
+                    />
+                  ) : (
+                    <StandardVideoUploader
+                      maxDurationSeconds={15}
+                      maxSizeMB={50}
+                      aspectRatio="4/5"
+                      storageFolderPath="socials/videos"
+                      value={images.find(u => isVideoUrl(u)) || ''}
+                      onChange={(videoUrl) => {
+                        if (videoUrl) {
+                          setImages([videoUrl]);
+                        }
+                      }}
+                      label={t('social.promo_video', '15초 홍보 숏폼 비디오')}
+                      placeholder={t('social.upload_video_15s', '15초 이하 동영상 업로드')}
+                    />
+                  )}
+                </div>
+                <p className="text-center text-xs font-bold text-[#acb3b4]">
+                  {mediaTab === 'image' 
+                    ? (t('social.optimal_ratio_desc') || '4:5 비율 포스터 권장') 
+                    : '15초 이하 숏폼 동영상 선택 시 모바일 무한 반복 자동재생 적용'}
+                </p>
               </div>
             </div>
-            <p className="text-center text-xs font-bold text-[#acb3b4]">{t('social.optimal_ratio_desc')}</p>
             <input ref={fileInputRef} type="file" accept="image/*,video/*" className="hidden" onChange={(e) => {
               const f = e.target.files?.[0];
               if (f) {
@@ -613,50 +639,46 @@ export default function EditSocialEvent({ onClose, onSuccess, socialData }: Edit
                 }
               }
             }} />
-          </div>
-        </div>
-
-
-        {/* 2. Basic Info Section */}
-        <div className="border border-[#e0e4e5] rounded-2xl bg-white">
-          <div className="bg-[#f8f9fa] px-4 py-3 border-b border-[#e0e4e5] flex items-center gap-2 rounded-t-[15px]">
-            <span className="material-symbols-rounded text-sm text-primary">info</span>
-            <p className="text-[14px] font-bold text-primary">{t('social.basic_info')}</p>
-          </div>
-          <div className="p-4 space-y-4">
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1.5">{t('social.event_title_en')}</label>
-              <div className={`flex items-center px-4 py-3 border rounded-xl bg-[#f8f9fa] focus-within:bg-white focus-within:ring-2 focus-within:ring-[#007AFF]/20 transition-all ${titleError ? 'border-red-300 ring-2 ring-red-100' : 'border-[#e0e4e5]'}`}>
-                <input value={title} onChange={(e) => handleTitleChange(e.target.value)}
-                  className="flex-1 bg-transparent border-none p-0 focus:ring-0 text-sm font-bold text-[#2d3435] placeholder:text-[#acb3b4] placeholder:font-normal outline-none"
-                  placeholder="e.g. Milonga El Bulin" type="text" />
+            {/* 2. Basic Info Section */}
+            <div className="border border-[#e0e4e5] rounded-2xl bg-white">
+              <div className="bg-[#f8f9fa] px-4 py-3 border-b border-[#e0e4e5] flex items-center gap-2 rounded-t-[15px]">
+                <span className="material-symbols-rounded text-sm text-primary">info</span>
+                <p className="text-[14px] font-bold text-primary">{t('social.basic_info')}</p>
               </div>
-              {titleError && <p className="text-xs font-bold text-red-500 mt-1 ml-1">{titleError}</p>}
-            </div>
-            
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1.5">{t('social.title_native')}</label>
-              <div className="flex items-center px-4 py-3 border border-[#e0e4e5] rounded-xl bg-[#f8f9fa] focus-within:bg-white focus-within:ring-2 focus-within:ring-[#007AFF]/20 transition-all">
-                <input value={titleNative} onChange={(e) => setTitleNative(e.target.value)}
-                  className="flex-1 bg-transparent border-none p-0 focus:ring-0 text-sm font-bold text-[#2d3435] placeholder:text-[#acb3b4] placeholder:font-normal outline-none"
-                  placeholder={t('social.title_native_placeholder', 'e.g. Milonga El Bulin')} type="text" />
-              </div>
-            </div>
- 
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1.5">{t('social.description_optional')}</label>
-              <div className="flex px-4 py-3 border border-[#e0e4e5] rounded-xl bg-[#f8f9fa] focus-within:bg-white focus-within:ring-2 focus-within:ring-[#007AFF]/20 transition-all">
-                <textarea value={description} onChange={(e) => setDescription(e.target.value)}
-                  className="flex-1 bg-transparent border-none p-0 focus:ring-0 text-sm font-bold text-[#2d3435] placeholder:text-[#acb3b4] placeholder:font-normal outline-none min-h-[80px] resize-none"
-                  placeholder={t('social.description_placeholder')} />
+              <div className="p-4 space-y-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5">{t('social.event_title_en')}</label>
+                  <div className={`flex items-center px-4 py-3 border rounded-xl bg-[#f8f9fa] focus-within:bg-white focus-within:ring-2 focus-within:ring-[#007AFF]/20 transition-all ${titleError ? 'border-red-300 ring-2 ring-red-100' : 'border-[#e0e4e5]'}`}>
+                    <input value={title} onChange={(e) => handleTitleChange(e.target.value)}
+                      className="flex-1 bg-transparent border-none p-0 focus:ring-0 text-sm font-bold text-[#2d3435] placeholder:text-[#acb3b4] placeholder:font-normal outline-none"
+                      placeholder="e.g. Milonga El Bulin" type="text" />
+                  </div>
+                  {titleError && <p className="text-xs font-bold text-red-500 mt-1 ml-1">{titleError}</p>}
+                </div>
+                
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5">{t('social.title_native')}</label>
+                  <div className="flex items-center px-4 py-3 border border-[#e0e4e5] rounded-xl bg-[#f8f9fa] focus-within:bg-white focus-within:ring-2 focus-within:ring-[#007AFF]/20 transition-all">
+                    <input value={titleNative} onChange={(e) => setTitleNative(e.target.value)}
+                      className="flex-1 bg-transparent border-none p-0 focus:ring-0 text-sm font-bold text-[#2d3435] placeholder:text-[#acb3b4] placeholder:font-normal outline-none"
+                      placeholder={t('social.title_native_placeholder', 'e.g. Milonga El Bulin')} type="text" />
+                  </div>
+                </div>
+     
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5">{t('social.description_optional')}</label>
+                  <div className="flex px-4 py-3 border border-[#e0e4e5] rounded-xl bg-[#f8f9fa] focus-within:bg-white focus-within:ring-2 focus-within:ring-[#007AFF]/20 transition-all">
+                    <textarea value={description} onChange={(e) => setDescription(e.target.value)}
+                      className="flex-1 bg-transparent border-none p-0 focus:ring-0 text-sm font-bold text-[#2d3435] placeholder:text-[#acb3b4] placeholder:font-normal outline-none min-h-[80px] resize-none"
+                      placeholder={t('social.description_placeholder')} />
+                  </div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      </div>
-      )}
+        )}
 
-      {currentStep === 3 && (
+        {currentStep === 3 && (
           <div className="space-y-5 animate-in fade-in duration-200">
             {/* 3. Date & Time Section */}
         <div className="border border-[#e0e4e5] rounded-2xl bg-white">
@@ -776,7 +798,8 @@ export default function EditSocialEvent({ onClose, onSuccess, socialData }: Edit
                 <div className="flex items-center gap-2">
                   <div className="px-3 py-3 border border-[#e0e4e5] rounded-xl bg-[#f8f9fa] focus-within:bg-white focus-within:ring-2 focus-within:ring-[#007AFF]/20 transition-all w-24">
                     <select value={currency} onChange={(e) => setCurrency(e.target.value)}
-                      className="w-full bg-transparent border-none p-0 text-sm font-bold text-[#2d3435] focus:ring-0 outline-none appearance-none">
+                      className="w-full bg-transparent border-none p-0 text-sm font-bold text-[#2d3435] focus:ring-0 outline-none appearance-none cursor-pointer"
+                      style={{ WebkitAppearance: 'none', appearance: 'none' }}>
                       <option value="KRW">KRW</option>
                       <option value="USD">USD</option>
                       <option value="EUR">EUR</option>

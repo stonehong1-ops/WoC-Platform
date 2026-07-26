@@ -23,6 +23,10 @@ export default function AdminPeoplePage() {
   // 상세 가입자 팝업창 관리 상태
   const [selectedDetail, setSelectedDetail] = useState<{ date: string; users: UserProfile[] } | null>(null);
 
+  // 통계2 전용 앱 환경 필터 및 검색 상태
+  const [stats2Filter, setStats2Filter] = useState<'all' | 'android' | 'ios' | 'pwa' | 'web'>('all');
+  const [stats2Search, setStats2Search] = useState('');
+
   useEffect(() => {
     const q = query(collection(db, 'users'), orderBy('createdAt', 'desc'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -445,16 +449,261 @@ export default function AdminPeoplePage() {
         </div>
       )}
 
-      {/* 통계2 탭: 준비 중 페이지 */}
-      {activeTab === 'stats2' && (
-        <div className="custom-card p-12 text-center shadow-sm flex flex-col items-center justify-center space-y-4 py-24">
-          <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-2">
-            <span className="material-symbols-outlined text-[40px] text-primary animate-bounce">analytics</span>
+      {/* 통계2 탭: 앱 구동 상태별 회원 및 가입/접속 날짜 분석 대시보드 */}
+      {activeTab === 'stats2' && (() => {
+        const getUserAppState = (user: UserProfile): 'android' | 'ios' | 'pwa' | 'web' => {
+          const u = user as any;
+          const p = (u.platform || '').toLowerCase();
+          if (p === 'android') return 'android';
+          if (p === 'ios' || !!u.iosFcmToken) return 'ios';
+          
+          const fcmTokens = Array.isArray(u.fcmTokens) ? u.fcmTokens : [];
+          if (fcmTokens.length > 0) return 'pwa';
+          if (u.pushSubscription || u.webPushToken || u.webPushTokens || u.isPwa || u.pwaInstalled || u.pwaToken) return 'pwa';
+          return 'web';
+        };
+
+        const androidUsersCount = users.filter(u => getUserAppState(u) === 'android').length;
+        const iosUsersCount = users.filter(u => getUserAppState(u) === 'ios').length;
+        const pwaUsersCount = users.filter(u => getUserAppState(u) === 'pwa').length;
+        const webUsersCount = users.filter(u => getUserAppState(u) === 'web').length;
+        const total = users.length || 1;
+
+        const filteredStats2Users = users.filter(u => {
+          const appState = getUserAppState(u);
+          if (stats2Filter !== 'all' && appState !== stats2Filter) return false;
+          if (stats2Search.trim()) {
+            const q = stats2Search.trim().toLowerCase();
+            const nick = (u.nickname || '').toLowerCase();
+            const native = (u.nativeNickname || '').toLowerCase();
+            const phone = u.phoneNumber || '';
+            const email = (u.email || '').toLowerCase();
+            return nick.includes(q) || native.includes(q) || phone.includes(q) || email.includes(q);
+          }
+          return true;
+        });
+
+        return (
+          <div className="space-y-6 animate-fade-in">
+            {/* 상단 KPI 요약 4대 카드 */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div 
+                onClick={() => setStats2Filter(prev => prev === 'android' ? 'all' : 'android')}
+                className={`custom-card p-5 cursor-pointer transition-all hover:scale-[1.02] shadow-sm relative overflow-hidden ${
+                  stats2Filter === 'android' ? 'ring-2 ring-emerald-500 bg-emerald-50/30' : ''
+                }`}
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-bold text-emerald-700 bg-emerald-100 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                    <span className="material-symbols-outlined text-sm">android</span> Android
+                  </span>
+                  <span className="text-xs text-outline font-bold">{Math.round((androidUsersCount / total) * 100)}%</span>
+                </div>
+                <h4 className="text-2xl font-black text-on-surface">{androidUsersCount}명</h4>
+                <p className="text-[11px] text-outline mt-1 font-medium">안드로이드 앱 설치</p>
+              </div>
+
+              <div 
+                onClick={() => setStats2Filter(prev => prev === 'ios' ? 'all' : 'ios')}
+                className={`custom-card p-5 cursor-pointer transition-all hover:scale-[1.02] shadow-sm relative overflow-hidden ${
+                  stats2Filter === 'ios' ? 'ring-2 ring-sky-500 bg-sky-50/30' : ''
+                }`}
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-bold text-sky-700 bg-sky-100 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                    <span className="material-symbols-outlined text-sm">phone_iphone</span> iOS App
+                  </span>
+                  <span className="text-xs text-outline font-bold">{Math.round((iosUsersCount / total) * 100)}%</span>
+                </div>
+                <h4 className="text-2xl font-black text-on-surface">{iosUsersCount}명</h4>
+                <p className="text-[11px] text-outline mt-1 font-medium">아이폰 앱 설치</p>
+              </div>
+
+              <div 
+                onClick={() => setStats2Filter(prev => prev === 'pwa' ? 'all' : 'pwa')}
+                className={`custom-card p-5 cursor-pointer transition-all hover:scale-[1.02] shadow-sm relative overflow-hidden ${
+                  stats2Filter === 'pwa' ? 'ring-2 ring-purple-500 bg-purple-50/30' : ''
+                }`}
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-bold text-purple-700 bg-purple-100 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                    <span className="material-symbols-outlined text-sm">notifications_active</span> PWA Push
+                  </span>
+                  <span className="text-xs text-outline font-bold">{Math.round((pwaUsersCount / total) * 100)}%</span>
+                </div>
+                <h4 className="text-2xl font-black text-on-surface">{pwaUsersCount}명</h4>
+                <p className="text-[11px] text-outline mt-1 font-medium">웹 푸시 승인 유저</p>
+              </div>
+
+              <div 
+                onClick={() => setStats2Filter(prev => prev === 'web' ? 'all' : 'web')}
+                className={`custom-card p-5 cursor-pointer transition-all hover:scale-[1.02] shadow-sm relative overflow-hidden ${
+                  stats2Filter === 'web' ? 'ring-2 ring-slate-400 bg-slate-50' : ''
+                }`}
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-bold text-slate-700 bg-slate-200 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                    <span className="material-symbols-outlined text-sm">language</span> Pure Web
+                  </span>
+                  <span className="text-xs text-outline font-bold">{Math.round((webUsersCount / total) * 100)}%</span>
+                </div>
+                <h4 className="text-2xl font-black text-on-surface">{webUsersCount}명</h4>
+                <p className="text-[11px] text-outline mt-1 font-medium">일반 웹 접속 유저</p>
+              </div>
+            </div>
+
+            {/* 필터 및 검색 컨트롤러 */}
+            <div className="custom-card p-6 shadow-sm space-y-4">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-outline-variant">
+                <div>
+                  <h3 className="text-title-lg font-bold text-on-surface flex items-center gap-2">
+                    <span className="material-symbols-outlined text-primary">devices</span>
+                    앱 상태별 가입자 & 날짜 상세 분석
+                  </h3>
+                  <p className="text-body-sm text-outline mt-0.5">유저별 디바이스 환경, 가입 일자 및 최근 서비스 방문 일자를 정밀 조회합니다.</p>
+                </div>
+                <span className="px-4 py-1.5 bg-primary/10 text-primary text-title-sm font-extrabold rounded-full w-fit">
+                  검색된 유저: {filteredStats2Users.length}명 / 전체 {users.length}명
+                </span>
+              </div>
+
+              <div className="flex flex-col md:flex-row gap-3 items-center justify-between">
+                {/* 탭 필터 */}
+                <div className="flex flex-wrap gap-1.5 w-full md:w-auto">
+                  {[
+                    { id: 'all', label: '전체 보기', icon: 'apps' },
+                    { id: 'android', label: 'Android 앱', icon: 'android' },
+                    { id: 'ios', label: 'iOS 앱', icon: 'phone_iphone' },
+                    { id: 'pwa', label: 'PWA 푸시', icon: 'notifications_active' },
+                    { id: 'web', label: '일반 웹', icon: 'language' }
+                  ].map(tab => (
+                    <button
+                      key={tab.id}
+                      onClick={() => setStats2Filter(tab.id as any)}
+                      className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                        stats2Filter === tab.id
+                          ? 'bg-primary text-on-primary shadow-sm scale-[1.02]'
+                          : 'bg-surface-container-low hover:bg-surface-container text-on-surface-variant'
+                      }`}
+                    >
+                      <span className="material-symbols-outlined text-sm">{tab.icon}</span>
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* 검색 입력창 */}
+                <div className="relative w-full md:w-64">
+                  <span className="material-symbols-outlined absolute left-3 top-2.5 text-outline text-lg pointer-events-none">search</span>
+                  <input
+                    type="text"
+                    placeholder="닉네임 / 이메일 검색..."
+                    value={stats2Search}
+                    onChange={(e) => setStats2Search(e.target.value)}
+                    className="w-full bg-surface-container-low border border-outline-variant/40 rounded-xl pl-9 pr-4 py-2 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                  {stats2Search && (
+                    <button onClick={() => setStats2Search('')} className="absolute right-2.5 top-2.5 text-outline hover:text-on-surface">
+                      <span className="material-symbols-outlined text-sm">close</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* 데이터 테이블 */}
+              <div className="overflow-x-auto rounded-xl border border-outline-variant/40 mt-4">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-surface-container-low border-b border-outline-variant text-label-md font-bold text-outline">
+                      <th className="py-3.5 px-4">회원 (닉네임)</th>
+                      <th className="py-3.5 px-4 text-center">앱 구동 환경</th>
+                      <th className="py-3.5 px-4 text-center">가입 방식</th>
+                      <th className="py-3.5 px-4">가입 일시 (KST)</th>
+                      <th className="py-3.5 px-4">최근 접속 일시 (KST)</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-outline-variant/30 text-body-sm">
+                    {filteredStats2Users.length === 0 ? (
+                      <tr>
+                        <td colSpan={5} className="py-12 text-center text-outline font-medium">
+                          조건에 부합하는 가입자 데이터가 없습니다.
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredStats2Users.map(user => {
+                        const appState = getUserAppState(user);
+                        const joinDate = safeDate(user.createdAt);
+                        const lastVisit = safeDate(user.lastVisitedAt);
+
+                        return (
+                          <tr key={user.id} className="hover:bg-surface-container/30 transition-colors">
+                            <td className="py-3.5 px-4">
+                              <div className="flex items-center gap-3">
+                                <img
+                                  src={user.photoURL || '/anonymous-user.png'}
+                                  alt={user.nickname}
+                                  onError={handleImageError}
+                                  className="w-9 h-9 rounded-xl object-cover border border-outline-variant/30"
+                                />
+                                <div>
+                                  <p className="font-bold text-on-surface">{user.nickname || 'Unknown'}</p>
+                                  {user.nativeNickname && (
+                                    <p className="text-[11px] text-outline">({user.nativeNickname})</p>
+                                  )}
+                                </div>
+                              </div>
+                            </td>
+                            <td className="py-3.5 px-4 text-center">
+                              {appState === 'android' && (
+                                <span className="inline-flex items-center gap-1 px-3 py-1 bg-emerald-100 text-emerald-800 text-[11px] font-extrabold rounded-full border border-emerald-200">
+                                  <span className="material-symbols-outlined text-xs">android</span> Android
+                                </span>
+                              )}
+                              {appState === 'ios' && (
+                                <span className="inline-flex items-center gap-1 px-3 py-1 bg-sky-100 text-sky-800 text-[11px] font-extrabold rounded-full border border-sky-200">
+                                  <span className="material-symbols-outlined text-xs">phone_iphone</span> iOS App
+                                </span>
+                              )}
+                              {appState === 'pwa' && (
+                                <span className="inline-flex items-center gap-1 px-3 py-1 bg-purple-100 text-purple-800 text-[11px] font-extrabold rounded-full border border-purple-200">
+                                  <span className="material-symbols-outlined text-xs">notifications_active</span> PWA Push
+                                </span>
+                              )}
+                              {appState === 'web' && (
+                                <span className="inline-flex items-center gap-1 px-3 py-1 bg-slate-100 text-slate-700 text-[11px] font-bold rounded-full border border-slate-200">
+                                  <span className="material-symbols-outlined text-xs">language</span> Pure Web
+                                </span>
+                              )}
+                            </td>
+                            <td className="py-3.5 px-4 text-center">
+                              <span className="px-2.5 py-1 bg-surface-container text-on-surface-variant text-[11px] font-bold rounded-lg border border-outline-variant/30">
+                                {getAuthMethodKo(user)}
+                              </span>
+                            </td>
+                            <td className="py-3.5 px-4 font-medium text-on-surface">
+                              {joinDate ? format(joinDate, 'yyyy.MM.dd HH:mm') : '-'}
+                            </td>
+                            <td className="py-3.5 px-4 font-medium text-on-surface">
+                              {lastVisit ? (
+                                <div className="flex flex-col">
+                                  <span>{format(lastVisit, 'yyyy.MM.dd HH:mm')}</span>
+                                  <span className="text-[10px] text-primary font-bold">{getEngagement(user)}</span>
+                                </div>
+                              ) : (
+                                '-'
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
-          <h3 className="text-title-lg font-title-lg text-on-surface font-bold">통계 2 준비 중입니다.</h3>
-          <p className="text-body-md text-outline max-w-md">가입 채널별 분석 및 상세 그룹 활동 지수 통계 분석 기능이 추가될 예정입니다.</p>
-        </div>
-      )}
+        );
+      })()}
 
       {/* 통계3 탭: 준비 중 페이지 */}
       {activeTab === 'stats3' && (

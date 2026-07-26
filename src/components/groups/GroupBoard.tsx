@@ -135,16 +135,6 @@ const GroupBoard = ({ group, isAdmin = false }: GroupBoardProps) => {
                 <span className="material-symbols-outlined text-[20px]">settings</span>
               </button>
             )}
-            <button 
-              onClick={() => {
-                setEditingPost(null);
-                setIsEditorOpen(true);
-              }}
-              className="bg-primary text-on-primary font-headline font-bold py-1.5 px-3 rounded-lg shadow-sm shadow-primary/20 flex items-center justify-center gap-1.5 hover:opacity-95 transition-opacity active:scale-[0.99] text-xs"
-            >
-              <span className="material-symbols-outlined text-[14px]">edit_document</span>
-              {t('group.board.write_post')}
-            </button>
           </div>
         </div>
 

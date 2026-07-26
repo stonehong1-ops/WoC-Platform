@@ -206,7 +206,10 @@ export default function AdminOthersPage() {
       {showCreate && (
         <div className="fixed inset-0 z-[100] bg-surface overflow-y-auto">
           {/* TopAppBar */}
-          <header className="fixed top-0 left-0 w-full z-50 flex items-center justify-between px-6 py-4 max-w-[896px] left-1/2 -translate-x-1/2 bg-white/95 backdrop-blur-md shadow-sm border-b border-outline-variant/30">
+          <header 
+            className="fixed top-0 left-0 w-full z-50 flex items-center justify-between px-6 py-4 max-w-[896px] left-1/2 -translate-x-1/2 bg-white/95 backdrop-blur-md shadow-sm border-b border-outline-variant/30 pt-safe"
+            style={{ paddingTop: 'calc(1rem + env(safe-area-inset-top, 0px))' }}
+          >
             <div className="flex items-center gap-4">
               <button onClick={() => setShowCreate(false)} className="flex items-center justify-center w-10 h-10 rounded-xl hover:bg-surface-container transition-all active:scale-[0.98] cursor-pointer">
                 <span className="material-symbols-outlined text-on-surface">close</span>
@@ -223,7 +226,13 @@ export default function AdminOthersPage() {
           </header>
 
           {/* Main Content Canvas */}
-          <main className="pt-24 pb-16 px-6 max-w-[896px] mx-auto space-y-6">
+          <main 
+            className="pt-24 pb-16 pb-safe px-6 max-w-[896px] mx-auto space-y-6"
+            style={{ 
+              paddingTop: 'calc(6rem + env(safe-area-inset-top, 0px))',
+              paddingBottom: 'calc(4rem + env(safe-area-inset-bottom, 0px))' 
+            }}
+          >
             {/* Card 1: Basic Info */}
             <section className="bg-white p-6 rounded-2xl shadow-sm border border-outline-variant/20 hover:shadow-md transition-all">
               <h2 className="text-sm font-bold text-primary mb-5 flex items-center gap-2 uppercase tracking-wider">

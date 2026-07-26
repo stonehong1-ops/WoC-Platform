@@ -10,15 +10,13 @@ import { motion, AnimatePresence } from "framer-motion";
 import { doc, writeBatch, deleteField, Timestamp } from "firebase/firestore";
 
 import { toast } from "sonner";
+import { useRouter } from "next/navigation";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { useBackButtonClose } from "@/hooks/useBackButtonClose";
 import GroupClassAddEditor from "./GroupClassAddEditor";
 import GroupClassDiscountEditor from "./GroupClassDiscountEditor";
 import GroupClassCloneEditor from "./GroupClassCloneEditor";
-import { classRegistrationService } from "@/lib/firebase/classRegistrationService";
-import { useRouter } from "next/navigation";
-import { GroupClassRegistrations } from "./GroupClassRegistrations";
-import { GroupClassStats } from "./GroupClassStats";
-import { useLanguage } from "@/contexts/LanguageContext";
-import { useBackButtonClose } from "@/hooks/useBackButtonClose";
+import GroupClassScheduleImageModal from "./GroupClassScheduleImageModal";
 
 interface GroupClassEditorProps {
   group: Group;
@@ -101,14 +99,16 @@ const GroupClassEditor: React.FC<GroupClassEditorProps> = ({ group, onSave, onCl
   const [editingState, setEditingState] = useState<EditingState | null>(null);
   const [loading, setLoading] = useState(false);
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'register' | 'application' | 'stats'>('register');
   const [isFullScreenTextOpen, setIsFullScreenTextOpen] = useState(false);
+  const [isImageModalOpen, setIsImageModalOpen] = useState(false);
 
   const closeEditing = useCallback(() => setEditingState(null), []);
   const closeFullScreenText = useCallback(() => setIsFullScreenTextOpen(false), []);
+  const closeImageModal = useCallback(() => setIsImageModalOpen(false), []);
 
   useBackButtonClose(!!editingState, closeEditing);
   useBackButtonClose(isFullScreenTextOpen, closeFullScreenText);
+  useBackButtonClose(isImageModalOpen, closeImageModal);
 
   const generateScheduleText = () => {
     let text = "";
@@ -208,6 +208,20 @@ const GroupClassEditor: React.FC<GroupClassEditorProps> = ({ group, onSave, onCl
       console.error(err);
       toast.error(t('common.error') || "오류가 발생했습니다.");
     });
+  };
+
+  const handleDownloadText = () => {
+    const text = generateScheduleText();
+    const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${group.name.replace(/\s+/g, "_")}_${monthDisplay.replace(/\s+/g, "_")}_Schedule.txt`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    toast.success("수업 일정 텍스트 파일이 저장되었습니다.");
   };
 
   const [currentDate, setCurrentDate] = useState(() => {
@@ -434,186 +448,96 @@ const GroupClassEditor: React.FC<GroupClassEditorProps> = ({ group, onSave, onCl
         )}
 
         <main className="flex-1">
-          <div className={`max-w-[896px] mx-auto space-y-6 ${isInline ? 'pb-24' : 'pb-48 md:pb-32'}`}>
+          <div className={`max-w-[896px] mx-auto space-y-6 pt-4 ${isInline ? 'pb-24' : 'pb-48 md:pb-32'}`}>
             
-            {/* Section Header */}
-            <div className="px-4 pt-4 pb-6">
-              <div className="mb-2">
-                <h2 className="text-[24px] leading-[1.3] font-semibold text-on-surface" style={{ fontFamily: "'Inter', sans-serif" }}>
-                  {t("group.class.management") || "Class Management"}
-                </h2>
-              </div>
-            </div>
-
-            {/* Month Navigation & Visibility */}
-            <section className="px-4 mb-6">
-              <div className="bg-white rounded-2xl shadow-[0px_10px_30px_rgba(0,0,0,0.03)] border border-white/20 overflow-hidden">
-                <div className="px-6 pt-6 pb-4 border-b border-outline/5">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                      <span className="material-symbols-outlined text-primary text-[20px]">calendar_month</span>
-                    </div>
-                    <div>
-                      <h3 className="text-[16px] leading-[1.6] font-semibold text-on-surface" style={{ fontFamily: "'Inter', sans-serif" }}>
-                        {t('group.class.registration_status') || "Registration Status"}
-                      </h3>
-                      <p className="text-[12px] leading-[1.2] font-medium text-on-surface-variant" style={{ fontFamily: "'Inter', sans-serif" }}>
-                        {t('group.class.close_registration_desc') || "Close registration for this month's classes"}
-                      </p>
-                    </div>
-                  </div>
+            {/* 월 선택 & 수강 마감 체크 심플 헤더 */}
+            <section className="px-4 mb-4">
+              <div className="bg-white rounded-2xl border border-[#e0e4e5] p-4 shadow-sm flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <button onClick={handlePrevMonth} className="w-8 h-8 rounded-lg border border-[#e0e4e5] bg-[#f8f9fa] hover:bg-white flex items-center justify-center text-slate-700 active:scale-95 transition-all">
+                    <span className="material-symbols-outlined text-[18px]">chevron_left</span>
+                  </button>
+                  <h2 className="text-base font-bold text-slate-800 px-1">{monthDisplay}</h2>
+                  <button onClick={handleNextMonth} className="w-8 h-8 rounded-lg border border-[#e0e4e5] bg-[#f8f9fa] hover:bg-white flex items-center justify-center text-slate-700 active:scale-95 transition-all">
+                    <span className="material-symbols-outlined text-[18px]">chevron_right</span>
+                  </button>
                 </div>
 
-                <div className="p-6 space-y-4">
-                  {/* Navigation Row */}
-                  <div className="flex items-center justify-between bg-surface-container-low border border-outline/5 p-2 rounded-xl">
-                    <button onClick={handlePrevMonth} className="p-2 hover:bg-white rounded-lg transition-all shadow-sm bg-white border border-outline/5 active:scale-95 text-on-surface flex items-center justify-center">
-                      <span className="material-symbols-outlined text-[20px]">chevron_left</span>
-                    </button>
-                    <h2 className="text-[18px] font-bold text-on-surface" style={{ fontFamily: "'Inter', sans-serif" }}>{monthDisplay}</h2>
-                    <button onClick={handleNextMonth} className="p-2 hover:bg-white rounded-lg transition-all shadow-sm bg-white border border-outline/5 active:scale-95 text-on-surface flex items-center justify-center">
-                      <span className="material-symbols-outlined text-[20px]">chevron_right</span>
-                    </button>
-                  </div>
-
-                  {/* Status Toggle Row */}
-                  <div className="flex bg-surface-container-low border border-outline/5 p-1 rounded-xl shadow-inner w-full">
-                    <button
-                      onClick={() => handleToggleRegistrationStatus(false)}
-                      disabled={loading}
-                      className={`flex-1 py-2.5 text-[13px] font-bold rounded-lg transition-all ${
-                        !isRegistrationOpen
-                          ? 'bg-surface-container-highest text-on-surface shadow-sm'
-                          : 'text-on-surface-variant/60 hover:text-on-surface hover:bg-surface-container-high'
-                      }`}
-                      style={{ fontFamily: "'Inter', sans-serif" }}
-                    >
-                      {t('group.class.status_closed')}
-                    </button>
-                    <button
-                      onClick={() => handleToggleRegistrationStatus(true)}
-                      disabled={loading}
-                      className={`flex-1 py-2.5 text-[13px] font-bold rounded-lg transition-all ${
-                        isRegistrationOpen
-                          ? 'bg-primary text-on-primary shadow-sm'
-                          : 'text-on-surface-variant/60 hover:text-on-surface hover:bg-surface-container-high'
-                      }`}
-                      style={{ fontFamily: "'Inter', sans-serif" }}
-                    >
-                      {t('group.class.status_open')}
-                    </button>
-                  </div>
-                </div>
+                {/* 수강 마감 체크 스위치 */}
+                <label className="flex items-center gap-2 cursor-pointer select-none">
+                  <span className="text-xs font-bold text-slate-700">수강 마감</span>
+                  <input
+                    type="checkbox"
+                    checked={!isRegistrationOpen}
+                    onChange={(e) => handleToggleRegistrationStatus(!e.target.checked)}
+                    disabled={loading}
+                    className="w-4 h-4 text-[#007AFF] rounded border-[#e0e4e5] focus:ring-0 cursor-pointer"
+                  />
+                </label>
               </div>
             </section>
 
-            {/* Tabs Navigation */}
-            <section className="px-4 mb-6">
-              <div className="flex bg-surface-container-low border border-outline/5 p-1 rounded-xl shadow-inner gap-1">
+            {/* 3개 심플 액션 버튼: 수업등록, 번들등록, 지난달참조 */}
+            <section className="px-4 mb-5">
+              <div className="grid grid-cols-3 gap-2.5">
                 <button
-                  onClick={() => setActiveTab('register')}
-                  className={`flex-1 py-2.5 text-[14px] font-bold rounded-lg transition-colors ${
-                    activeTab === 'register' ? 'bg-primary text-on-primary shadow-sm' : 'text-on-surface-variant/60 hover:text-on-surface hover:bg-surface-container-high'
-                  }`}
-                  style={{ fontFamily: "'Inter', sans-serif" }}
+                  onClick={() => setEditingState({ type: 'add-class', data: null })}
+                  className="py-3 px-3 bg-[#007AFF] hover:bg-[#0066CC] text-white rounded-xl flex items-center justify-center gap-1.5 text-xs font-bold transition-all shadow-sm active:scale-95"
                 >
-                  {t('group.class.register') || "Register"}
+                  <span className="material-symbols-outlined text-[16px]">add_circle</span>
+                  <span>수업 등록</span>
                 </button>
                 <button
-                  onClick={() => setActiveTab('application')}
-                  className={`flex-1 py-2.5 text-[14px] font-bold rounded-lg transition-colors ${
-                    activeTab === 'application' ? 'bg-primary text-on-primary shadow-sm' : 'text-on-surface-variant/60 hover:text-on-surface hover:bg-surface-container-high'
-                  }`}
-                  style={{ fontFamily: "'Inter', sans-serif" }}
+                  onClick={() => setEditingState({ type: 'discount', data: null })}
+                  className="py-3 px-3 bg-white text-slate-700 border border-[#e0e4e5] hover:bg-slate-50 rounded-xl flex items-center justify-center gap-1.5 text-xs font-bold transition-all shadow-sm active:scale-95"
                 >
-                  {t('group.class.application') || "Application"}
+                  <span className="material-symbols-outlined text-rose-500 text-[16px]">sell</span>
+                  <span>번들 등록</span>
                 </button>
                 <button
-                  onClick={() => setActiveTab('stats')}
-                  className={`flex-1 py-2.5 text-[14px] font-bold rounded-lg transition-colors ${
-                    activeTab === 'stats' ? 'bg-primary text-on-primary shadow-sm' : 'text-on-surface-variant/60 hover:text-on-surface hover:bg-surface-container-high'
-                  }`}
-                  style={{ fontFamily: "'Inter', sans-serif" }}
+                  onClick={() => handleEdit('clone', null)}
+                  className="py-3 px-3 bg-white text-slate-700 border border-[#e0e4e5] hover:bg-slate-50 rounded-xl flex items-center justify-center gap-1.5 text-xs font-bold transition-all shadow-sm active:scale-95"
                 >
-                  {t('group.class.stats') || "Stats"}
+                  <span className="material-symbols-outlined text-primary text-[16px]">difference</span>
+                  <span>지난달 참조</span>
                 </button>
               </div>
             </section>
 
-            {activeTab === 'register' && (
-              <>
-                {/* Action Buttons */}
-                <section className="px-4 mb-6">
-                  <div className="grid grid-cols-2 gap-3">
-                    <button
-                      onClick={() => setEditingState({ type: 'add-class', data: null })}
-                      className="flex flex-col items-center justify-center gap-1.5 p-4 bg-white text-on-surface rounded-2xl border border-white/20 shadow-[0px_10px_30px_rgba(0,0,0,0.02)] hover:bg-surface-container-low transition-all active:scale-[0.98] relative group"
-                    >
-                      <div className="absolute top-3 right-3 w-5 h-5 bg-primary text-on-primary rounded-full flex items-center justify-center text-[10px] font-bold shadow-sm">{filteredClasses.length}</div>
-                      <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary group-hover:scale-105 transition-transform">
-                        <span className="material-symbols-outlined text-[20px]">school</span>
-                      </div>
-                      <span className="text-[12px] font-bold leading-tight text-center" style={{ fontFamily: "'Inter', sans-serif" }}>{t('group.class.class') || "Class"}</span>
-                    </button>
-                    <button
-                      onClick={() => setEditingState({ type: 'discount', data: null })}
-                      className="flex flex-col items-center justify-center gap-1.5 p-4 bg-white text-on-surface rounded-2xl border border-white/20 shadow-[0px_10px_30px_rgba(0,0,0,0.02)] hover:bg-surface-container-low transition-all active:scale-[0.98] relative group"
-                    >
-                      <div className="absolute top-3 right-3 w-5 h-5 bg-primary text-on-primary rounded-full flex items-center justify-center text-[10px] font-bold shadow-sm">{filteredDiscounts.length}</div>
-                      <div className="w-10 h-10 rounded-xl bg-secondary/10 flex items-center justify-center text-secondary group-hover:scale-105 transition-transform">
-                        <span className="material-symbols-outlined text-[20px]">sell</span>
-                      </div>
-                      <span className="text-[12px] font-bold leading-tight text-center" style={{ fontFamily: "'Inter', sans-serif" }} dangerouslySetInnerHTML={{ __html: t('group.class.bundle_discount') || "Bundle<br />discount" }} />
-                    </button>
+            {/* 메인 수업 리스트 (요일별 / 시간순) */}
+            <section className="px-4 mb-6 flex flex-col gap-4">
+              {/* 번들 패키지 할인 (있는 경우) */}
+              {filteredDiscounts.length > 0 && (
+                <div className="space-y-3 mb-2">
+                  <div className="flex items-center gap-2 px-1">
+                    <span className="material-symbols-outlined text-rose-500 text-sm">card_membership</span>
+                    <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                      {t('group.class.bundle_discount') || '번들 할인 패키지'} ({filteredDiscounts.length})
+                    </h3>
                   </div>
-                </section>
-
-                {/* List Section */}
-                <section className="px-4 mb-6 flex flex-col gap-4">
-                  {filteredClasses.length === 0 && filteredDiscounts.length === 0 && (
-                    <div className="bg-transparent border-2 border-dashed border-outline/15 rounded-2xl p-10 text-center flex flex-col items-center justify-center">
-                      <span className="material-symbols-outlined text-on-surface-variant/30 text-4xl mb-2">inbox</span>
-                      <p className="text-on-surface-variant font-bold">{t('group.class.no_items') || "No items registered"}</p>
-                    </div>
-                  )}
-
-                  {/* Discounts */}
                   {filteredDiscounts.map((discount: ClassDiscount) => (
-                    <div key={discount.id} className="bg-white rounded-2xl shadow-[0px_10px_30px_rgba(0,0,0,0.03)] border border-white/20 p-6 flex items-start gap-4 hover:shadow-[0px_15px_40px_rgba(0,0,0,0.05)] transition-all">
-                      <div className="flex-grow">
-                        <div className="flex justify-between items-start mb-1">
-                          <div className="flex items-center gap-2">
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-rose-600 bg-rose-50 px-2 py-0.5 rounded-lg">
-                              {t('group.class.bundle_badge') || "Bundle"}
-                            </span>
-                            <span className="text-xs font-bold text-on-surface-variant/40">#D-{discount.id.slice(0, 4)}</span>
-                          </div>
+                    <div key={discount.id} className="bg-white rounded-2xl shadow-sm border border-[#e0e4e5] p-4 flex items-start justify-between gap-3 hover:border-rose-300 transition-all">
+                      <div className="flex-grow space-y-1.5">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-bold text-rose-600 bg-rose-50 px-2.5 py-0.5 rounded-full border border-rose-100">
+                            {t('group.class.bundle_badge') || '패키지'}
+                          </span>
+                          <h4 className="text-sm font-bold text-slate-800">{discount.title}</h4>
                         </div>
-                        <h4 className="text-lg font-bold text-on-surface leading-tight mb-2" style={{ fontFamily: "'Inter', sans-serif" }}>{discount.title}</h4>
-                        <div className="flex flex-col gap-1 text-sm text-on-surface-variant mb-3">
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-semibold text-on-surface-variant" style={{ fontFamily: "'Inter', sans-serif" }}>
-                              {t('group.class.includes_classes')?.replace('{count}', String(discount.includedClassIds?.length || 0)) || `Includes ${discount.includedClassIds?.length || 0} classes`}
-                            </span>
+                        {discount.includedClassIds && discount.includedClassIds.length > 0 && (
+                          <div className="flex flex-wrap gap-1 pt-0.5">
+                            {discount.includedClassIds.map((classId: string) => {
+                              const cls = allClasses.find(c => c.id === classId);
+                              return cls ? (
+                                <span key={classId} className="text-[11px] bg-slate-100 text-slate-700 px-2 py-0.5 rounded-md font-semibold">
+                                  {cls.title}
+                                </span>
+                              ) : null;
+                            })}
                           </div>
-                          {discount.includedClassIds && discount.includedClassIds.length > 0 && (
-                            <div className="flex flex-wrap gap-1 mt-1">
-                              {discount.includedClassIds.map((classId: string) => {
-                                const cls = allClasses.find(c => c.id === classId);
-                                return cls ? (
-                                  <span key={classId} className="text-[10px] bg-surface-container-low text-on-surface-variant px-2.5 py-1 rounded-full border border-outline/5 font-semibold">
-                                    {cls.title}
-                                  </span>
-                                ) : null;
-                              })}
-                            </div>
-                          )}
-                        </div>
-                        <div className="flex items-center justify-between pt-2 border-t border-outline/5">
-                          <div className="flex items-center gap-2">
-                            <span className="text-[12px] font-medium text-on-surface-variant" style={{ fontFamily: "'Inter', sans-serif" }}>{t('group.class.discounted_price') || "Discounted Price"}</span>
-                          </div>
-                          <span className="text-base font-bold text-primary" style={{ fontFamily: "'Inter', sans-serif" }}>{discount.amount === 0 ? t('group.class.free', 'Free') : `${discount.currency === 'KRW' ? '₩' : discount.currency} ${discount.amount.toLocaleString()}`}</span>
+                        )}
+                        <div className="text-xs font-bold text-[#007AFF] pt-1">
+                          {discount.amount === 0 ? (t('group.class.free') || '무료') : `${discount.currency === 'KRW' ? '₩' : discount.currency} ${discount.amount.toLocaleString()}`}
                         </div>
                       </div>
                       <div className="relative action-menu-container">
@@ -622,157 +546,153 @@ const GroupClassEditor: React.FC<GroupClassEditorProps> = ({ group, onSave, onCl
                             e.stopPropagation();
                             setActiveMenuId(activeMenuId === discount.id ? null : discount.id);
                           }}
-                          className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-surface-container-low transition-all text-on-surface-variant/70"
+                          className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition-colors"
                         >
-                          <span className="material-symbols-outlined text-[20px]">more_vert</span>
+                          <span className="material-symbols-outlined text-[18px]">more_vert</span>
                         </button>
                         {activeMenuId === discount.id && (
-                          <div className="absolute right-0 mt-1 w-32 bg-white rounded-xl shadow-[0px_10px_30px_rgba(0,0,0,0.08)] border border-outline/5 overflow-hidden z-20">
-                            <button onClick={() => handleEdit('discount', discount)} className="w-full px-4 py-2.5 text-left text-sm font-bold text-on-surface hover:bg-surface-container-low transition-colors" style={{ fontFamily: "'Inter', sans-serif" }}>{t('common.edit') || "Edit"}</button>
-                            <button onClick={() => handleDelete('discount', discount.id)} className="w-full px-4 py-2.5 text-left text-sm font-bold text-error hover:bg-error/5 transition-colors" style={{ fontFamily: "'Inter', sans-serif" }}>{t('common.delete') || "Delete"}</button>
+                          <div className="absolute right-0 mt-1 w-28 bg-white rounded-xl shadow-lg border border-slate-100 overflow-hidden z-20 py-1">
+                            <button onClick={() => handleEdit('discount', discount)} className="w-full px-4 py-2 text-left text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors">{t('common.edit') || "수정"}</button>
+                            <button onClick={() => handleDelete('discount', discount.id)} className="w-full px-4 py-2 text-left text-xs font-bold text-red-600 hover:bg-red-50 transition-colors">{t('common.delete') || "삭제"}</button>
                           </div>
                         )}
                       </div>
                     </div>
                   ))}
+                </div>
+              )}
 
-                  {/* Classes */}
-                  {sortedClasses.map((cls, idx) => {
-                    const day = getClassDay(cls);
-                    const prevCls = idx > 0 ? sortedClasses[idx - 1] : null;
-                    const prevDay = prevCls ? getClassDay(prevCls) : null;
-                    const isNewDay = idx > 0 && day !== prevDay;
+              {/* 정규 클래스 요일별 / 시간순 그룹화 렌더링 */}
+              {(() => {
+                const classesByDay: { [key: string]: typeof sortedClasses } = {
+                  MON: [], TUE: [], WED: [], THU: [], FRI: [], SAT: [], SUN: []
+                };
 
-                    return (
-                      <React.Fragment key={cls.id}>
-                        {isNewDay && (
-                          <div className="border-t border-outline/10 my-4" />
-                        )}
-                        <div className="bg-white rounded-2xl shadow-[0px_10px_30px_rgba(0,0,0,0.03)] border border-white/20 p-6 flex items-start gap-4 hover:shadow-[0px_15px_40px_rgba(0,0,0,0.05)] transition-all">
-                          <div className="flex-grow">
-                            <div className="flex justify-between items-start mb-1">
-                              <div className="flex items-center gap-2">
-                                <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-lg ${getLevelColor(cls.level)}`}>
-                                  {cls.level || t('group.class.all_levels') || 'All Levels'}
-                                </span>
-                                <span className="text-xs font-bold text-on-surface-variant/40">#C-{cls.id.slice(0, 4)}</span>
-                              </div>
-                            </div>
-                            <h4 className="text-lg font-bold text-on-surface leading-tight mb-2" style={{ fontFamily: "'Inter', sans-serif" }}>{cls.title}</h4>
-                            <div className="flex flex-col gap-1 text-sm text-on-surface-variant mb-3">
-                              <div className="flex items-center gap-2">
-                                <span className="text-sm font-semibold text-primary" style={{ fontFamily: "'Inter', sans-serif" }}>
-                                  {cls.schedule?.length ? (t('group.class.plus_sessions')?.replace('{date}', cls.schedule[0].date || '').replace('{count}', String(cls.schedule.length - 1)) || `${cls.schedule[0].date || ''} plus ${cls.schedule.length - 1} sessions`) : (t('group.class.no_sessions') || 'No sessions')}
-                                </span>
-                                <span className="ml-2 text-on-surface-variant font-medium" style={{ fontFamily: "'Inter', sans-serif" }}>{cls.schedule?.[0]?.timeSlot || ''}</span>
-                              </div>
-                            </div>
-                            <div className="flex items-center justify-between pt-2 border-t border-outline/5">
-                              <div className="flex items-center gap-2">
-                                <span className="text-[12px] font-medium text-on-surface-variant" style={{ fontFamily: "'Inter', sans-serif" }}>{t('group.class.instructor') || "Instructor:"}</span>
-                                <span className="text-sm font-semibold text-on-surface" style={{ fontFamily: "'Inter', sans-serif" }}>
-                                  {cls.instructors?.[0]?.name || t('group.class.tbd') || 'TBD'}
-                                  {cls.instructors && cls.instructors.length > 1 && ` +${cls.instructors.length - 1}`}
-                                </span>
-                              </div>
-                              <span className="text-base font-bold text-on-surface" style={{ fontFamily: "'Inter', sans-serif" }}>{cls.amount === 0 ? t('group.class.free', 'Free') : `${cls.currency === 'KRW' ? '₩' : cls.currency} ${cls.amount.toLocaleString()}`}</span>
-                            </div>
-                          </div>
-                          <div className="relative action-menu-container">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setActiveMenuId(activeMenuId === cls.id ? null : cls.id);
-                              }}
-                              className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-surface-container-low transition-all text-on-surface-variant/70"
-                            >
-                              <span className="material-symbols-outlined text-[20px]">more_vert</span>
-                            </button>
-                            {activeMenuId === cls.id && (
-                              <div className="absolute right-0 mt-1 w-32 bg-white rounded-xl shadow-[0px_10px_30px_rgba(0,0,0,0.08)] border border-outline/5 overflow-hidden z-20">
-                                <button onClick={() => handleEdit('add-class', cls)} className="w-full px-4 py-2.5 text-left text-sm font-bold text-on-surface hover:bg-surface-container-low transition-colors" style={{ fontFamily: "'Inter', sans-serif" }}>{t('common.edit') || "Edit"}</button>
-                                <button onClick={() => handleDelete('class', cls.id)} className="w-full px-4 py-2.5 text-left text-sm font-bold text-error hover:bg-error/5 transition-colors" style={{ fontFamily: "'Inter', sans-serif" }}>{t('common.delete') || "Delete"}</button>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </React.Fragment>
-                    );
-                  })}
+                sortedClasses.forEach(cls => {
+                  const day = getClassDay(cls);
+                  if (classesByDay[day]) {
+                    classesByDay[day].push(cls);
+                  } else {
+                    classesByDay['MON'].push(cls);
+                  }
+                });
 
-                  {/* WocClass 연동 클래스 */}
-                  {linkedWocClasses.length > 0 && (
-                    <>
-                      <div className="border-t border-outline/10 my-4 pt-2">
-                        <span className="text-[11px] font-bold text-primary uppercase tracking-wider">{t('group.class.linked_classes') || 'Linked Classes'}</span>
+                // 요일 내부에서 시간순 정렬
+                DAY_ORDER.forEach(day => {
+                  classesByDay[day].sort((a, b) => {
+                    const timeA = a.schedule?.[0]?.timeSlot?.split(" - ")[0] || "00:00";
+                    const timeB = b.schedule?.[0]?.timeSlot?.split(" - ")[0] || "00:00";
+                    return timeA.localeCompare(timeB);
+                  });
+                });
+
+                const hasAnyClasses = DAY_ORDER.some(day => classesByDay[day].length > 0);
+
+                if (!hasAnyClasses && filteredDiscounts.length === 0) {
+                  return (
+                    <div className="bg-white border border-dashed border-slate-200 rounded-2xl p-10 text-center flex flex-col items-center justify-center">
+                      <span className="material-symbols-outlined text-slate-300 text-4xl mb-2">event_busy</span>
+                      <p className="text-slate-500 font-bold text-sm">{t('group.class.no_items') || "등록된 클래스가 없습니다."}</p>
+                    </div>
+                  );
+                }
+
+                return DAY_ORDER.map(day => {
+                  const dayClasses = classesByDay[day];
+                  if (dayClasses.length === 0) return null;
+
+                  return (
+                    <div key={day} className="space-y-3 mb-2">
+                      <div className="flex items-center gap-2 px-1 pt-2">
+                        <span className="w-2.5 h-2.5 rounded-full bg-[#007AFF]" />
+                        <h3 className="text-xs font-bold text-slate-800 tracking-wide">
+                          {DAY_NAMES_KR[day]} ({day}) 클래스 ({dayClasses.length})
+                        </h3>
                       </div>
-                      {linkedWocClasses.map(wc => (
-                        <div key={wc.id} className="bg-white rounded-2xl shadow-[0px_10px_30px_rgba(0,0,0,0.03)] border border-white/20 p-6 flex items-start gap-4 hover:shadow-[0px_15px_40px_rgba(0,0,0,0.05)] transition-all">
-                          <div className="flex-grow">
-                            <div className="flex justify-between items-start mb-1">
-                              <div className="flex items-center gap-2">
-                                <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-lg ${wc.level ? (wc.level === 'Beginner' ? 'text-emerald-600 bg-emerald-50' : wc.level === 'Intermediate' ? 'text-orange-600 bg-orange-50' : wc.level === 'Advanced' ? 'text-blue-600 bg-blue-50' : 'text-purple-600 bg-purple-50') : 'text-purple-600 bg-purple-50'}`}>
-                                  {wc.level || t('group.class.all_levels') || 'All Levels'}
-                                </span>
-                                <span className="text-[10px] font-bold uppercase tracking-wider text-blue-600 bg-blue-50 px-2 py-0.5 rounded-lg">
-                                  {t('group.class.linked_badge') || '연동됨'}
-                                </span>
+
+                      <div className="space-y-2.5">
+                        {dayClasses.map(cls => {
+                          const firstSchedule = cls.schedule?.[0];
+                          const startTime = firstSchedule?.timeSlot?.split(" - ")[0] || "";
+                          const endTime = firstSchedule?.timeSlot?.split(" - ")[1] || "";
+                          const timeDisplay = startTime && endTime ? `${startTime} ~ ${endTime}` : (firstSchedule?.timeSlot || "시간 미정");
+                          
+                          // 등록된 모든 강사 전원 명시 (콤마 구분)
+                          const allInstructorsStr = cls.instructors && cls.instructors.length > 0
+                            ? cls.instructors.map(i => getKoreanName(i.name)).join(", ")
+                            : (t('group.class.tbd') || '강사 미정');
+
+                          return (
+                            <div key={cls.id} className="bg-white rounded-2xl border border-[#e0e4e5] p-4 shadow-sm hover:border-[#007AFF]/40 transition-all space-y-3">
+                              <div className="flex items-start justify-between gap-3">
+                                <div className="space-y-1">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-[11px] font-bold text-[#007AFF] bg-[#007AFF]/10 px-2.5 py-0.5 rounded-full">
+                                      ⏰ {timeDisplay}
+                                    </span>
+                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${getLevelColor(cls.level)}`}>
+                                      {cls.level || 'All Levels'}
+                                    </span>
+                                  </div>
+                                  <h4 className="text-base font-bold text-slate-800 pt-0.5">{cls.title}</h4>
+                                </div>
+
+                                <div className="relative action-menu-container shrink-0">
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setActiveMenuId(activeMenuId === cls.id ? null : cls.id);
+                                    }}
+                                    className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition-colors"
+                                  >
+                                    <span className="material-symbols-outlined text-[18px]">more_vert</span>
+                                  </button>
+                                  {activeMenuId === cls.id && (
+                                    <div className="absolute right-0 mt-1 w-28 bg-white rounded-xl shadow-lg border border-slate-100 overflow-hidden z-20 py-1">
+                                      <button onClick={() => handleEdit('add-class', cls)} className="w-full px-4 py-2 text-left text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors">{t('common.edit') || "수정"}</button>
+                                      <button onClick={() => handleDelete('class', cls.id)} className="w-full px-4 py-2 text-left text-xs font-bold text-red-600 hover:bg-red-50 transition-colors">{t('common.delete') || "삭제"}</button>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+
+                              <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-xs">
+                                <div className="flex items-center gap-1.5 text-slate-600 font-medium">
+                                  <span className="material-symbols-outlined text-[15px] text-slate-400">person</span>
+                                  <span>강사: <strong className="text-slate-800">{allInstructorsStr}</strong></span>
+                                </div>
+                                <div className="text-sm font-bold text-slate-900">
+                                  {cls.amount === 0 ? (t('group.class.free') || '무료') : `${cls.currency === 'KRW' ? '₩' : cls.currency} ${cls.amount.toLocaleString()}`}
+                                </div>
                               </div>
                             </div>
-                            <h4 className="text-lg font-bold text-on-surface leading-tight mb-2" style={{ fontFamily: "'Inter', sans-serif" }}>{wc.title}</h4>
-                            <div className="flex items-center justify-between pt-2 border-t border-outline/5">
-                              <span className="text-[12px] font-medium text-on-surface-variant" style={{ fontFamily: "'Inter', sans-serif" }}>{wc.type === 'regular' ? (t('group.class.regular') || 'Regular') : (t('group.class.special_type') || 'Special')}</span>
-                              <span className="text-base font-bold text-on-surface" style={{ fontFamily: "'Inter', sans-serif" }}>
-                                {wc.pricing?.dropIn ? `₩${wc.pricing.dropIn.toLocaleString()}` : (t('group.class.free', 'Free'))}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </>
-                  )}
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                });
+              })()}
 
-                  {(filteredClasses.length > 0 || filteredDiscounts.length > 0) && (
-                    <button
-                      onClick={() => setIsFullScreenTextOpen(true)}
-                      className="mt-4 w-full py-4 px-6 bg-white text-on-surface-variant hover:bg-surface-container-low border border-outline/10 rounded-2xl flex items-center justify-center gap-2 font-bold transition-all shadow-sm active:scale-[0.98]"
-                      style={{ fontFamily: "'Inter', sans-serif" }}
-                    >
-                      <span className="material-symbols-outlined text-[20px]">assignment</span>
-                      {t('group.class.view_as_text') || '텍스트로 보기'}
-                    </button>
-                  )}
-                </section>
-              </>
-            )}
-
-            {activeTab === 'application' && (
-              <section className="px-4 mb-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                <GroupClassRegistrations 
-                  group={group} 
-                  validClassIds={[
-                    ...filteredClasses.map(c => c.id),
-                    ...filteredDiscounts.map((d: any) => d.id)
-                  ]}
-                  allClasses={allClasses}
-                  allDiscounts={allDiscounts}
-                />
-              </section>
-            )}
-
-            {activeTab === 'stats' && (
-              <section className="px-4 mb-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                <GroupClassStats 
-                  group={group} 
-                  validClassIds={[
-                    ...filteredClasses.map(c => c.id),
-                    ...filteredDiscounts.map((d: any) => d.id)
-                  ]}
-                  filteredClasses={filteredClasses}
-                />
-              </section>
-            )}
-
+              {(filteredClasses.length > 0 || filteredDiscounts.length > 0) && (
+                <div className="grid grid-cols-2 gap-2.5 mt-2">
+                  <button
+                    onClick={() => setIsImageModalOpen(true)}
+                    className="py-3 px-4 bg-white text-[#007AFF] border border-[#007AFF]/30 hover:bg-[#007AFF]/5 rounded-xl flex items-center justify-center gap-1.5 text-xs font-bold transition-all shadow-sm active:scale-95"
+                  >
+                    <span className="material-symbols-outlined text-[18px]">image</span>
+                    <span>이미지로 보기 & 저장</span>
+                  </button>
+                  <button
+                    onClick={() => setIsFullScreenTextOpen(true)}
+                    className="py-3 px-4 bg-white text-slate-700 hover:bg-slate-50 border border-[#e0e4e5] rounded-xl flex items-center justify-center gap-1.5 text-xs font-bold transition-all shadow-sm active:scale-95"
+                  >
+                    <span className="material-symbols-outlined text-slate-500 text-[18px]">assignment</span>
+                    <span>텍스트 복사</span>
+                  </button>
+                </div>
+              )}
+            </section>
           </div>
         </main>
 
@@ -784,8 +704,7 @@ const GroupClassEditor: React.FC<GroupClassEditorProps> = ({ group, onSave, onCl
             initialData={editingState.data}
             onClose={() => setEditingState(null)}
             onSave={() => {
-              if (onSave) onSave();
-              else router.refresh();
+              setEditingState(null);
             }}
             targetMonth={currentMonthStr}
           />
@@ -797,8 +716,7 @@ const GroupClassEditor: React.FC<GroupClassEditorProps> = ({ group, onSave, onCl
             initialData={editingState.data}
             onClose={() => setEditingState(null)}
             onSave={() => {
-              if (onSave) onSave();
-              else router.refresh();
+              setEditingState(null);
             }}
             targetMonth={currentMonthStr}
           />
@@ -810,54 +728,62 @@ const GroupClassEditor: React.FC<GroupClassEditorProps> = ({ group, onSave, onCl
             targetMonth={currentMonthStr}
             onClose={() => setEditingState(null)}
             onComplete={() => {
-              if (onSave) onSave();
-              else router.refresh();
+              setEditingState(null);
             }}
           />
         )}
       </>
+
+      {/* Image Schedule Modal */}
+      <AnimatePresence>
+        {isImageModalOpen && (
+          <GroupClassScheduleImageModal
+            group={group}
+            monthDisplay={monthDisplay}
+            sortedClasses={sortedClasses}
+            filteredDiscounts={filteredDiscounts}
+            onClose={() => setIsImageModalOpen(false)}
+          />
+        )}
+      </AnimatePresence>
       <AnimatePresence>
         {isFullScreenTextOpen && (
           <motion.div
-            initial={{ opacity: 0, y: 50 }}
+            initial={{ opacity: 0, y: "100%" }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 50 }}
-            className="fixed inset-0 z-[200] bg-background flex flex-col no-scrollbar"
+            exit={{ opacity: 0, y: "100%" }}
+            transition={{ type: "spring", damping: 25, stiffness: 200 }}
+            className="fixed inset-0 z-[1000] bg-white flex flex-col items-center justify-center font-['Inter',sans-serif] overflow-hidden"
           >
-            {/* Header */}
-            <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-xl border-b border-outline/5">
-              <div className="max-w-[896px] mx-auto px-4 py-4 flex items-center justify-between w-full">
-                <div className="flex items-center gap-4">
-                  <button 
-                    onClick={() => setIsFullScreenTextOpen(false)}
-                    className="w-10 h-10 rounded-full flex items-center justify-center text-primary hover:bg-primary/5 transition-all"
-                  >
-                    <span className="material-symbols-outlined text-primary">arrow_back</span>
-                  </button>
-                  <h1 className="text-base font-bold text-on-surface" style={{ fontFamily: "'Inter', sans-serif" }}>
-                    {t('group.class.view_as_text_title') || "텍스트로 전체 보기"}
-                  </h1>
-                </div>
+            <main className="w-full max-w-[896px] h-[100dvh] flex flex-col bg-[#f8f9fa] relative text-left pt-[env(safe-area-inset-top,0px)] pb-[env(safe-area-inset-bottom,0px)]">
+              {/* Header */}
+              <div className="flex-shrink-0 bg-white border-b border-[#e0e4e5] px-4 h-14 flex items-center justify-between z-50 sticky top-0 shadow-sm">
+                <button 
+                  onClick={() => setIsFullScreenTextOpen(false)}
+                  className="w-10 h-10 flex items-center justify-center -ml-2 active:scale-95 transition-transform text-slate-700"
+                >
+                  <span className="material-symbols-rounded text-2xl">arrow_back</span>
+                </button>
+                <h1 className="text-base font-bold text-slate-800">
+                  {monthDisplay} 수업 일정 텍스트
+                </h1>
                 <button
                   onClick={handleCopyAll}
-                  className="px-4 py-2 bg-primary text-on-primary rounded-xl flex items-center gap-1.5 text-xs font-bold shadow-sm hover:bg-primary-hover active:scale-95 transition-all"
-                  style={{ fontFamily: "'Inter', sans-serif" }}
+                  className="px-4 py-1.5 bg-[#007AFF] hover:bg-[#0066CC] text-white rounded-xl flex items-center gap-1.5 text-xs font-bold transition-all shadow-sm active:scale-95"
                 >
                   <span className="material-symbols-outlined text-[16px]">content_copy</span>
-                  {t('group.class.copy_all') || "전체 복사"}
+                  <span>복사</span>
                 </button>
               </div>
-            </header>
 
-            {/* Main Area */}
-            <main className="flex-1 overflow-y-auto px-4 py-6 bg-surface-container-lowest">
-              <div className="max-w-[896px] mx-auto h-[calc(100vh-120px)] flex flex-col">
+              {/* Main Area */}
+              <div className="flex-1 overflow-y-auto p-4 flex flex-col no-scrollbar">
                 <textarea
                   readOnly
                   value={generateScheduleText()}
                   onClick={(e) => (e.target as HTMLTextAreaElement).select()}
-                  className="w-full flex-1 p-6 bg-white border border-outline/10 rounded-2xl font-mono text-sm leading-relaxed text-on-surface focus:outline-none focus:ring-1 focus:ring-primary/20 resize-none select-text shadow-sm"
-                  style={{ fontFamily: "'Courier New', Courier, monospace" }}
+                  className="w-full flex-1 min-h-[400px] p-5 bg-white border border-[#e0e4e5] rounded-2xl text-sm font-medium leading-relaxed text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#007AFF]/20 resize-none select-text shadow-sm"
+                  style={{ fontFamily: "'Inter', sans-serif" }}
                 />
               </div>
             </main>

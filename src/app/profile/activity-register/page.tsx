@@ -212,12 +212,8 @@ export default function ActivityRegisterPage() {
         className="fixed top-0 left-0 w-full flex-shrink-0 bg-white border-b border-slate-100 px-4 flex items-center justify-between z-50"
         style={{
           zIndex: 100010,
-          paddingTop: Capacitor.isNativePlatform()
-            ? "env(safe-area-inset-top)"
-            : "0px",
-          height: Capacitor.isNativePlatform()
-            ? "calc(56px + env(safe-area-inset-top))"
-            : "56px",
+          paddingTop: "env(safe-area-inset-top, 0px)",
+          height: "calc(56px + env(safe-area-inset-top, 0px))",
         }}
       >
         <button
@@ -228,7 +224,7 @@ export default function ActivityRegisterPage() {
           <span className="material-symbols-rounded text-2xl">arrow_back</span>
         </button>
         <h1 className="text-[16px] font-bold text-slate-800">
-          {language === "KR" ? "활동 등록" : "Register Activity"}
+          {t('activity.create_activity') || '새 활동'}
         </h1>
         <div className="w-10" />
       </header>
@@ -526,12 +522,8 @@ export default function ActivityRegisterPage() {
         style={{
           zIndex: 100010,
           paddingTop: "16px",
-          paddingBottom: Capacitor.isNativePlatform()
-            ? "calc(16px + env(safe-area-inset-bottom))"
-            : "16px",
-          height: Capacitor.isNativePlatform()
-            ? "calc(76px + env(safe-area-inset-bottom))"
-            : "76px",
+          paddingBottom: "calc(16px + env(safe-area-inset-bottom, 0px))",
+          height: "calc(76px + env(safe-area-inset-bottom, 0px))",
         }}
       >
         {currentStep > 1 && (

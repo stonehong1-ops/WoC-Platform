@@ -59,16 +59,23 @@ export default function CreateGroupModal({ isOpen, onClose, onSuccess }: CreateG
   const [showUserResults, setShowUserResults] = useState(false);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showConfirmClose, setShowConfirmClose] = useState(false);
+
+  const handleCloseWithDirtyCheck = () => {
+    if (name.trim() || description.trim() || venueSearch.trim()) {
+      if (confirm(t('common.confirm_discard', '작성 중인 내용이 사라집니다. 나가시겠습니까?'))) {
+        onClose();
+      }
+    } else {
+      onClose();
+    }
+  };
 
   // 모달 자체 뒤로가기 바인딩 (클래스/이벤트와 동일 패턴)
   useBackButtonClose(isOpen, () => {
-    if (showConfirmClose) {
-      setShowConfirmClose(false);
-    } else if (step > 1) {
+    if (step > 1) {
       setStep(prev => prev - 1);
     } else {
-      setShowConfirmClose(true);
+      handleCloseWithDirtyCheck();
     }
   });
 
@@ -174,13 +181,8 @@ export default function CreateGroupModal({ isOpen, onClose, onSuccess }: CreateG
     if (step > 1) {
       setStep(prev => prev - 1);
     } else {
-      setShowConfirmClose(true);
+      handleCloseWithDirtyCheck();
     }
-  };
-
-  const handleConfirmExit = () => {
-    setShowConfirmClose(false);
-    onClose();
   };
 
   // 등록 제출
@@ -253,7 +255,7 @@ export default function CreateGroupModal({ isOpen, onClose, onSuccess }: CreateG
         </button>
         
         <h1 className="text-[16px] font-bold text-slate-800 truncate">
-          {t('groups.create_title') || '그룹(모임) 생성'}
+          {t('groups.create_title') || '새 그룹(모임)'}
         </h1>
 
         <div className="w-9"></div>
@@ -583,31 +585,6 @@ export default function CreateGroupModal({ isOpen, onClose, onSuccess }: CreateG
         </div>
       </div>
 
-      {/* 이탈 확인 팝업 */}
-      {showConfirmClose && (
-        <div className="fixed inset-0 z-[200] bg-black/50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-sm w-full p-6 text-center space-y-4 shadow-xl">
-            <h3 className="text-base font-bold text-slate-800">그룹 등록을 중단하시겠습니까?</h3>
-            <p className="text-xs text-slate-600">작성 중인 정보는 저장되지 않고 삭제됩니다.</p>
-            <div className="flex gap-2 pt-2">
-              <button
-                type="button"
-                onClick={() => setShowConfirmClose(false)}
-                className="flex-1 py-2.5 bg-slate-100 text-slate-700 font-bold rounded-xl text-xs hover:bg-slate-200"
-              >
-                계속 작성
-              </button>
-              <button
-                type="button"
-                onClick={handleConfirmExit}
-                className="flex-1 py-2.5 bg-red-500 text-white font-bold rounded-xl text-xs hover:bg-red-600"
-              >
-                나가기
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
       </div>
     </Portal>
   );

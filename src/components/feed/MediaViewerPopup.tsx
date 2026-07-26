@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Capacitor } from '@capacitor/core';
 import Portal from '@/components/common/Portal';
+import { useBackButtonClose } from '@/hooks/useBackButtonClose';
 
 interface MediaData {
   url: string;
@@ -14,44 +15,45 @@ interface MediaViewerPopupProps {
   onClose: () => void;
   media: MediaData[];
   initialIndex?: number;
+  playbackRateControl?: boolean;
 }
 
-export default function MediaViewerPopup({ isOpen, onClose, media, initialIndex = 0 }: MediaViewerPopupProps) {
+export default function MediaViewerPopup({
+  isOpen,
+  onClose,
+  media,
+  initialIndex = 0,
+  playbackRateControl = false
+}: MediaViewerPopupProps) {
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
   const [slideDir, setSlideDir] = useState<'left' | 'right' | null>(null);
   const [isAnimating, setIsAnimating] = useState(false);
+  const [playbackRate, setPlaybackRate] = useState<number>(1.0);
+  const videoRef = useRef<HTMLVideoElement>(null);
   const touchStartX = useRef<number | null>(null);
   const touchStartY = useRef<number | null>(null);
-  useEffect(() => {
-    if (isOpen) {
-      setCurrentIndex(initialIndex);
-      setSlideDir(null);
-      document.body.style.overflow = 'hidden';
 
-      const stateKey = `media_viewer_${Date.now()}`;
-      window.history.pushState({ stateKey }, '');
-
-      const handlePopState = () => {
-        onClose();
-      };
-      window.addEventListener('popstate', handlePopState);
-
-      return () => {
-        document.body.style.overflow = '';
-        window.removeEventListener('popstate', handlePopState);
-        if (window.history.state?.stateKey === stateKey) {
-          window.history.back();
-        }
-      };
-    } else {
-      document.body.style.overflow = '';
-    }
-  }, [isOpen, initialIndex, onClose]);
-
-  // UI로 닫을 때 (X버튼, 배경 클릭 등)
+  // UI로 닫기
   const handleClose = useCallback(() => {
     onClose();
   }, [onClose]);
+
+  // isOpen이 true가 되거나 initialIndex가 변경될 때 currentIndex 및 playbackRate(1.0) 즉시 동기화
+  useEffect(() => {
+    if (isOpen) {
+      setCurrentIndex(initialIndex);
+      setPlaybackRate(1.0);
+      setSlideDir(null);
+      const prevOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = prevOverflow;
+      };
+    }
+  }, [isOpen, initialIndex]);
+
+  // Android 하드웨어 뒤로가기 버튼 닫기 연동 (hasOpenModals() === true 보장 & 페이지 이동 차단)
+  useBackButtonClose(isOpen, handleClose);
 
   const goTo = useCallback((nextIndex: number, dir: 'left' | 'right') => {
     if (isAnimating) return;
@@ -124,14 +126,14 @@ export default function MediaViewerPopup({ isOpen, onClose, media, initialIndex 
   return (
     <Portal>
       <div
-        className="fixed inset-0 z-[20000] bg-black/95 backdrop-blur-sm flex flex-col"
+        className="fixed inset-0 z-[999999] bg-black/95 backdrop-blur-sm flex flex-col"
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
       >
         {/* 상단 헤더 */}
         <header 
           className="absolute top-0 w-full z-10 flex items-center justify-between pb-4 px-4 bg-gradient-to-b from-black/60 to-transparent pointer-events-none"
-          style={{ paddingTop: Capacitor.isNativePlatform() ? 'calc(16px + env(safe-area-inset-top))' : '16px' }}
+          style={{ paddingTop: 'calc(16px + env(safe-area-inset-top, 0px))' }}
         >
           <div className="text-white font-bold text-sm tracking-widest bg-black/40 px-3 py-1 rounded-full backdrop-blur-md pointer-events-auto">
             {currentIndex + 1} / {media.length}
@@ -156,13 +158,44 @@ export default function MediaViewerPopup({ isOpen, onClose, media, initialIndex 
             onClick={(e) => e.stopPropagation()}
           >
             {currentMedia.type === 'video' ? (
-              <video
-                src={currentMedia.url}
-                className="max-w-full max-h-[85vh] object-contain rounded-lg"
-                controls
-                autoPlay
-                playsInline
-              />
+              <div className="relative flex flex-col items-center max-w-full max-h-[85vh]">
+                <video
+                  ref={videoRef}
+                  src={currentMedia.url}
+                  className="max-w-full max-h-[80vh] object-contain rounded-lg"
+                  controls
+                  autoPlay
+                  playsInline
+                  onPlay={() => {
+                    if (videoRef.current) {
+                      videoRef.current.playbackRate = playbackRate;
+                    }
+                  }}
+                />
+                {playbackRateControl && (
+                  <div className="flex items-center gap-1.5 mt-3 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 z-20" onClick={(e) => e.stopPropagation()}>
+                    <span className="text-[10px] font-bold text-white/70 mr-1 uppercase tracking-wider">Speed</span>
+                    {[0.5, 0.75, 1.0].map((rate) => (
+                      <button
+                        key={rate}
+                        onClick={() => {
+                          setPlaybackRate(rate);
+                          if (videoRef.current) {
+                            videoRef.current.playbackRate = rate;
+                          }
+                        }}
+                        className={`px-2.5 py-0.5 rounded-full text-xs font-bold transition-all ${
+                          playbackRate === rate
+                            ? 'bg-primary text-white shadow-sm'
+                            : 'bg-white/10 text-white/80 hover:bg-white/20'
+                        }`}
+                      >
+                        {rate}x
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             ) : (
               <img
                 src={currentMedia.url}
@@ -194,7 +227,10 @@ export default function MediaViewerPopup({ isOpen, onClose, media, initialIndex 
 
         {/* 하단 도트 인디케이터 */}
         {media.length > 1 && (
-          <div className="absolute bottom-8 left-0 right-0 flex justify-center gap-1.5 pointer-events-none">
+          <div 
+            className="absolute left-0 right-0 flex justify-center gap-1.5 pointer-events-none"
+            style={{ bottom: 'calc(32px + env(safe-area-inset-bottom, 0px))' }}
+          >
             {media.map((_, i) => (
               <div
                 key={i}

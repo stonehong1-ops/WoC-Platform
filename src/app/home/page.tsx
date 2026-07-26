@@ -1155,9 +1155,9 @@ We review Simon Collier, Artemis Cooper, María Susana Azzi, and Richard Martin'
                 onClick={() => setIsCartoonsOpen(true)}
               >
                 <span className="absolute top-4 left-4 z-10 bg-indigo-500/90 text-white text-[9px] font-black px-2 py-0.5 rounded uppercase tracking-wider shadow-sm">새 글</span>
-                <img alt="가비의 탱고툰" className="w-full h-full object-cover object-center transition-transform duration-700 group-hover:scale-105" src="/gavi.jpg"/>
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-4 text-left">
-                  <h4 className="text-white font-bold text-base">가비의 탱고툰</h4>
+                <img alt="가비의 탱고툰" className="w-full h-full object-cover object-center scale-[1.06] transition-transform duration-700 group-hover:scale-112" src="/gavi_thumb.jpg"/>
+                <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/50 to-transparent flex flex-col justify-end p-4 text-left">
+                  <h4 className="text-white font-black text-base drop-shadow-[0_2px_4px_rgba(0,0,0,0.95)] drop-shadow-[0_1px_2px_rgba(0,0,0,0.95)]">가비의 탱고툰</h4>
                 </div>
               </div>
 
@@ -1172,11 +1172,11 @@ We review Simon Collier, Artemis Cooper, María Susana Azzi, and Richard Martin'
                 <span className="absolute top-4 left-4 z-10 bg-slate-900/90 text-white text-[9px] font-black px-2 py-0.5 rounded uppercase tracking-wider shadow-sm">6월호</span>
                 <img 
                   alt="밀롱가 에티켓" 
-                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" 
+                  className="w-full h-full object-cover scale-[1.06] transition-transform duration-700 group-hover:scale-112" 
                   src="https://tangoclass.co.kr/wp-content/uploads/2026/06/2026-05-Cabeceo-Title-KO.jpg"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-4 text-left">
-                  <h4 className="text-white font-bold text-base">밀롱가 에티켓</h4>
+                <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/50 to-transparent flex flex-col justify-end p-4 text-left">
+                  <h4 className="text-white font-black text-base drop-shadow-[0_2px_4px_rgba(0,0,0,0.95)] drop-shadow-[0_1px_2px_rgba(0,0,0,0.95)]">밀롱가 에티켓</h4>
                 </div>
               </div>
 
@@ -1189,9 +1189,9 @@ We review Simon Collier, Artemis Cooper, María Susana Azzi, and Richard Martin'
                 }}
               >
                 <span className="absolute top-4 left-4 z-10 bg-rose-600/95 text-white text-[9px] font-black px-2 py-0.5 rounded uppercase tracking-wider shadow-sm">이번 주</span>
-                <img alt="탱고의 역사 리뷰" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" src="/ddakji.jpg"/>
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-4 text-left">
-                  <h4 className="text-white font-bold text-base">탱고의 역사 리뷰</h4>
+                <img alt="탱고의 역사 리뷰" className="w-full h-full object-cover scale-[1.06] transition-transform duration-700 group-hover:scale-112" src="/ddakji.jpg"/>
+                <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/50 to-transparent flex flex-col justify-end p-4 text-left">
+                  <h4 className="text-white font-black text-base drop-shadow-[0_2px_4px_rgba(0,0,0,0.95)] drop-shadow-[0_1px_2px_rgba(0,0,0,0.95)]">탱고의 역사 리뷰</h4>
                 </div>
               </div>
 
@@ -1204,9 +1204,9 @@ We review Simon Collier, Artemis Cooper, María Susana Azzi, and Richard Martin'
                 }}
               >
                 <span className="absolute top-4 left-4 z-10 bg-amber-600/90 text-white text-[9px] font-black px-2 py-0.5 rounded uppercase tracking-wider shadow-sm">업데이트됨</span>
-                <img alt="베토의 탱고여행" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" src="/beto.jpg"/>
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-4 text-left">
-                  <h4 className="text-white font-bold text-base">베토의 탱고여행</h4>
+                <img alt="베토의 탱고여행" className="w-full h-full object-cover scale-[1.06] transition-transform duration-700 group-hover:scale-112" src="/beto.jpg"/>
+                <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/50 to-transparent flex flex-col justify-end p-4 text-left">
+                  <h4 className="text-white font-black text-base drop-shadow-[0_2px_4px_rgba(0,0,0,0.95)] drop-shadow-[0_1px_2px_rgba(0,0,0,0.95)]">베토의 탱고여행</h4>
                 </div>
               </div>
 

@@ -16,6 +16,7 @@ import UserBadge from '@/components/common/UserBadge';
 import CreateResaleItem from './CreateResaleItem';
 import { useBlockedUsers } from '@/hooks/useBlockedUsers';
 import ReportModal from '@/components/common/ReportModal';
+import MediaViewerPopup from '@/components/feed/MediaViewerPopup';
 import { doc, setDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase/clientApp';
 
@@ -37,7 +38,8 @@ export default function ResaleItemDetail({ item, onClose }: ResaleItemDetailProp
 
   // UI state
   const [isScrolled, setIsScrolled] = useState(false);
-  const [isImageExpanded, setIsImageExpanded] = useState(false);
+  const [isMediaViewerOpen, setIsMediaViewerOpen] = useState(false);
+  const [viewerInitialIdx, setViewerInitialIdx] = useState(0);
   const [chatRoomId, setChatRoomId] = useState<string | null>(null);
   const [showPurchaseFlow, setShowPurchaseFlow] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
@@ -346,7 +348,7 @@ export default function ResaleItemDetail({ item, onClose }: ResaleItemDetailProp
           </div>
           {/* Images */}
           {images.length > 0 && (
-            <div className="relative h-full" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd} onClick={() => setIsImageExpanded(true)}>
+            <div className="relative h-full cursor-pointer" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd} onClick={() => { setViewerInitialIdx(currentImg); setIsMediaViewerOpen(true); }}>
               <div className="flex h-full transition-transform duration-300 ease-out" style={{ transform: `translateX(-${currentImg * 100}%)` }}>
                 {images.map((img, i) => (
                   <div key={i} className="w-full flex-shrink-0 h-full">
@@ -544,32 +546,13 @@ export default function ResaleItemDetail({ item, onClose }: ResaleItemDetailProp
         )}
       </div>
 
-      {/* Full Screen Image Viewer */}
-      {isImageExpanded && (
-        <div className="fixed inset-0 z-[200] bg-black flex flex-col animate-in fade-in duration-200">
-          <div className="absolute top-0 left-0 right-0 z-10 flex justify-end p-4">
-            <button onClick={() => setIsImageExpanded(false)} className="w-10 h-10 rounded-full bg-black/40 text-white flex items-center justify-center">
-              <span className="material-symbols-rounded text-2xl">close</span>
-            </button>
-          </div>
-          <div className="flex-1 w-full h-full flex items-center justify-center" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
-            <div className="flex w-full transition-transform duration-300 ease-out h-full items-center" style={{ transform: `translateX(-${currentImg * 100}%)` }}>
-              {images.map((img, i) => (
-                <div key={i} className="w-full flex-shrink-0 flex items-center justify-center px-4">
-                  <img src={img} alt={`Fullscreen ${i + 1}`} className="w-full max-h-[80vh] object-contain" />
-                </div>
-              ))}
-            </div>
-          </div>
-          {images.length > 1 && (
-            <div className="absolute bottom-10 left-0 right-0 flex justify-center gap-2">
-              {images.map((_, i) => (
-                <div key={i} className={`rounded-full transition-all ${i === currentImg ? 'w-6 h-2 bg-white' : 'w-2 h-2 bg-white/40'}`} />
-              ))}
-            </div>
-          )}
-        </div>
-      )}
+      {/* Full Screen Media Viewer */}
+      <MediaViewerPopup
+        isOpen={isMediaViewerOpen}
+        onClose={() => setIsMediaViewerOpen(false)}
+        media={images.map(url => ({ url, type: 'image' }))}
+        initialIndex={viewerInitialIdx}
+      />
 
       {/* Full Screen Chat Room */}
       {chatRoomId && (

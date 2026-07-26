@@ -8,6 +8,7 @@ import { db, storage } from '@/lib/firebase/clientApp';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useLanguage } from '@/contexts/LanguageContext';
 import ChatInput from './ChatInput';
+import MediaViewerPopup from '@/components/feed/MediaViewerPopup';
 
 interface Message {
   id: string;
@@ -46,6 +47,7 @@ export default function AiLessonThread({ threadId, onClose }: { threadId: string
   const [sending, setSending] = useState(false);
   const [generatingReport, setGeneratingReport] = useState(false);
   const [showReport, setShowReport] = useState(false);
+  const [selectedMedia, setSelectedMedia] = useState<{ url: string; type: 'image' | 'video' } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesRef = useRef<Message[]>([]);
 
@@ -363,15 +365,27 @@ export default function AiLessonThread({ threadId, onClose }: { threadId: string
               {/* Media */}
               {msg.mediaUrls && msg.mediaUrls.length > 0 && (
                 <div className="flex gap-1.5 mb-1.5 flex-wrap">
-                  {msg.mediaUrls.map((url, i) => (
-                    <div key={i} className="w-24 h-24 rounded-xl overflow-hidden border border-slate-200">
-                      {msg.mediaTypes?.[i] === 'video' ? (
-                        <video src={url} className="w-full h-full object-cover" controls />
-                      ) : (
-                        <img src={url} alt="" className="w-full h-full object-cover" />
-                      )}
-                    </div>
-                  ))}
+                  {msg.mediaUrls.map((url, i) => {
+                    const isVideo = msg.mediaTypes?.[i] === 'video';
+                    return (
+                      <div
+                        key={i}
+                        className="w-24 h-24 rounded-xl overflow-hidden border border-slate-200 cursor-pointer relative group"
+                        onClick={() => setSelectedMedia({ url, type: isVideo ? 'video' : 'image' })}
+                      >
+                        {isVideo ? (
+                          <>
+                            <video src={url} className="w-full h-full object-cover" />
+                            <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
+                              <span className="material-symbols-outlined text-white text-2xl drop-shadow-md">play_arrow</span>
+                            </div>
+                          </>
+                        ) : (
+                          <img src={url} alt="" className="w-full h-full object-cover" />
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               )}
               {/* Text bubble */}
@@ -410,6 +424,16 @@ export default function AiLessonThread({ threadId, onClose }: { threadId: string
           placeholder={t('lesson.chat_placeholder')}
         />
       </div>
+
+      {/* Full Screen Media Viewer with playbackRateControl enabled for slow motion dance feedback */}
+      {selectedMedia && (
+        <MediaViewerPopup
+          isOpen={!!selectedMedia}
+          onClose={() => setSelectedMedia(null)}
+          media={[{ url: selectedMedia.url, type: selectedMedia.type }]}
+          playbackRateControl={true}
+        />
+      )}
     </div>
   );
 }

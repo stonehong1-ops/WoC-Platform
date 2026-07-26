@@ -20,6 +20,8 @@ export interface GroupFeedSectionProps {
   upcomingEvents: any[];
   moments: GalleryPost[];
   adminTodos: Notification[];
+  onNoticeClick?: (post: Post) => void;
+  onMomentClick?: (moment: GalleryPost) => void;
   handleTabClick: (tab: any) => void;
   safeFormat: (date: any, formatStr: string) => string;
   safeFormatRelative: (date: any) => string;
@@ -38,6 +40,8 @@ export default function GroupFeedSection({
   upcomingEvents,
   moments,
   adminTodos,
+  onNoticeClick,
+  onMomentClick,
   handleTabClick,
   safeFormat,
   safeFormatRelative,
@@ -98,11 +102,13 @@ export default function GroupFeedSection({
 
       {/* Notice Board Section */}
       <section>
+        {/* Announcement Section (Full Screen Detail Support) */}
         <div 
-          className="rounded-xl p-4 flex flex-col gap-4 relative cursor-pointer" 
-          style={{ backgroundColor: currentGroup.headerThemeColor ? `${currentGroup.headerThemeColor}18` : '#f3f3f6' }} 
+          className="bg-surface-container-low rounded-2xl p-5 shadow-xs border border-outline-variant/15 flex flex-col gap-3 relative cursor-pointer hover:shadow-md transition-all active:scale-[0.99]"
           onClick={() => {
-            if (isFullMember) {
+            if (noticePost && onNoticeClick) {
+              onNoticeClick(noticePost);
+            } else if (isFullMember) {
               handleTabClick('board');
             } else {
               toast(t('group.members_only') || 'Members only feature', { icon: '🔒' });
@@ -372,6 +378,7 @@ export default function GroupFeedSection({
             {moments.slice(0, 4).map((moment, idx) => (
               <div
                 key={moment.id || idx}
+                onClick={() => onMomentClick ? onMomentClick(moment) : handleTabClick('live')}
                 className="relative aspect-square rounded-xl overflow-hidden bg-surface-container cursor-pointer active:scale-[0.97] transition-transform"
               >
                 <ImageWithFallback src={moment.media?.[0] || ''} alt={moment.caption || "Moment"} className="absolute inset-0 w-full h-full object-cover" fallbackType="gallery" />

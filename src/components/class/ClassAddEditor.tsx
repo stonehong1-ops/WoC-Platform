@@ -61,7 +61,7 @@ const ClassAddEditor: React.FC<ClassAddEditorProps> = ({
   const [manageableGroups, setManageableGroups] = useState<Group[]>([]);
 
   const [classType, setClassType] = useState<string>(
-    initialData?.classType || "Partner Class"
+    initialData?.classType || "Change Class"
   );
 
   const [instructors, setInstructors] = useState<
@@ -332,11 +332,21 @@ const ClassAddEditor: React.FC<ClassAddEditorProps> = ({
 
       const firstEntry = scheduleEntries[0];
       const lastEntry = scheduleEntries[scheduleEntries.length - 1];
+
+      let computedDayOfWeek = 0;
+      if (firstEntry?.date) {
+        const cleanDateStr = firstEntry.date.replace(/\./g, '-');
+        const parsedD = new Date(cleanDateStr);
+        if (!isNaN(parsedD.getTime())) {
+          computedDayOfWeek = parsedD.getDay();
+        }
+      }
+
       const singleSchedule = {
         recurrenceType: isSpecial ? "special" : "regular",
         startDate: firstEntry?.date || "",
         endDate: lastEntry?.date || "",
-        dayOfWeek: firstEntry?.date ? new Date(firstEntry.date).getDay() : 0,
+        dayOfWeek: computedDayOfWeek,
         startTime: firstEntry?.timeSlot?.split(" - ")[0] || "19:00",
         endTime: firstEntry?.timeSlot?.split(" - ")[1] || "21:00",
       };
@@ -349,31 +359,37 @@ const ClassAddEditor: React.FC<ClassAddEditorProps> = ({
         content: e.content || "",
       }));
 
-      const payload: GroupClass = {
+      const rawPayload: any = {
         id: classId,
-        title,
-        description,
-        level,
-        currency,
-        amount: priceAmount,
-        price: priceAmount,
-        dailyClassPrice: priceAmount,
-        instructors,
-        schedule: scheduleEntries,
-        singleSchedule,
-        sessions: sessionsArray,
+        title: title || "",
+        description: description || "",
+        level: level || "Beginner",
+        currency: currency || "KRW",
+        amount: Number(priceAmount) || 0,
+        price: Number(priceAmount) || 0,
+        dailyClassPrice: Number(priceAmount) || 0,
+        instructors: instructors || [],
+        schedule: scheduleEntries || [],
+        singleSchedule: singleSchedule || {},
+        sessions: sessionsArray || [],
         status: initialData?.status || "Open",
         targetMonth: targetMonth || `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, "0")}`,
-        imageUrl: finalImageUrl,
-        videoUrl: finalVideoUrl,
-        classType: isSpecial ? "special" : classType,
-        leaderCount: capacityEnabled ? leaderCount : 0,
-        followerCount: capacityEnabled ? followerCount : 0,
-        maxCapacity: capacityEnabled ? leaderCount + followerCount : 0,
+        imageUrl: finalImageUrl || "",
+        videoUrl: finalVideoUrl || "",
+        classType: isSpecial ? "special" : (classType || "Change Class"),
+        leaderCount: capacityEnabled ? (Number(leaderCount) || 0) : 0,
+        followerCount: capacityEnabled ? (Number(followerCount) || 0) : 0,
+        maxCapacity: capacityEnabled ? ((Number(leaderCount) || 0) + (Number(followerCount) || 0)) : 0,
         location: venueName || selectedGroup?.name || "Studio",
-        locationMemo,
+        locationMemo: locationMemo || "",
         createdBy: user?.uid || "",
-      } as any;
+        connectedGroupIds: initialData?.connectedGroupIds || [],
+        organizerType: initialData?.organizerType || "person",
+        organizerId: initialData?.organizerId || user?.uid || "",
+      };
+
+      // Firestore undefined / NaN 에러 방지를 위해 JSON 직렬화 및 검증
+      const payload: GroupClass = JSON.parse(JSON.stringify(rawPayload));
 
       if (groupId !== "special") {
         if (initialData) {
@@ -393,8 +409,8 @@ const ClassAddEditor: React.FC<ClassAddEditorProps> = ({
       if (onSave) onSave();
       onClose();
     } catch (err: any) {
-      console.error("Save class error:", err);
-      toast.error(t("class.save_failed") || "저장에 실패했습니다.");
+      console.error("Save class detailed error:", err);
+      toast.error(err?.message ? `저장 실패: ${err.message}` : (t("class.save_failed") || "저장에 실패했습니다."));
     } finally {
       setIsSaving(false);
       setUploadProgress(null);
@@ -501,7 +517,8 @@ const ClassAddEditor: React.FC<ClassAddEditorProps> = ({
                     <select
                       value={classType}
                       onChange={e => setClassType(e.target.value)}
-                      className="w-full bg-transparent border-none p-0 text-sm font-bold text-[#2d3435] focus:ring-0 outline-none appearance-none"
+                      className="w-full bg-transparent border-none p-0 text-sm font-bold text-[#2d3435] focus:ring-0 outline-none appearance-none cursor-pointer"
+                      style={{ WebkitAppearance: 'none', appearance: 'none' }}
                     >
                       <option value="Partner Class">파트너 클래스</option>
                       <option value="Change Class">체인지 수업</option>
@@ -631,7 +648,8 @@ const ClassAddEditor: React.FC<ClassAddEditorProps> = ({
                     <select
                       value={level}
                       onChange={e => setLevel(e.target.value as any)}
-                      className="w-full bg-transparent border-none p-0 text-sm font-bold text-[#2d3435] focus:ring-0 outline-none appearance-none"
+                      className="w-full bg-transparent border-none p-0 text-sm font-bold text-[#2d3435] focus:ring-0 outline-none appearance-none cursor-pointer"
+                      style={{ WebkitAppearance: 'none', appearance: 'none' }}
                     >
                       <option value="Basic">기초 (Basic)</option>
                       <option value="Beginner">초급 (Beginner)</option>
@@ -770,7 +788,7 @@ const ClassAddEditor: React.FC<ClassAddEditorProps> = ({
             <div className="border border-[#e0e4e5] rounded-2xl bg-white p-5 space-y-4">
               <div className="flex items-center gap-2 border-b border-[#e0e4e5] pb-3">
                 <span className="material-symbols-rounded text-primary text-sm">local_activity</span>
-                <p className="text-[14px] font-bold text-primary">1회 참가비 설정</p>
+                <p className="text-[14px] font-bold text-primary">수업료</p>
               </div>
 
               <div className="flex items-center gap-2">
@@ -804,9 +822,13 @@ const ClassAddEditor: React.FC<ClassAddEditorProps> = ({
   };
 
   return (
-    <div
-      className="fixed inset-0 bg-white overflow-y-auto animate-in fade-in duration-300"
-      style={{ zIndex: 100000, paddingTop: 'calc(56px + env(safe-area-inset-top, 0px))' }}
+    <motion.div
+      initial={{ opacity: 0, y: "100%" }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: "100%" }}
+      transition={{ type: "spring", damping: 25, stiffness: 200 }}
+      className="fixed inset-0 z-[1000] bg-white flex flex-col overflow-y-auto no-scrollbar font-['Inter',sans-serif]"
+      style={{ paddingTop: 'calc(56px + env(safe-area-inset-top, 0px))' }}
     >
       <style dangerouslySetInnerHTML={{ __html: `.material-symbols-rounded { font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24; }` }} />
 
@@ -827,7 +849,7 @@ const ClassAddEditor: React.FC<ClassAddEditorProps> = ({
           <span className="material-symbols-rounded text-2xl">arrow_back</span>
         </button>
         <h1 className="text-[16px] font-bold text-slate-800">
-          {initialData ? t('class.edit_class') : t('class.add_class')}
+          {initialData ? (t('class.edit_class') || '클래스 수정') : (t('class.add_class') || '새 클래스')}
         </h1>
         <div className="w-10" />
       </header>
@@ -904,7 +926,7 @@ const ClassAddEditor: React.FC<ClassAddEditorProps> = ({
             : (isSaving ? (uploadProgress !== null ? `${uploadProgress}%` : (t('common.saving') || "저장 중...")) : (t('common.save') || "저장"))}
         </button>
       </div>
-    </div>
+    </motion.div>
   );
 };
 

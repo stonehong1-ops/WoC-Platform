@@ -157,8 +157,8 @@ function RegisterPageContent() {
       <div 
         className="flex-shrink-0 bg-white border-b border-slate-100 px-4 flex items-center justify-between z-50"
         style={{
-          height: Capacitor.isNativePlatform() ? 'calc(56px + env(safe-area-inset-top))' : '56px',
-          paddingTop: Capacitor.isNativePlatform() ? 'env(safe-area-inset-top)' : '0px'
+          paddingTop: 'env(safe-area-inset-top, 0px)',
+          height: 'calc(56px + env(safe-area-inset-top, 0px))'
         }}
       >
         <button type="button" onClick={() => {
@@ -171,7 +171,7 @@ function RegisterPageContent() {
           <span className="material-symbols-rounded text-2xl">arrow_back</span>
         </button>
         <h1 className="text-[16px] font-bold text-slate-800">
-          {editId ? t('rental.register.button_update') : t('rental.register.button_register')}
+          {editId ? (t('rental.edit_rental') || '렌탈 수정') : (t('rental.create_rental') || '새 렌탈')}
         </h1>
         <div className="w-10" />
 

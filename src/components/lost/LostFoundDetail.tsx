@@ -10,6 +10,8 @@ import { LostFoundItem } from '@/types/lostFound';
 
 import { useLanguage } from '@/contexts/LanguageContext';
 import UserBadge from '@/components/common/UserBadge';
+import ReportModal from '@/components/common/ReportModal';
+import MediaViewerPopup from '@/components/feed/MediaViewerPopup';
 
 interface LostFoundDetailProps {
   id: string;
@@ -29,6 +31,8 @@ export default function LostFoundDetail({ id, onClose }: LostFoundDetailProps) {
   // Image carousel
   const [currentImg, setCurrentImg] = useState(0);
   const touchStartX = useRef(0);
+  const [isMediaViewerOpen, setIsMediaViewerOpen] = useState(false);
+  const [viewerInitialIdx, setViewerInitialIdx] = useState(0);
 
   // UI state
   const [isScrolled, setIsScrolled] = useState(false);
@@ -172,7 +176,7 @@ export default function LostFoundDetail({ id, onClose }: LostFoundDetailProps) {
           </div>
           {/* Images */}
           {images.length > 0 && (
-            <div className="relative h-full" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
+            <div className="relative h-full cursor-pointer" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd} onClick={() => { setViewerInitialIdx(currentImg); setIsMediaViewerOpen(true); }}>
               <div className="flex h-full transition-transform duration-300 ease-out" style={{ transform: `translateX(-${currentImg * 100}%)` }}>
                 {images.map((img, i) => (
                   <div key={i} className="w-full flex-shrink-0 h-full">
@@ -183,12 +187,12 @@ export default function LostFoundDetail({ id, onClose }: LostFoundDetailProps) {
               </div>
               {/* Left/Right Arrows */}
               {images.length > 1 && currentImg > 0 && (
-                <button onClick={() => setCurrentImg(p => p - 1)} className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/25 backdrop-blur-sm flex items-center justify-center text-white active:scale-90 z-10">
+                <button onClick={(e) => { e.stopPropagation(); setCurrentImg(p => p - 1); }} className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/25 backdrop-blur-sm flex items-center justify-center text-white active:scale-90 z-10">
                   <span className="material-symbols-rounded text-lg">chevron_left</span>
                 </button>
               )}
               {images.length > 1 && currentImg < images.length - 1 && (
-                <button onClick={() => setCurrentImg(p => p + 1)} className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/25 backdrop-blur-sm flex items-center justify-center text-white active:scale-90 z-10">
+                <button onClick={(e) => { e.stopPropagation(); setCurrentImg(p => p + 1); }} className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-black/25 backdrop-blur-sm flex items-center justify-center text-white active:scale-90 z-10">
                   <span className="material-symbols-rounded text-lg">chevron_right</span>
                 </button>
               )}
@@ -326,6 +330,14 @@ export default function LostFoundDetail({ id, onClose }: LostFoundDetailProps) {
           </button>
         )}
       </div>
+
+      {/* Full Screen Media Viewer */}
+      <MediaViewerPopup
+        isOpen={isMediaViewerOpen}
+        onClose={() => setIsMediaViewerOpen(false)}
+        media={images.map(url => ({ url, type: 'image' }))}
+        initialIndex={viewerInitialIdx}
+      />
     </div>
   );
 }

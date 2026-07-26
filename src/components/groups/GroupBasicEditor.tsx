@@ -31,6 +31,7 @@ export default function GroupBasicEditor({ group, onClose }: GroupBasicEditorPro
 
   const [isSaving, setIsSaving] = useState(false);
   const [uploadingField, setUploadingField] = useState<string | null>(null);
+  const [coverPreviewUrl, setCoverPreviewUrl] = useState<string | null>(null);
   const [isOptimizing, setIsOptimizing] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const coverInputRef = useRef<HTMLInputElement>(null);
@@ -104,10 +105,9 @@ export default function GroupBasicEditor({ group, onClose }: GroupBasicEditorPro
       return;
     }
 
-    // Create a temporary blob URL for immediate preview
+    // Create a temporary blob URL for immediate preview only
     const blobUrl = URL.createObjectURL(file);
-    const originalImage = formData[field];
-    setFormData(prev => ({ ...prev, [field]: blobUrl }));
+    setCoverPreviewUrl(blobUrl);
     
     setUploadingField(field);
     setIsOptimizing(true);
@@ -120,15 +120,14 @@ export default function GroupBasicEditor({ group, onClose }: GroupBasicEditorPro
         setUploadProgress(Math.round(progress));
       });
       
-      // Revoke the blob URL to free up memory
       URL.revokeObjectURL(blobUrl);
-      
+      setCoverPreviewUrl(null);
       setFormData(prev => ({ ...prev, [field]: downloadURL }));
       toast.success(t('group.basic.image_uploaded'));
     } catch (error) {
       console.error("Error uploading image:", error);
-      // Fallback to original image on error
-      setFormData(prev => ({ ...prev, [field]: originalImage }));
+      URL.revokeObjectURL(blobUrl);
+      setCoverPreviewUrl(null);
       toast.error(t('group.basic.upload_failed'));
     } finally {
       setUploadingField(null);
@@ -151,6 +150,7 @@ export default function GroupBasicEditor({ group, onClose }: GroupBasicEditorPro
         slug: formData.slug,
         description: formData.description,
         coverImage: formData.coverImage,
+        imageUrl: formData.coverImage,
         coverImageDescription: formData.coverImageDescription,
         operatingHours: formData.operatingHours.split('\n').filter(line => line.trim() !== '').map(line => {
           const parts = line.split(':');
@@ -240,9 +240,9 @@ export default function GroupBasicEditor({ group, onClose }: GroupBasicEditorPro
                 onClick={() => coverInputRef.current?.click()}
                 className="aspect-[21/9] rounded-[2.5rem] bg-white/5 border border-white/10 hover:border-[#0057bd]/40 transition-all cursor-pointer flex flex-col items-center justify-center relative overflow-hidden group shadow-2xl"
               >
-                {formData.coverImage ? (
+                {(coverPreviewUrl || formData.coverImage) ? (
                   <>
-                    <img src={formData.coverImage} alt="Cover" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+                    <img src={coverPreviewUrl || formData.coverImage} alt="Cover" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
                     <div className="absolute inset-0 bg-[#0a0f1d]/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-3">
                       <div className="w-14 h-14 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20">
                         <span className="material-symbols-outlined text-white text-3xl">photo_camera</span>

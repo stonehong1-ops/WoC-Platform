@@ -37,7 +37,7 @@ export default function GroupDetail({ group, isModal, onClose }: GroupDetailProp
   if (isModal) {
     return (
       <Portal>
-        <div className="fixed inset-0 z-[9999] bg-[#FAF8FF] overflow-hidden flex flex-col font-body notranslate animate-in slide-in-from-bottom duration-300">
+        <div className="fixed inset-0 z-[9000] bg-[#FAF8FF] overflow-hidden flex flex-col font-body notranslate animate-in slide-in-from-bottom duration-300">
           {content}
         </div>
       </Portal>

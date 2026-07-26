@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import Portal from '@/components/common/Portal';
+import { useLocalBackClose } from '@/hooks/useLocalBackClose';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { storageService } from '@/lib/firebase/storageService';
@@ -31,6 +32,7 @@ interface PostEditorModalProps {
   post?: Post | null;
   isOpen: boolean;
   onClose: () => void;
+  defaultPostType?: 'notice' | 'board' | 'feed';
 }
 
 /* --- Style config --- */
@@ -187,9 +189,23 @@ const renderParsedContent = (content: string, coverImageUrl: string | null, isKr
   );
 };
 
-export default function PostEditorModal({ group, post, isOpen, onClose }: PostEditorModalProps) {
+export default function PostEditorModal({ group, post, isOpen, onClose, defaultPostType }: PostEditorModalProps) {
   const { t, language } = useLanguage();
   const { user, profile, setShowLogin } = useAuth();
+  
+  const handleCloseWithDirtyCheck = () => {
+    const isDirty = !!(title.trim() || content.trim() || media.length > 0);
+    if (isDirty) {
+      if (confirm(t('common.confirm_discard') || "작성 중인 내용이 있습니다. 정말 나가시겠습니까?")) {
+        onClose();
+      }
+    } else {
+      onClose();
+    }
+  };
+
+  // [스톤님 최종 원칙] PostEditorModal Local Back Owner (pure LIFO, 0ms history side-effect free)
+  useLocalBackClose(isOpen, handleCloseWithDirtyCheck);
   
   const boards = (group.boards && group.boards.length > 0) ? group.boards : DEFAULT_BOARDS;
 
@@ -275,8 +291,8 @@ export default function PostEditorModal({ group, post, isOpen, onClose }: PostEd
       syntax: isKr ? '![서브제목: 상세설명](이미지URL) 또는 ![서브제목|상세설명](이미지URL)' : '![Subtitle: Description](ImageURL) or ![Subtitle|Description](ImageURL)',
       previewComponent: (
         <div className="flex items-center gap-2 py-0.5 text-left">
-          <div className="w-8 h-8 bg-surface-variant overflow-hidden rounded rotate-45 scale-75 shadow-3xs flex-shrink-0">
-            <img src="https://lh3.googleusercontent.com/aida/ADBb0ug-hPMVqq1Aj_dtT00E_6_II27LkLFavGyeJrot7giurbGLzEOWSPxMI9vbLcyL8z8WmaGTEVuwrH0tN2f-uDoxeG9_03SOAlsOK3JwaeB-ksfuSK5bYve8iAHv-du8nUXre_b7CdETBnRFLl347MwmNoaYtOewRCgeYEJyG4OLbEO7o4mof2PJJK680fdDXv8LNFANn3OcIBQkQ-WbJiYdGnot5Ko7F5B2YA6JMrRhjbjjunBmTlfszzJwMWlp9OhF4zuyz0Eq" className="w-full h-full object-cover -rotate-45 scale-125" alt="" />
+          <div className="w-8 h-8 bg-gradient-to-tr from-amber-400 to-rose-500 overflow-hidden rounded rotate-45 scale-75 shadow-3xs flex-shrink-0 flex items-center justify-center text-white">
+            <span className="material-symbols-rounded text-xs -rotate-45">photo</span>
           </div>
           <div className="min-w-0">
             <p className="text-[10px] font-bold text-on-surface truncate leading-none mb-0.5">{isKr ? '예술적 서브제목' : 'Asymmetric Subtitle'}</p>
@@ -335,7 +351,10 @@ export default function PostEditorModal({ group, post, isOpen, onClose }: PostEd
   const showColorPreview = isShort && colorActive;
   const showMedia = !showColorPreview;
 
-  const previewClass = [IMPACT_SIZES[selectedImpact].cls, ...selectedEmphasis.map(i => EMPHASIS_OPTIONS[i].cls)].join(' ');
+  const previewClass = [
+    (IMPACT_SIZES[selectedImpact] && IMPACT_SIZES[selectedImpact].cls) ? IMPACT_SIZES[selectedImpact].cls : 'text-xl font-normal',
+    ...selectedEmphasis.map(i => EMPHASIS_OPTIONS[i] ? EMPHASIS_OPTIONS[i].cls : null).filter(Boolean)
+  ].join(' ');
   const imageCount = coverImageUrl ? 1 : 0;
   const videoCount = 0;
 
@@ -406,24 +425,36 @@ export default function PostEditorModal({ group, post, isOpen, onClose }: PostEd
     if (post) {
       setTitle(post.title || '');
       setContent(post.content || '');
-      setCategory(post.category || boards[0]?.id || 'notice');
-      
+      setCategory(post.category || defaultPostType || (boards && boards[0] ? boards[0].id : 'feed'));
+
       // Parse legacy bgTheme or JSON format
       if (post.bgTheme) {
-        try {
-          const parsed = JSON.parse(post.bgTheme);
-          const foundColor = COLOR_PALETTE.find(c => c.bg === parsed.bgColor);
+        let parsed: any = null;
+        if (typeof post.bgTheme === 'object') {
+          parsed = post.bgTheme;
+        } else if (typeof post.bgTheme === 'string') {
+          const trimmed = post.bgTheme.trim();
+          if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+            try {
+              parsed = JSON.parse(trimmed);
+            } catch (e) {
+              parsed = null;
+            }
+          }
+        }
+
+        if (parsed && typeof parsed === 'object') {
+          const foundColor = COLOR_PALETTE.find(c => c.bg === parsed.bgColor || c.name === parsed.bgColor);
           if (foundColor) setSelectedColor(foundColor);
-          
+
           const impactIdx = IMPACT_SIZES.findIndex(s => s.cls === parsed.impactClass);
           if (impactIdx >= 0) setSelectedImpact(impactIdx);
-          
+
           if (parsed.emphasisClasses && Array.isArray(parsed.emphasisClasses)) {
             const empIndices = parsed.emphasisClasses.map((cls: string) => EMPHASIS_OPTIONS.findIndex(e => e.cls === cls)).filter((i: number) => i >= 0);
             setSelectedEmphasis(empIndices);
           }
-        } catch (e) {
-          // If not JSON, try to find color directly
+        } else if (typeof post.bgTheme === 'string') {
           const foundColor = COLOR_PALETTE.find(c => c.name === post.bgTheme || c.bg === post.bgTheme);
           if (foundColor) setSelectedColor(foundColor);
         }
@@ -433,13 +464,11 @@ export default function PostEditorModal({ group, post, isOpen, onClose }: PostEd
         setSelectedEmphasis([]);
       }
       
-      // Setup media (커버 이미지는 철저히 제외하고 본문 이미지/링크/비디오만 분리하여 격리 수용)
       const existingMedia: MediaItem[] = [];
       if (post.media && post.media.length > 0) {
         post.media.forEach((m: any, i) => {
           const isStr = typeof m === 'string';
           const url = isStr ? m : m.url;
-          // 대표 커버와 주소가 일치하면 중복 처리를 차단하기 위해 스킵
           if (url === post.image) return;
 
           existingMedia.push({
@@ -454,7 +483,6 @@ export default function PostEditorModal({ group, post, isOpen, onClose }: PostEd
       }
       setMedia(existingMedia);
       
-      // 대표 커버 이미지 전독 상태 직결 바인딩
       if (post.image) {
         setCoverImageUrl(post.image);
       } else {
@@ -465,7 +493,7 @@ export default function PostEditorModal({ group, post, isOpen, onClose }: PostEd
     } else {
       setTitle('');
       setContent('');
-      setCategory(boards[0]?.id || 'notice');
+      setCategory(defaultPostType || (boards && boards[0] ? boards[0].id : 'feed'));
       setMedia([]);
       setCoverImageUrl(null);
       setCoverImageId(null);
@@ -476,7 +504,9 @@ export default function PostEditorModal({ group, post, isOpen, onClose }: PostEd
     }
     setTagKeyword('');
     setTagResults([]);
-  }, [post, isOpen, boards]);
+  }, [post, isOpen, boards, defaultPostType]);
+
+
 
 
 
@@ -701,58 +731,34 @@ export default function PostEditorModal({ group, post, isOpen, onClose }: PostEd
 
   return (
     <Portal>
-      <div className="fixed inset-0 z-[10000] bg-surface-bright text-on-surface font-body-md antialiased flex flex-col">
+      <div 
+        data-post-editor-overlay="true"
+        data-post-editor="true"
+        className="fixed inset-0 z-[9990] bg-white text-slate-800 font-body antialiased flex flex-col overflow-hidden"
+      >
 
-        {/* --- TopAppBar (헤더 탭 바 이식) --- */}
-        <header className="fixed top-0 w-full z-50 bg-surface/80 backdrop-blur-md flex justify-between items-center px-6 h-20 transition-all duration-300 header-ui border-b border-outline-variant/10">
-          <div className="flex items-center gap-4">
-            <button onClick={onClose} className="p-2 rounded-full active:scale-95 duration-150 hover:bg-surface-container-low flex items-center justify-center">
-              <span className="material-symbols-outlined text-on-surface-variant text-[24px]">close</span>
-            </button>
-            <h1 className="font-headline-md text-headline-md font-bold tracking-tighter text-on-surface text-xl sm:text-2xl hidden md:block">{group.name}</h1>
-          </div>
+        {/* --- TopAppBar (스톤님 표준 헤더 이식) --- */}
+        <header
+          className="w-full shrink-0 z-50 bg-white border-b border-[#e0e4e5] flex justify-between items-center px-4 sticky top-0"
+          style={{
+            paddingTop: 'env(safe-area-inset-top, 0px)',
+            height: 'calc(56px + env(safe-area-inset-top, 0px))'
+          }}
+        >
+          <button onClick={handleCloseWithDirtyCheck} className="w-10 h-10 flex items-center justify-center -ml-2 text-slate-700 hover:bg-slate-50 rounded-full active:scale-95 transition-transform shrink-0">
+            <span className="material-symbols-rounded text-2xl">arrow_back</span>
+          </button>
 
-          {/* 헤더 정중앙: 럭셔리 슬라이딩 탭 바 (반응형 겹침 해결) */}
-          <div className="sm:absolute sm:left-1/2 sm:-translate-x-1/2 flex items-center bg-surface-container-high rounded-full p-0.5 sm:p-1 border border-outline-variant/15 select-none shrink-0 scale-95 sm:scale-100 z-10">
-            <button
-              type="button"
-              onClick={() => setActiveTab('write')}
-              className={`px-3 sm:px-6 py-1.5 sm:py-2 rounded-full font-label-sm sm:font-label-md text-[11px] sm:text-xs tracking-tight transition-all duration-300 ${
-                activeTab === 'write'
-                  ? 'bg-primary text-on-primary shadow-sm font-extrabold'
-                  : 'text-on-surface-variant hover:text-primary'
-              }`}
-            >
-              {isKr ? '집필' : t('blog.write_mode', 'Write')}
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab('preview')}
-              className={`px-3 sm:px-6 py-1.5 sm:py-2 rounded-full font-label-sm sm:font-label-md text-[11px] sm:text-xs tracking-tight transition-all duration-300 ${
-                activeTab === 'preview'
-                  ? 'bg-primary text-on-primary shadow-sm font-extrabold'
-                  : 'text-on-surface-variant hover:text-primary'
-              }`}
-            >
-              {isKr ? '미리보기' : t('blog.preview_mode', 'Preview')}
-            </button>
-          </div>
+          <h1 className="text-[16px] font-bold text-slate-800 text-center flex-1 truncate px-2">
+            {post ? (t('blog.edit_post') || '게시글 수정') : (t('blog.new_post') || '새 게시글')}
+          </h1>
 
-          <div className="flex items-center gap-2 sm:gap-6">
-            <span className="font-label-md text-label-md text-outline cursor-pointer hover:text-primary transition-colors hidden md:block">{t('blog.drafts', 'Drafts')}</span>
-            <button
-              onClick={handleSubmit}
-              disabled={isSubmitting || (!content.trim() && !coverImageUrl && media.length === 0) || media.some(m => m.status === 'uploading')}
-              className="bg-primary text-on-primary px-4 sm:px-8 py-1.5 sm:py-2.5 rounded-full font-label-sm sm:font-label-md text-xs sm:text-sm hover:opacity-90 active:scale-95 transition-all shadow-sm disabled:opacity-40 shrink-0"
-            >
-              {isSubmitting ? (post ? t('common.updating') : t('common.posting')) : (post ? t('common.update') : t('common.post') || 'Publish')}
-            </button>
-          </div>
+          <div className="w-10 shrink-0" />
         </header>
 
         {/* --- 집필 작성 모드 (Write Canvas) --- */}
         {activeTab === 'write' && (
-          <main className="flex-1 overflow-y-auto pt-24 pb-32 px-6 max-w-4xl mx-auto w-full space-y-8 no-scrollbar animate-in fade-in duration-200">
+          <main className="flex-1 min-h-0 overflow-y-auto py-6 px-6 max-w-4xl mx-auto w-full space-y-8 pb-36 no-scrollbar animate-in fade-in duration-200">
 
             {/* 아코디언 가이드북 */}
             <section className="w-full">
@@ -764,7 +770,7 @@ export default function PostEditorModal({ group, post, isOpen, onClose }: PostEd
                 >
                   <div className="flex items-center gap-2">
                     <span className="material-symbols-outlined text-[20px] text-primary">auto_stories</span>
-                    <span>{t('blog.guide_title', '아티클 집필 가이드북')}</span>
+                    <span className="whitespace-nowrap font-bold text-sm">{t('blog.guide_title', '작성가이드')}</span>
                   </div>
                   <div className="flex items-center gap-1 text-sm text-outline font-medium">
                     <span>{showGuide ? t('blog.guide_accordion_close', '가이드북 접기') : t('blog.guide_accordion_open', '가이드북 펼치기')}</span>
@@ -869,9 +875,10 @@ export default function PostEditorModal({ group, post, isOpen, onClose }: PostEd
             {/* Content Area */}
             <section className="space-y-6 distraction-free-focus text-left">
               {/* Title Input */}
-              <input 
-                className="w-full bg-transparent border-none focus:ring-0 font-display-lg text-4xl sm:text-5xl font-black text-on-surface placeholder:text-outline-variant p-0 selection:bg-primary-fixed/30 tracking-tight leading-tight outline-none"
-                placeholder={t('blog.title_placeholder_sample', 'A Night at Milonga Paraiso')}
+              <input
+                /* autoFocus 제거 - 스톤님 1차 키보드 뷰포트 실험 */
+                className="w-full bg-transparent border-none focus:ring-0 text-xl sm:text-2xl font-bold text-slate-800 placeholder:text-[#acb3b4] placeholder:font-normal p-0 selection:bg-primary/20 tracking-tight leading-tight outline-none"
+                placeholder={t('blog.title_placeholder') || '제목 입력'}
                 type="text"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
@@ -930,7 +937,7 @@ export default function PostEditorModal({ group, post, isOpen, onClose }: PostEd
               <textarea
                 ref={contentRef}
                 className="w-full min-h-[400px] bg-transparent border-none focus:ring-0 font-body-lg text-lg text-on-surface-variant leading-relaxed p-0 outline-none selection:bg-primary-fixed/30 resize-none overflow-hidden placeholder:text-outline/50"
-                placeholder={t('blog.content_placeholder', 'Write your story...')}
+                placeholder={t('blog.content_placeholder') || '내용 입력'}
                 value={content}
                 onChange={e => setContent(e.target.value)}
                 onSelect={handleTextareaSelect}
@@ -1031,10 +1038,13 @@ export default function PostEditorModal({ group, post, isOpen, onClose }: PostEd
           </main>
         )}
 
-        {/* Floating Formatting Bar (Brunch style) - 모바일 반응형 간격 슬림화 개정 */}
+        {/* Floating Formatting Bar (FAB style) - 푸터 바로 위 배치 */}
         {activeTab === 'write' && (
-          <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 max-w-[95vw] px-2 animate-in slide-in-from-bottom-5 duration-300">
-            <div className="bg-surface/90 backdrop-blur-xl shadow-2xl rounded-full px-4 md:px-6 py-3 md:py-3.5 flex items-center gap-3.5 md:gap-6 border border-outline-variant/15">
+          <div
+            className="fixed inset-x-0 z-50 w-full pointer-events-none flex justify-center items-center px-4 animate-in slide-in-from-bottom-5 duration-300"
+            style={{ bottom: 'calc(80px + env(safe-area-inset-bottom, 0px))' }}
+          >
+            <div className="pointer-events-auto bg-white/95 backdrop-blur-xl shadow-2xl rounded-full px-5 py-3 flex items-center justify-center mx-auto gap-4 md:gap-6 border border-[#e0e4e5]">
               <div className="flex items-center gap-3 md:gap-5 border-r border-outline-variant/30 pr-3.5 md:pr-5">
                 <button 
                   type="button"
@@ -1102,6 +1112,28 @@ export default function PostEditorModal({ group, post, isOpen, onClose }: PostEd
             </div>
           </div>
         )}
+
+        {/* 모바일 하단 고정 푸터 바 (스톤님 표준 규격 적용) */}
+        <div
+          className="fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-t border-[#e0e4e5] p-4 flex items-center gap-3 shadow-lg"
+          style={{ paddingBottom: 'calc(16px + env(safe-area-inset-bottom, 0px))' }}
+        >
+          <button
+            type="button"
+            onClick={handleCloseWithDirtyCheck}
+            className="flex-1 py-3.5 border border-[#e0e4e5] text-slate-700 font-bold text-sm rounded-full hover:bg-slate-50 active:scale-95 transition-all"
+          >
+            {t('common.cancel') || '취소'}
+          </button>
+          <button
+            type="button"
+            onClick={handleSubmit}
+            disabled={isSubmitting || (!content.trim() && !coverImageUrl && media.length === 0) || media.some(m => m.status === 'uploading')}
+            className="flex-1 py-3.5 bg-[#007AFF] text-white font-bold text-sm rounded-full hover:bg-blue-600 active:scale-95 transition-all disabled:opacity-50 shadow-md shadow-blue-500/20"
+          >
+            {isSubmitting ? (post ? t('common.updating') : t('common.posting')) : (post ? t('common.update') : (isKr ? '게시' : 'Publish'))}
+          </button>
+        </div>
 
       </div>
       <input ref={mediaInputRef} type="file" className="hidden" accept="image/*,video/*" multiple onChange={handleMediaSelect} />

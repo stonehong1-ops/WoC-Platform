@@ -18,7 +18,7 @@ function ChatContent() {
   const { t } = useLanguage();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const roomIdFromUrl = searchParams.get('roomId');
+  const roomIdFromUrl = searchParams.get('roomId') || searchParams.get('room') || searchParams.get('id');
   
   const [selectedRoomId, setSelectedRoomId] = useState<string | null>(roomIdFromUrl);
   const [activeTab, setActiveTab] = useState<'Personal' | 'Group' | 'Market'>('Personal');
@@ -125,22 +125,37 @@ function ChatContent() {
 
   useEffect(() => {
     setSelectedRoomId(roomIdFromUrl);
+
+    if (roomIdFromUrl) {
+      chatService.getChatRoom(roomIdFromUrl).then((room) => {
+        if (!room) return;
+        if (room.type === 'business') {
+          setActiveTab('Market');
+        } else if (room.type === 'group' || room.type === 'groups' || room.type === 'notice' || room.type === 'public') {
+          setActiveTab('Group');
+        } else {
+          setActiveTab('Personal');
+        }
+      }).catch(console.error);
+    }
   }, [roomIdFromUrl]);
 
   const handleRoomsLoaded = useCallback((counts: { market: number, group: number, personal: number }) => {
     setTabCounts(counts);
-    // Set tab only once when initial rooms are loaded
+    // Set tab only once when initial rooms are loaded AND no specific roomId in URL
     if (!initialTabSet) {
-      if (counts.market > 0) {
-        setActiveTab('Market');
-      } else if (counts.group > 0) {
-        setActiveTab('Group');
-      } else {
-        setActiveTab('Personal');
+      if (!roomIdFromUrl) {
+        if (counts.market > 0) {
+          setActiveTab('Market');
+        } else if (counts.group > 0) {
+          setActiveTab('Group');
+        } else {
+          setActiveTab('Personal');
+        }
       }
       setInitialTabSet(true);
     }
-  }, [initialTabSet]);
+  }, [initialTabSet, roomIdFromUrl]);
 
   const handleSelectRoom = (id: string) => {
     router.push(`/chat?roomId=${id}`);

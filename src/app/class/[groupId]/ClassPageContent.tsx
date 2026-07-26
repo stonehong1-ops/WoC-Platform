@@ -13,6 +13,7 @@ import {
   formatScheduleDates 
 } from './constants/classConstants';
 import { GroupClass } from '@/types/group';
+import { formatInstructorNames } from '@/app/social/constants/seoulRegions';
 
 interface ClassPageContentProps {
   propGroupId?: string;
@@ -115,32 +116,33 @@ export default function ClassPageContent({
   return (
     <>
       {!isEditMode && (
-    <div className="fixed inset-0 z-[200] bg-white flex flex-col animate-in slide-in-from-bottom duration-300">
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-[#f2f4f4] flex-shrink-0 bg-white z-10">
-        <button onClick={() => isOverlay && onClose ? onClose() : router.back()} className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-[#f2f4f4] transition-colors">
-          <span className="material-symbols-outlined text-xl text-[#596061]">arrow_back</span>
-        </button>
-        <div className="flex flex-col items-center">
-          <h2 className="text-base font-black text-[#2d3435]">{t('class.detail.schedule_title')}</h2>
-        </div>
-        
-        <div className="flex items-center gap-2">
-          {/* Download Icon */}
-          <button
-            onClick={handleDownload}
-            disabled={isDownloading}
-            className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-[#f0f4ff] transition-colors disabled:opacity-50"
-          >
-            <span className="material-symbols-outlined text-xl text-[#0057bd]">
-              {isDownloading ? 'progress_activity' : 'download'}
-            </span>
-          </button>
-        </div>
-      </div>
+        <div className="fixed inset-0 z-[1000] bg-white flex flex-col items-center justify-center font-['Inter',sans-serif] overflow-hidden">
+          <div className="w-full max-w-[896px] h-[100dvh] flex flex-col bg-white relative text-left pt-[env(safe-area-inset-top,0px)] pb-[env(safe-area-inset-bottom,0px)]">
+            {/* Header */}
+            <div className="flex items-center justify-between px-4 h-14 border-b border-[#e0e4e5] flex-shrink-0 bg-white z-10 shadow-sm">
+              <button onClick={() => onClose ? onClose() : router.back()} className="w-10 h-10 -ml-2 rounded-full flex items-center justify-center hover:bg-[#f2f4f4] active:scale-95 transition-all text-[#2d3435]">
+                <span className="material-symbols-outlined text-2xl">arrow_back</span>
+              </button>
+              <div className="flex flex-col items-center">
+                <h2 className="text-base font-bold text-[#2d3435]">{t('class.detail.schedule_title') || "수강 신청"}</h2>
+              </div>
+              
+              <div className="flex items-center gap-2">
+                {/* Download Icon */}
+                <button
+                  onClick={handleDownload}
+                  disabled={isDownloading}
+                  className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-[#f0f4ff] transition-colors disabled:opacity-50 text-[#007AFF]"
+                >
+                  <span className="material-symbols-outlined text-xl">
+                    {isDownloading ? 'progress_activity' : 'download'}
+                  </span>
+                </button>
+              </div>
+            </div>
 
-      {/* Scrollable Content (Poster style) */}
-      <div className="flex-1 overflow-y-auto">
+            {/* Scrollable Content (Poster style) */}
+            <div className="flex-1 overflow-y-auto no-scrollbar">
         <div ref={captureRef} className="bg-white px-5 py-6">
           {!isRegistrationOpen && (
             <div className="bg-rose-50 border border-rose-200 text-rose-600 rounded-xl px-4 py-3 text-xs font-bold mb-4 flex items-center gap-2">
@@ -185,7 +187,17 @@ export default function ClassPageContent({
               </div>
               <div className="space-y-3">
                 {discounts.map(disc => (
-                  <div key={disc.id} onClick={() => handleCardClick({ ...disc, itemType: 'discount' })} className="bg-white rounded-xl p-3 shadow-sm border border-[#d97706]/10 cursor-pointer hover:shadow-md transition-all">
+                  <div 
+                    key={disc.id} 
+                    onClick={() => {
+                      if (selectedClasses.has(disc.id)) {
+                        handleRemoveFromBasket(disc.id);
+                      } else {
+                        handleAddToBasket(disc.id, 'discount');
+                      }
+                    }} 
+                    className="bg-white rounded-xl p-3 shadow-sm border border-[#d97706]/10 cursor-pointer hover:shadow-md transition-all"
+                  >
                     <div className="flex justify-between items-start mb-1">
                       <p className="text-sm font-bold text-[#2d3435]">{disc.title}</p>
                     </div>
@@ -268,7 +280,18 @@ export default function ClassPageContent({
                         const timeDisplay = cls.schedule?.[0]?.timeSlot || (cls.startTime ? `${cls.startTime}${cls.endTime ? ' - ' + cls.endTime : ''}` : '');
 
                         return (
-                          <div key={cls.id} onClick={() => handleCardClick({ ...cls, itemType: 'class' })} className="p-3 flex gap-3 cursor-pointer hover:bg-[#f8f9fa] transition-colors group bg-white">
+                          <div 
+                            key={cls.id} 
+                            onClick={() => {
+                              if (isDiscountSelected) return;
+                              if (selectedClasses.has(cls.id)) {
+                                handleRemoveFromBasket(cls.id);
+                              } else {
+                                handleAddToBasket(cls.id, 'class');
+                              }
+                            }} 
+                            className={`p-3 flex gap-3 transition-colors group bg-white ${isDiscountSelected ? 'opacity-40 pointer-events-none cursor-not-allowed' : 'cursor-pointer hover:bg-[#f8f9fa]'}`}
+                          >
                             {(() => {
                               const imgKey = `class-img-${cls.id}`;
                               const hasError = imageErrors[imgKey];
@@ -352,7 +375,9 @@ export default function ClassPageContent({
                                           </div>
                                         );
                                       })()}
-                                      <p className="text-[8px] font-bold text-[#596061] mt-0.5 text-center truncate w-full">{instructor?.name || 'Instructor'}</p>
+                                      <p className="text-[8px] font-bold text-[#596061] mt-0.5 text-center truncate w-full">
+                                        {formatInstructorNames((instructor as any)?.instructorNativeName || (instructor as any)?.nameNative || instructor?.name || 'Instructor', language)}
+                                      </p>
                                     </div>
                                   ))}
                                 </div>
@@ -504,7 +529,9 @@ export default function ClassPageContent({
                                     </div>
                                   );
                                 })()}
-                                <p className="text-[8px] font-bold text-[#596061] mt-0.5 text-center truncate w-full">{instructor?.name || 'Instructor'}</p>
+                                <p className="text-[8px] font-bold text-[#596061] mt-0.5 text-center truncate w-full">
+                                  {formatInstructorNames((instructor as any)?.instructorNativeName || (instructor as any)?.nameNative || instructor?.name || 'Instructor', language)}
+                                </p>
                               </div>
                             ))}
                           </div>
@@ -636,7 +663,6 @@ export default function ClassPageContent({
       )}
 
     </div>
-      )}
 
       {/* Item Details Popup Modal */}
       <UnifiedCheckoutModal
@@ -780,7 +806,7 @@ export default function ClassPageContent({
                             <div className="border-t border-neutral-200 my-3" />
                           )}
                           <div className="flex flex-col p-2.5 rounded-xl border border-neutral-200 bg-white transition-colors">
-                            <label className="flex items-start gap-2.5 cursor-pointer">
+                            <div className="flex items-start gap-2.5">
                               <input
                                 type="checkbox"
                                 checked={isChecked}
@@ -792,7 +818,7 @@ export default function ClassPageContent({
                                     return newSet;
                                   });
                                 }}
-                                className="w-4.5 h-4.5 rounded border-neutral-300 text-blue-600 focus:ring-blue-500 accent-blue-600 mt-0.5 shrink-0"
+                                className="w-4.5 h-4.5 rounded border-neutral-300 text-blue-600 focus:ring-blue-500 accent-blue-600 mt-0.5 shrink-0 cursor-pointer"
                               />
                               <div className="flex-1 min-w-0 flex flex-col gap-0.5">
                                 <div className="flex items-center gap-1.5 min-w-0">
@@ -806,7 +832,7 @@ export default function ClassPageContent({
                                   {cls.instructors?.length > 0 && ` | ${cls.instructors.map((i: any) => i.name).join(', ')}`}
                                 </p>
                               </div>
-                            </label>
+                            </div>
 
                             {isChecked && (
                               <div className="mt-2 pl-7 animate-in slide-in-from-top-1 duration-200">
@@ -971,6 +997,9 @@ export default function ClassPageContent({
           </div>
         </UnifiedCheckoutModal>
       )}
+
+      </div>
+  )}
 
       <ClassDetail
         groupId={groupId}

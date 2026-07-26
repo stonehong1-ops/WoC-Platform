@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { galleryService, GalleryPost } from '@/lib/firebase/galleryService';
+import { galleryService, GalleryPost, dedupeAndSortPosts, mergeRealtimeAndHistory } from '@/lib/firebase/galleryService';
 import { getSafeStorageUrl } from '@/lib/utils/storageUtils';
 import SectionHeader from '@/components/common/SectionHeader';
 import { tabCache } from '@/lib/utils/tabCache';
@@ -13,6 +13,8 @@ export default function LivePortalHome() {
   const router = useRouter();
   
   const [posts, setPosts] = useState<GalleryPost[]>([]);
+  const realtimePostsRef = useRef<GalleryPost[]>([]);
+  const historyPostsRef = useRef<GalleryPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [mounted, setMounted] = useState(false);
 
@@ -25,22 +27,23 @@ export default function LivePortalHome() {
     tabCache.logTransitionTime('Live', 'render');
   }, []);
 
-  // 실시간 라이브 피드 데이터 구독 (Cache-First + SWR)
+  // 실시간 라이브 피드 데이터 구독 (tabCache HIT 시 0초 복원 + background refresh)
   useEffect(() => {
     const cached = tabCache.getStale('live:latest');
-    if (cached) {
+    if (cached && cached.length > 0) {
       setPosts(cached);
       setLoading(false);
     }
 
-    const unsubscribe = galleryService.subscribeFeed((fetchedPosts) => {
-      const sorted = [...fetchedPosts].sort((a, b) => {
-        const timeA = typeof a.createdAt === 'number' ? a.createdAt : (a.createdAt?.toMillis?.() || 0);
-        const timeB = typeof b.createdAt === 'number' ? b.createdAt : (b.createdAt?.toMillis?.() || 0);
-        return timeB - timeA;
-      });
-      tabCache.set('live:latest', sorted.slice(0, 15));
-      setPosts(sorted);
+    const unsubscribe = galleryService.subscribeFeed((newRealtime) => {
+      const { finalPosts, newHistory } = mergeRealtimeAndHistory(
+        newRealtime,
+        realtimePostsRef.current,
+        historyPostsRef.current
+      );
+      realtimePostsRef.current = newRealtime;
+      historyPostsRef.current = newHistory;
+      setPosts(finalPosts);
       setLoading(false);
     });
     return () => unsubscribe();

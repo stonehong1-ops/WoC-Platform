@@ -36,10 +36,15 @@ export default function EventProgramTab({ event }: Props) {
 // ========================================
 function ByDateView({ programs, currency }: { programs: EventProgram[]; currency: string }) {
   const { t, formatDate } = useLanguage();
-  // 모든 unique 날짜 추출
+  // 모든 unique 날짜 추출 (p.dates 배열 또는 단일 p.date 속성 모두 호환 대응)
   const allDates = useMemo(() => {
     const dateSet = new Set<string>();
-    programs.forEach(p => p.dates.forEach(d => dateSet.add(d)));
+    programs.forEach(p => {
+      const datesArr = Array.isArray(p.dates) ? p.dates : (p as any).date ? [(p as any).date] : [];
+      datesArr.forEach(d => {
+        if (d && typeof d === 'string') dateSet.add(d);
+      });
+    });
     return Array.from(dateSet).sort();
   }, [programs]);
 
@@ -47,8 +52,11 @@ function ByDateView({ programs, currency }: { programs: EventProgram[]; currency
 
   const dayPrograms = useMemo(() => {
     return programs
-      .filter(p => p.dates.includes(selectedDate))
-      .sort((a, b) => a.startTime.localeCompare(b.startTime));
+      .filter(p => {
+        const datesArr = Array.isArray(p.dates) ? p.dates : (p as any).date ? [(p as any).date] : [];
+        return datesArr.includes(selectedDate);
+      })
+      .sort((a, b) => (a.startTime || "").localeCompare(b.startTime || ""));
   }, [programs, selectedDate]);
 
   return (
@@ -191,10 +199,12 @@ function ProgramCard({ program: p, currency, showDates }: { program: EventProgra
         {p.description && <p className="text-[11px] text-[#596061] mt-1.5 leading-relaxed">{p.description}</p>}
 
         {/* Instructor / DJ */}
-        {p.instructor && (
+        {(p.instructor || (p as any).teachers) && (
           <div className="flex items-center gap-1.5 mt-2">
             <span className="material-symbols-rounded text-sm text-[#acb3b4]">person</span>
-            <span className="text-[10px] font-bold text-[#596061]">{p.instructor}</span>
+            <span className="text-[10px] font-bold text-[#596061]">
+              {p.instructor || (Array.isArray((p as any).teachers) ? (p as any).teachers.join(", ") : (p as any).teachers)}
+            </span>
           </div>
         )}
         {p.djName && (
@@ -211,11 +221,13 @@ function ProgramCard({ program: p, currency, showDates }: { program: EventProgra
         )}
 
         {/* Dates (for category view) */}
-        {showDates && p.dates.length > 0 && (
+        {showDates && (Array.isArray(p.dates) ? p.dates : (p as any).date ? [(p as any).date] : []).length > 0 && (
           <div className="mt-2 flex items-center gap-1 flex-wrap">
             <span className="material-symbols-rounded text-sm text-[#acb3b4]">event</span>
             <span className="text-[10px] text-[#acb3b4]">
-              {p.dates.map(d => formatDate(parseISO(d), "shortMonthDay")).join(", ")}
+              {(Array.isArray(p.dates) ? p.dates : [(p as any).date]).filter(Boolean).map(d => {
+                try { return formatDate(parseISO(d), "shortMonthDay"); } catch { return d; }
+              }).join(", ")}
             </span>
           </div>
         )}

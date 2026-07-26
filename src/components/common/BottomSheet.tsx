@@ -104,22 +104,13 @@ export default function BottomSheet({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              onClick={handleDismiss}
               className="absolute inset-0 bg-black/60 backdrop-blur-sm"
               style={{ zIndex: -1 }}
             />
 
             {/* Sheet Container */}
             <motion.div
-              drag={keyboardHeight > 0 ? false : "y"}
-              dragConstraints={{ top: 0 }}
-              dragElastic={{ top: 0.05, bottom: 0.85 }}
-              onDragEnd={(event, info) => {
-                // If dragged down past 120px or swiped fast enough, trigger close
-                if (info.offset.y > 120 || info.velocity.y > 350) {
-                  handleDismiss();
-                }
-              }}
+              drag={false}
               initial={{ y: "100%" }}
               animate={{ y: 0 }}
               exit={{ y: "100%" }}

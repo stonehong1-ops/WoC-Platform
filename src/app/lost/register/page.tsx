@@ -157,7 +157,7 @@ function RegisterPageContent() {
         images: finalImages,
         authorId: user.uid,
         authorName: user.displayName || 'Anonymous',
-        authorPhoto: user.photoURL || undefined,
+        authorPhoto: user.photoURL || '',
         status: 'SEARCHING',
       };
 
@@ -178,8 +178,8 @@ function RegisterPageContent() {
   };
 
   const headerTitle = editId
-    ? (language === 'KR' ? '분실물/습득물 수정' : 'Edit Lost & Found')
-    : (language === 'KR' ? '분실물/습득물 등록' : 'Register Lost & Found');
+    ? (t('lost.edit_title') || '분실물 수정')
+    : (t('lost.create_title') || '새 분실물');
 
   const stepCategoryTitle = step === 1
     ? (language === 'KR' ? '분류, 사진 및 제목' : 'Type, Photos & Title')

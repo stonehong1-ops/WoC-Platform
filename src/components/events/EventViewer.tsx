@@ -18,6 +18,7 @@ import EditEvent from "./EditEvent";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useNavigation } from "@/components/providers/NavigationProvider";
 import ReportModal from "@/components/common/ReportModal";
+import MediaViewerPopup from "@/components/feed/MediaViewerPopup";
 
 interface EventViewerProps {
   event: Event;
@@ -67,13 +68,7 @@ export default function EventViewer({ event: initialEvent, onClose }: EventViewe
     openModal: openChat,
     closeModal: handleCloseChat,
   } = useModalNavigation("chatId");
-  const {
-    value: imageModal,
-    openModal: openImageModal,
-    closeModal: closeImageModal,
-  } = useModalNavigation("imageModal");
-
-  const showImageModal = imageModal === "true";
+  const [isMediaViewerOpen, setIsMediaViewerOpen] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
 
   // Permission: Host, Staff, or Admin can edit
@@ -166,22 +161,21 @@ export default function EventViewer({ event: initialEvent, onClose }: EventViewe
       {/* Header */}
       <div 
         className={`fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4 pb-3 transition-all duration-300 ${isScrolled ? "bg-white/95 backdrop-blur-md shadow-sm" : "bg-gradient-to-b from-black/30 to-transparent"}`}
-        style={{ paddingTop: 'calc(12px + env(safe-area-inset-top, 0px))' }}
+        style={{
+          paddingTop: 'calc(12px + env(safe-area-inset-top, 0px))',
+          height: 'calc(56px + env(safe-area-inset-top, 0px))'
+        }}
       >
         <button onClick={onClose} className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${isScrolled ? "bg-slate-100 text-[#2d3435]" : "bg-black/20 backdrop-blur-sm text-white"}`}>
           <span className="material-symbols-rounded text-xl">arrow_back</span>
         </button>
-        <div className={`flex flex-col items-center max-w-[160px] transition-colors ${isScrolled ? "text-[#2d3435]" : "text-white drop-shadow-md"}`}>
+        <div className={`flex flex-col items-center max-w-[200px] transition-all duration-300 ${isScrolled ? "opacity-100 translate-y-0 text-[#2d3435]" : "opacity-0 -translate-y-2 text-white pointer-events-none"}`}>
           <div className="text-base font-bold truncate w-full text-center">
             {language === 'KR' && event.titleNative ? event.titleNative : event.title}
           </div>
-          {event.titleNative && language !== 'KR' && <div className={`text-[10px] font-bold truncate w-full text-center ${isScrolled ? "text-[#acb3b4]" : "text-white/90 drop-shadow-md"}`}>{event.titleNative}</div>}
+          {event.titleNative && language !== 'KR' && <div className={`text-[10px] font-bold truncate w-full text-center ${isScrolled ? "text-[#acb3b4]" : "text-white/90"}`}>{event.titleNative}</div>}
         </div>
         <div className="flex items-center gap-1">
-          <button onClick={() => navigator.share ? navigator.share({ title: event.title, url: window.location.href }).catch(console.error) : alert(t('event.share_not_supported'))}
-            className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${isScrolled ? "bg-slate-100 text-[#2d3435]" : "bg-black/20 backdrop-blur-sm text-white"}`}>
-            <span className="material-symbols-rounded text-xl">share</span>
-          </button>
           <div className="relative">
             <button 
               onClick={() => setShowMenu(!showMenu)}
@@ -190,7 +184,22 @@ export default function EventViewer({ event: initialEvent, onClose }: EventViewe
               <span className="material-symbols-rounded text-xl">more_vert</span>
             </button>
             {showMenu && (
-              <div className="absolute right-0 mt-2 z-[120] bg-white border border-slate-100 shadow-xl rounded-2xl py-1 w-28 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+              <div className="absolute right-0 mt-2 z-[120] bg-white border border-slate-100 shadow-xl rounded-2xl py-1 w-36 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                <button 
+                  onClick={() => {
+                    setShowMenu(false);
+                    if (navigator.share) {
+                      navigator.share({ title: event.title, url: window.location.href }).catch(console.error);
+                    } else {
+                      navigator.clipboard?.writeText(window.location.href);
+                      alert(t('event.link_copied') || '링크가 복사되었습니다.');
+                    }
+                  }}
+                  className="w-full px-4 py-2.5 text-left text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors flex items-center gap-2"
+                >
+                  <span className="material-symbols-rounded text-base text-slate-400">share</span>
+                  {t('common.share') || '공유하기'}
+                </button>
                 {canEdit && (
                   <>
                     <button 
@@ -224,7 +233,10 @@ export default function EventViewer({ event: initialEvent, onClose }: EventViewe
 
       {/* Fixed Tab Bar — appears when scrolled past anchor */}
       {isTabStuck && (
-        <div className="fixed top-[56px] left-0 right-0 z-40">
+        <div 
+          className="fixed left-0 right-0 z-40"
+          style={{ top: 'calc(56px + env(safe-area-inset-top, 0px))' }}
+        >
           <TabBar />
         </div>
       )}
@@ -240,7 +252,7 @@ export default function EventViewer({ event: initialEvent, onClose }: EventViewe
             </div>
           )}
           {images.length > 0 && (
-            <div className="relative w-full" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd} onClick={() => openImageModal("true")}>
+            <div className="relative w-full" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd} onClick={() => setIsMediaViewerOpen(true)}>
               <div className="flex w-full transition-transform duration-300 ease-out" style={{ transform: `translateX(-${currentImg * 100}%)` }}>
                 {images.map((img, i) => (
                   <div key={i} className="w-full flex-shrink-0 flex items-center justify-center">
@@ -290,24 +302,12 @@ export default function EventViewer({ event: initialEvent, onClose }: EventViewe
       </div>
 
       {/* Full Screen Image Viewer */}
-      {showImageModal && (
-        <div className="fixed inset-0 z-[200] bg-black flex flex-col animate-in fade-in duration-200">
-          <div className="absolute top-0 left-0 right-0 z-10 flex justify-end p-4">
-            <button onClick={closeImageModal} className="w-10 h-10 rounded-full bg-black/40 text-white flex items-center justify-center">
-              <span className="material-symbols-rounded text-2xl">close</span>
-            </button>
-          </div>
-          <div className="flex-1 w-full h-full flex items-center justify-center" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
-            <div className="flex w-full transition-transform duration-300 ease-out h-full items-center" style={{ transform: `translateX(-${currentImg * 100}%)` }}>
-              {images.map((img, i) => (
-                <div key={i} className="w-full flex-shrink-0 flex items-center justify-center px-4">
-                  <img src={img} alt={`Fullscreen ${i + 1}`} className="w-full max-h-[80vh] object-contain" />
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
+      <MediaViewerPopup
+        isOpen={isMediaViewerOpen}
+        onClose={() => setIsMediaViewerOpen(false)}
+        media={images.map(url => ({ url, type: 'image' }))}
+        initialIndex={currentImg}
+      />
 
       {/* Edit Event */}
       {showEdit && (

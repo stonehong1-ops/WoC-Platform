@@ -208,7 +208,7 @@ export default function VenueForm({ isOpen, onClose, initialData }: VenueFormPro
           <span className="material-symbols-rounded text-2xl">arrow_back</span>
         </button>
         <h1 className="text-[16px] font-bold text-slate-800">
-          {initialData ? t('venue.edit_title', '장소 수정') : t('venue.register_title', '장소 등록')}
+          {initialData ? (t('venue.edit_title') || '장소 수정') : (t('venue.register_title') || '새 장소')}
         </h1>
         <div className="w-10" />
       </header>

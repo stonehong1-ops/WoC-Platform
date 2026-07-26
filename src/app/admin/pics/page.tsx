@@ -203,7 +203,7 @@ export default function AdminPicsPage() {
   };
 
   return (
-    <main className="flex h-screen bg-surface overflow-hidden">
+    <main className="flex flex-1 h-[calc(100dvh-env(safe-area-inset-top,0px)-env(safe-area-inset-bottom,0px))] bg-surface overflow-hidden">
       {/* Sidebar / List */}
       <div className={`flex-1 border-r border-surface-container flex flex-col ${isEditing ? 'hidden md:flex md:max-w-md' : 'flex'}`}>
         <div className="p-6 border-b border-surface-container shrink-0 flex items-center justify-between bg-surface-container-lowest shadow-sm z-10">
@@ -482,7 +482,10 @@ export default function AdminPicsPage() {
             </div>
           </div>
 
-          <div className="p-4 border-t border-surface-container bg-surface-container-lowest flex justify-between items-center shrink-0">
+          <div 
+            className="p-4 pb-safe border-t border-surface-container bg-surface-container-lowest flex justify-between items-center shrink-0"
+            style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom, 0px))' }}
+          >
             {selectedPic.id ? (
               <button 
                 onClick={() => handleDelete(selectedPic.id as string)}

@@ -198,198 +198,210 @@ const GroupClassDiscountEditor: React.FC<GroupClassDiscountEditorProps> = ({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: "100%" }}
       transition={{ type: "spring", damping: 25, stiffness: 200 }}
-      className="fixed inset-0 z-[110] bg-white flex items-center justify-center font-['Plus_Jakarta_Sans']"
+      className="fixed inset-0 z-[1000] bg-white flex flex-col items-center justify-center font-['Inter',sans-serif] overflow-hidden"
     >
-      <main className="max-w-md w-full h-[100dvh] bg-white flex flex-col overflow-hidden relative text-left">
+      <main className="w-full max-w-[896px] h-[100dvh] flex flex-col bg-[#f8f9fa] relative text-left pt-[env(safe-area-inset-top,0px)] pb-[env(safe-area-inset-bottom,0px)]">
         {/* Header */}
-        <div className="flex-shrink-0 bg-white border-b border-slate-100 px-4 h-14 flex items-center justify-between z-50">
+        <div className="flex-shrink-0 bg-white border-b border-[#e0e4e5] px-4 h-14 flex items-center justify-between z-50 sticky top-0 shadow-sm">
           <button type="button" onClick={onClose} className="w-10 h-10 flex items-center justify-center -ml-2 active:scale-95 transition-transform text-slate-700">
             <span className="material-symbols-rounded text-2xl">arrow_back</span>
           </button>
-          <h1 className="text-[14px] font-black uppercase tracking-widest text-slate-800">
-            {isEditMode ? t("discount.edit_bundle") || "Edit Bundle" : t("discount.add_bundle") || "Discount Editor"}
+          <h1 className="text-base font-bold text-slate-800">
+            {isEditMode ? "번들 수정" : "번들 등록"}
           </h1>
           <div className="w-10" />
         </div>
 
         <form onSubmit={(e) => { e.preventDefault(); handleSave(); }} className="flex-1 flex flex-col overflow-hidden">
           {/* Scrollable Content */}
-          <div className="flex-1 overflow-y-auto px-4 mt-4 space-y-6 pb-6 text-left no-scrollbar">
-            {/* Title */}
-            <div>
-              <label className="block text-xs font-bold text-[#596061] mb-1.5 uppercase tracking-wider">
-                {t("discount.class_title") || "Bundle Title"} <span className="text-red-400">*</span>
-              </label>
-              <input
-                required
-                id="discount-title"
-                value={formData.title}
-                onChange={e => setFormData({ ...formData, title: e.target.value })}
-                className="w-full bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-4 py-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
-                placeholder={t("discount.title_placeholder") || "e.g. Contemporary Dance 2-Class Bundle"}
-                type="text"
-              />
-            </div>
+          <div className="flex-1 overflow-y-auto px-4 py-6 space-y-5 text-left no-scrollbar">
+            
+            {/* 기본 정보 섹션 카드 */}
+            <div className="bg-white border border-[#e0e4e5] rounded-2xl p-4 shadow-sm space-y-4">
+              <h3 className="text-xs font-bold text-[#007AFF] uppercase tracking-wider flex items-center gap-1.5">
+                <span className="material-symbols-outlined text-[16px]">info</span>
+                <span>번들 기본 정보</span>
+              </h3>
 
-            {/* Description */}
-            <div>
-              <label className="block text-xs font-bold text-[#596061] mb-1.5 uppercase tracking-wider">
-                {t("discount.description") || "Description"}
-              </label>
-              <textarea
-                id="discount-desc"
-                value={formData.description}
-                onChange={e => setFormData({ ...formData, description: e.target.value })}
-                className="w-full min-h-[120px] bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-4 py-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all resize-none leading-relaxed"
-                placeholder={t("discount.desc_placeholder") || "Provide details about this bundle discount..."}
-                rows={4}
-              />
-            </div>
+              {/* Title */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                  번들 제목 <span className="text-red-500">*</span>
+                </label>
+                <input
+                  required
+                  id="discount-title"
+                  value={formData.title}
+                  onChange={e => setFormData({ ...formData, title: e.target.value })}
+                  className="w-full bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-4 py-3 text-sm font-bold text-slate-800 focus:bg-white focus:ring-2 focus:ring-[#007AFF]/20 outline-none transition-all placeholder:font-normal placeholder:text-[#acb3b4]"
+                  placeholder="예: 현대무용 2개 클래스 묶음 패키지"
+                  type="text"
+                />
+              </div>
 
-            {/* Cover Image Upload */}
-            <div>
-              <label className="block text-xs font-bold text-[#596061] mb-1.5 uppercase tracking-wider">
-                {t("discount.image_url") || "Cover Image"}
-              </label>
-              <input
-                type="file"
-                ref={imageInputRef}
-                className="hidden"
-                accept="image/*"
-                onChange={handleImageSelect}
-              />
-              <div
-                onClick={() => imageInputRef.current?.click()}
-                className="w-full h-40 border border-[#e0e4e5] rounded-xl flex flex-col items-center justify-center text-center bg-[#f8f9fa] active:scale-95 transition-transform cursor-pointer relative overflow-hidden"
-              >
-                {imagePreviewUrl ? (
-                  <>
-                    <img src={imagePreviewUrl} alt="Thumbnail preview" className="w-full h-full object-cover absolute inset-0" />
-                    <button
-                      type="button"
-                      onClick={(e) => { e.stopPropagation(); removeImage(); }}
-                      className="absolute top-2 right-2 w-6 h-6 bg-black/60 rounded-full text-white flex items-center justify-center active:scale-95 z-10 animate-fade-in"
-                    >
-                      <span className="material-symbols-rounded text-[16px]">close</span>
-                    </button>
-                    {uploadProgress !== null && (
-                      <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center text-white z-20">
-                        <span className="material-symbols-rounded animate-spin text-2xl mb-1">progress_activity</span>
-                        <span className="text-xs font-bold">{uploadProgress}%</span>
+              {/* Description */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                  번들 안내 및 설명
+                </label>
+                <textarea
+                  id="discount-desc"
+                  value={formData.description}
+                  onChange={e => setFormData({ ...formData, description: e.target.value })}
+                  className="w-full min-h-[100px] bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-4 py-3 text-sm font-bold text-slate-800 focus:bg-white focus:ring-2 focus:ring-[#007AFF]/20 outline-none transition-all resize-none leading-relaxed placeholder:font-normal placeholder:text-[#acb3b4]"
+                  placeholder="패키지 구성 및 수강 혜택에 대해 작성해주세요..."
+                  rows={3}
+                />
+              </div>
+
+              {/* Cover Image Upload */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                  대표 커버 이미지
+                </label>
+                <input
+                  type="file"
+                  ref={imageInputRef}
+                  className="hidden"
+                  accept="image/*"
+                  onChange={handleImageSelect}
+                />
+                <div
+                  onClick={() => imageInputRef.current?.click()}
+                  className="w-full h-36 border border-[#e0e4e5] rounded-xl flex flex-col items-center justify-center text-center bg-[#f8f9fa] active:scale-95 transition-transform cursor-pointer relative overflow-hidden"
+                >
+                  {imagePreviewUrl ? (
+                    <>
+                      <img src={imagePreviewUrl} alt="Thumbnail preview" className="w-full h-full object-cover absolute inset-0" />
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); removeImage(); }}
+                        className="absolute top-2 right-2 w-7 h-7 bg-black/60 rounded-full text-white flex items-center justify-center active:scale-95 z-10"
+                      >
+                        <span className="material-symbols-rounded text-[18px]">close</span>
+                      </button>
+                      {uploadProgress !== null && (
+                        <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center text-white z-20">
+                          <span className="material-symbols-rounded animate-spin text-2xl mb-1">progress_activity</span>
+                          <span className="text-xs font-bold">{uploadProgress}%</span>
+                        </div>
+                      )}
+                      <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-[10px] font-bold text-center py-1.5 uppercase tracking-wider z-10">
+                        사진 변경하기
                       </div>
-                    )}
-                    <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-[9px] font-bold text-center py-1 uppercase tracking-wider z-10">
-                      {t("class.change_photo") || "Change Photo"}
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <span className="material-symbols-rounded text-2xl text-slate-400 mb-1">add_photo_alternate</span>
-                    <p className="text-xs font-bold text-[#596061] mb-0.5">{t("class.upload_photo") || "Upload Photo"}</p>
-                    <p className="text-[10px] text-slate-400">{t("class.photo_desc") || "Support JPG, PNG, GIF"}</p>
-                  </>
-                )}
+                    </>
+                  ) : (
+                    <>
+                      <span className="material-symbols-rounded text-3xl text-slate-400 mb-1">add_photo_alternate</span>
+                      <p className="text-xs font-bold text-slate-700 mb-0.5">이미지 업로드</p>
+                      <p className="text-[11px] text-slate-400">JPG, PNG, GIF 파일 지원</p>
+                    </>
+                  )}
+                </div>
               </div>
             </div>
 
-            {/* Pricing & Discount Details */}
-            <div className="bg-[#f8f9fa] rounded-xl p-4 border border-[#e0e4e5] space-y-4">
-              <h3 className="text-xs font-bold text-[#596061] uppercase tracking-wider">{t("discount.pricing") || "Pricing"}</h3>
+            {/* 가격 설정 섹션 카드 */}
+            <div className="bg-white border border-[#e0e4e5] rounded-2xl p-4 shadow-sm space-y-4">
+              <h3 className="text-xs font-bold text-[#007AFF] uppercase tracking-wider flex items-center gap-1.5">
+                <span className="material-symbols-outlined text-[16px]">sell</span>
+                <span>패키지 요금 설정</span>
+              </h3>
               
-              <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
                 {/* Currency */}
                 <div>
-                  <label className="block text-[10px] font-bold text-[#596061] mb-1 uppercase tracking-wider">{t("discount.currency") || "Currency"}</label>
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5">통화 단위</label>
                   <div className="relative">
                     <select
                       value={formData.currency}
                       onChange={e => setFormData({ ...formData, currency: e.target.value as any })}
-                      className="w-full bg-white border border-[#e0e4e5] rounded-lg px-3 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all appearance-none pr-8"
+                      className="w-full bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-3 py-2.5 text-sm font-bold text-slate-800 focus:bg-white focus:ring-2 focus:ring-[#007AFF]/20 outline-none transition-all cursor-pointer"
+                      style={{ WebkitAppearance: 'none', appearance: 'none' }}
                     >
-                      <option value="KRW">KRW - South Korean Won</option>
-                      <option value="USD">USD - US Dollar</option>
-                      <option value="EUR">EUR - Euro</option>
-                      <option value="JPY">JPY - Japanese Yen</option>
+                      <option value="KRW">KRW (₩)</option>
+                      <option value="USD">USD ($)</option>
+                      <option value="EUR">EUR (€)</option>
+                      <option value="JPY">JPY (¥)</option>
                     </select>
-                    <span className="material-symbols-rounded absolute right-3 top-1/2 -translate-y-1/2 text-[#acb3b4] pointer-events-none">expand_more</span>
                   </div>
                 </div>
 
                 {/* Amount */}
                 <div>
-                  <label className="block text-[10px] font-bold text-[#596061] mb-1 uppercase tracking-wider">{t("discount.amount") || "Amount"}</label>
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5">할인 패키지 가격 <span className="text-red-500">*</span></label>
                   <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-sm">
-                      {formData.currency === "KRW" ? "₩" : formData.currency === "USD" ? "$" : formData.currency === "EUR" ? "€" : formData.currency === "JPY" ? "¥" : "₩"}
-                    </span>
                     <input
                       value={formData.amount ? formData.amount.toLocaleString() : ""}
                       onChange={e => {
                         const val = e.target.value.replace(/[^0-9]/g, "");
                         setFormData({ ...formData, amount: Number(val) });
                       }}
-                      className="w-full bg-white border border-[#e0e4e5] rounded-lg pl-8 pr-4 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all text-right font-bold"
+                      className="w-full bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-4 py-2.5 text-sm font-bold text-slate-800 focus:bg-white focus:ring-2 focus:ring-[#007AFF]/20 outline-none transition-all text-right"
                       placeholder="0"
                       type="text"
                     />
                   </div>
                 </div>
+              </div>
 
-                {/* Discount Description */}
-                <div>
-                  <label className="block text-[10px] font-bold text-[#596061] mb-1 uppercase tracking-wider">{t("discount.discount_description") || "Discount Description"}</label>
-                  <input
-                    id="discount-details"
-                    value={formData.discountDescription}
-                    onChange={e => setFormData({ ...formData, discountDescription: e.target.value })}
-                    className="w-full bg-white border border-[#e0e4e5] rounded-lg px-3 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
-                    placeholder={t("discount.discount_placeholder") || "e.g. Save 20% by booking together!"}
-                    type="text"
-                  />
-                </div>
+              {/* Discount Description */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">할인 혜택 문구</label>
+                <input
+                  id="discount-details"
+                  value={formData.discountDescription}
+                  onChange={e => setFormData({ ...formData, discountDescription: e.target.value })}
+                  className="w-full bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-4 py-2.5 text-sm font-bold text-slate-800 focus:bg-white focus:ring-2 focus:ring-[#007AFF]/20 outline-none transition-all placeholder:font-normal placeholder:text-[#acb3b4]"
+                  placeholder="예: 2개 클래스 동시 수강 시 20% 특별 할인!"
+                  type="text"
+                />
               </div>
             </div>
 
-            {/* Select Classes */}
-            <div className="bg-[#f8f9fa] rounded-xl p-4 border border-[#e0e4e5] space-y-4">
+            {/* 포함할 클래스 선택 섹션 카드 */}
+            <div className="bg-white border border-[#e0e4e5] rounded-2xl p-4 shadow-sm space-y-3">
               <div>
-                <h3 className="text-xs font-bold text-[#596061] uppercase tracking-wider">{t("discount.select_classes") || "Select Classes"}</h3>
-                <p className="text-[10px] font-medium text-slate-400 mt-0.5 leading-normal">{t("discount.select_classes_desc") || "Choose existing classes from this month to include in the bundle."}</p>
+                <h3 className="text-xs font-bold text-[#007AFF] uppercase tracking-wider flex items-center gap-1.5">
+                  <span className="material-symbols-outlined text-[16px]">checklist</span>
+                  <span>번들에 포함할 정규 클래스 선택</span>
+                </h3>
+                <p className="text-xs font-medium text-slate-500 mt-1">번들 패키지로 묶어서 함께 제공할 수업들을 2개 이상 선택해 주세요.</p>
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-2.5 pt-1">
                 {classes.length === 0 ? (
-                  <p className="text-xs text-center py-4 text-slate-400 font-bold">{t("discount.no_classes") || "No classes available."}</p>
+                  <p className="text-xs text-center py-6 text-slate-400 font-bold">이번 달 등록된 정규 클래스가 없습니다.</p>
                 ) : (
                   classes.map((cls) => {
                     const isSelected = formData.includedClassIds.includes(cls.id);
+                    const day = getClassDay(cls);
+                    const dayNameKr = DAY_LABELS[day]?.ko ? `${DAY_LABELS[day].ko}요일` : day;
+                    const timeSlot = cls.schedule?.[0]?.timeSlot || "시간 미정";
+
                     return (
-                      <label key={cls.id} className="flex items-center gap-3 p-3 bg-white rounded-xl border border-[#e0e4e5] cursor-pointer hover:border-primary transition-all active:scale-[0.99]">
-                        <div className="relative flex items-center justify-center w-5 h-5 shrink-0">
+                      <label key={cls.id} className={`flex items-start gap-3 p-3.5 rounded-xl border transition-all cursor-pointer select-none ${
+                        isSelected ? 'bg-[#007AFF]/5 border-[#007AFF]' : 'bg-[#f8f9fa] border-[#e0e4e5] hover:border-slate-300'
+                      }`}>
+                        <div className="relative flex items-center justify-center w-5 h-5 shrink-0 mt-0.5">
                           <input
                             type="checkbox"
-                            className="peer appearance-none w-5 h-5 border border-slate-300 rounded bg-transparent checked:bg-primary checked:border-primary transition-all duration-200 cursor-pointer"
+                            className="peer appearance-none w-5 h-5 border border-slate-300 rounded bg-white checked:bg-[#007AFF] checked:border-[#007AFF] transition-all duration-200 cursor-pointer"
                             checked={isSelected}
                             onChange={() => handleToggleClass(cls.id)}
                           />
                           <span className="material-symbols-rounded absolute text-white opacity-0 peer-checked:opacity-100 pointer-events-none text-xs font-bold transition-opacity duration-200">check</span>
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-bold text-slate-800 truncate">{cls.title}</p>
-                          <p className="text-[10px] font-semibold text-slate-400 mt-0.5">
-                            {cls.schedule && cls.schedule.length > 0 ? (
-                              (() => {
-                                const baseDate = cls.schedule[0].date;
-                                const day = getDayOfWeek(baseDate || '');
-                                const daySuffix = language === "KR"
-                                  ? `(${DAY_LABELS[day]?.ko || ""})`
-                                  : ` (${DAY_LABELS[day]?.en || ""})`;
-                                return `${baseDate || ''}${daySuffix} • ${cls.schedule[0].timeSlot}`;
-                              })()
-                            ) : (
-                              t("discount.no_schedule") || "No schedule"
-                            )}
-                          </p>
+                        <div className="flex-1 min-w-0 space-y-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-[11px] font-bold text-[#007AFF] bg-white border border-[#007AFF]/20 px-2 py-0.5 rounded-full shadow-2xs">
+                              🗓️ {dayNameKr} ({day})
+                            </span>
+                            <span className="text-[11px] font-semibold text-slate-600">
+                              ⏰ {timeSlot}
+                            </span>
+                          </div>
+                          <p className="text-sm font-bold text-slate-800">{cls.title}</p>
                         </div>
                       </label>
                     );
@@ -399,12 +411,12 @@ const GroupClassDiscountEditor: React.FC<GroupClassDiscountEditorProps> = ({
             </div>
           </div>
 
-          {/* Submit Save Floating Bar */}
-          <div className="flex-shrink-0 w-full p-4 border-t border-slate-100 bg-white pb-[calc(1rem+env(safe-area-inset-bottom))] z-50">
+          {/* Submit Save Floating Bar (Safe Area 침범 예방) */}
+          <div className="flex-shrink-0 w-full p-4 border-t border-[#e0e4e5] bg-white z-50 shadow-lg">
             <button type="submit" disabled={loading}
-              className="w-full bg-primary text-white font-bold py-3.5 rounded-xl shadow-lg shadow-primary/20 active:scale-[0.98] transition-transform disabled:opacity-50 flex items-center justify-center gap-2">
+              className="w-full bg-[#007AFF] hover:bg-[#0066CC] text-white text-sm font-bold py-3.5 rounded-xl shadow-md active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-2">
               {loading && <span className="material-symbols-rounded animate-spin text-sm">progress_activity</span>}
-              {t("common.save") || "SAVE"}
+              <span>{isEditMode ? "번들 패키지 수정 저장" : "번들 패키지 신규 저장"}</span>
             </button>
           </div>
         </form>

@@ -71,12 +71,12 @@ export default function GroupShellMore({
       {isOpen && (
         <motion.div
           key="more-dropdown-wrapper"
-          className="absolute right-0 top-full"
-          style={{ zIndex: 100 }}
+          className="absolute right-0 top-full mt-2"
+          style={{ zIndex: 9999 }}
         >
-          {/* 백드롭 레이어: 외부 클릭 감지 및 차단을 위해 최상위 바로 아래인 z-[99]로 조정 */}
+          {/* 백드롭 레이어: 화면 전체 딤드 배경 및 외부 클릭 닫힘 */}
           <div
-            className="fixed inset-0 z-[99]"
+            className="fixed inset-0 z-[9998] bg-black/20 backdrop-blur-[1px]"
             onClick={(e) => {
               e.stopPropagation();
               e.preventDefault();
@@ -88,8 +88,8 @@ export default function GroupShellMore({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.95 }}
             transition={{ duration: 0.2 }}
-            className="more-dropdown"
-            style={{ position: 'relative', top: 0, zIndex: 100 }}
+            className="more-dropdown relative"
+            style={{ zIndex: 9999 }}
           >
             {/* 일반 메뉴 */}
             {menuItems.length > 0 && (
@@ -112,7 +112,6 @@ export default function GroupShellMore({
             {isAdmin && serviceItems.length > 0 && (
               <>
                 {(menuItems.length > 0) && <div className="divider" />}
-                <div className="menu-title">{t('group.more.service')}</div>
                 {serviceItems.map(item => (
                   <div
                     key={item.id}

@@ -305,7 +305,10 @@ function CheckoutContent() {
 
   return (
     <div className="font-sans text-[#2d3435] bg-[#f8f9fa] min-h-screen relative">
-      <header className="bg-white/80 backdrop-blur-xl border-b border-[#f2f4f4] fixed top-0 z-50 w-full">
+      <header 
+        className="bg-white/80 backdrop-blur-xl border-b border-[#f2f4f4] fixed top-0 z-50 w-full"
+        style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
+      >
         <div className="flex items-center justify-between px-4 h-16 max-w-[600px] mx-auto">
           <button onClick={() => router.back()} className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-[#f2f4f4] transition-colors">
             <span className="material-symbols-outlined text-[#596061]">arrow_back</span>
@@ -315,7 +318,10 @@ function CheckoutContent() {
         </div>
       </header>
 
-      <main className="pt-20 pb-[200px] px-4 max-w-[600px] mx-auto space-y-4">
+      <main 
+        className="pb-[200px] px-4 max-w-[600px] mx-auto space-y-4"
+        style={{ paddingTop: 'calc(80px + env(safe-area-inset-top, 0px))' }}
+      >
         {/* Reservation Summary */}
         <SectionCard icon="bed" title={t('stay.checkout.stay_summary')}>
           <div className="flex gap-4 p-4 bg-[#f8f9fa] rounded-2xl border border-[#e0e4e5]">

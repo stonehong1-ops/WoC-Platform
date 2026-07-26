@@ -68,7 +68,7 @@ export default function UniversalFeed({
 
   // Subscribe to own reported keys to instantly hide them
   useEffect(() => {
-    if (!currentUser) {
+    if (!currentUser || !currentUser.uid) {
       setReportedTargetIds(new Set());
       return;
     }

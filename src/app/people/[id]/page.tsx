@@ -13,6 +13,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { doc, onSnapshot, deleteDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase/clientApp';
 import ReportModal from '@/components/common/ReportModal';
+import MediaViewerPopup from '@/components/feed/MediaViewerPopup';
 import { toast } from 'sonner';
 
 const ADMIN_UIDS = ['7iaZAmaYY9dNNEShmJmROI8XrtH2'];
@@ -33,6 +34,8 @@ export default function PeopleDetailPage() {
   const [scrolled, setScrolled] = useState(false);
   const [showTodo, setShowTodo] = useState(false);
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [isMediaViewerOpen, setIsMediaViewerOpen] = useState(false);
+  const [viewerInitialIdx, setViewerInitialIdx] = useState(0);
   const menuRef = useRef<HTMLDivElement>(null);
   const [isBlocked, setIsBlocked] = useState(false);
 
@@ -401,7 +404,15 @@ export default function PeopleDetailPage() {
       </header>
 
       {/* Cinematic Hero */}
-      <section className="relative w-full h-[600px] overflow-hidden">
+      <section 
+        className="relative w-full h-[600px] overflow-hidden cursor-pointer"
+        onClick={() => {
+          if (person.heroImageUrl || person.profilePhotoUrl) {
+            setViewerInitialIdx(0);
+            setIsMediaViewerOpen(true);
+          }
+        }}
+      >
         {person.heroImageUrl && (
           <img alt={person.name} className="w-full h-full object-cover scale-105" src={person.heroImageUrl} />
         )}
@@ -409,7 +420,7 @@ export default function PeopleDetailPage() {
 
         {/* Partner Badge */}
         {person.partnerName && (
-          <div className="absolute top-24 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-black/40 backdrop-blur-md rounded-full pl-1 pr-3 py-1 border border-white/10">
+          <div className="absolute top-24 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-black/40 backdrop-blur-md rounded-full pl-1 pr-3 py-1 border border-white/10" onClick={(e) => e.stopPropagation()}>
             {person.partnerPhotoUrl && (
               <img alt={person.partnerName} className="w-6 h-6 rounded-full object-cover" src={person.partnerPhotoUrl} />
             )}
@@ -419,7 +430,7 @@ export default function PeopleDetailPage() {
 
         {/* Live Status */}
         {person.isLiveNow && person.liveStatus && (
-          <div className="absolute top-36 left-6">
+          <div className="absolute top-36 left-6" onClick={(e) => e.stopPropagation()}>
             <div className="inline-flex items-center gap-2 bg-primary/20 backdrop-blur-xl border border-primary/30 px-3 py-1.5 rounded-full">
               <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-300 opacity-75" />
@@ -434,7 +445,18 @@ export default function PeopleDetailPage() {
         <div className="absolute bottom-0 left-0 w-full p-6 flex flex-col items-start gap-3">
           <div className="flex items-end gap-6 mb-2">
             {person.profilePhotoUrl && (
-              <div className="p-1 bg-white/20 backdrop-blur-md rounded-full ring-2 ring-white/30 shrink-0">
+              <div 
+                className="p-1 bg-white/20 backdrop-blur-md rounded-full ring-2 ring-white/30 shrink-0 cursor-pointer"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (person.heroImageUrl && person.profilePhotoUrl) {
+                    setViewerInitialIdx(1);
+                  } else {
+                    setViewerInitialIdx(0);
+                  }
+                  setIsMediaViewerOpen(true);
+                }}
+              >
                 <img alt={person.name} className="w-20 h-20 rounded-full object-cover" src={person.profilePhotoUrl} />
               </div>
             )}
@@ -465,7 +487,7 @@ export default function PeopleDetailPage() {
 
           {/* Booking */}
           {person.bookingNote && (
-            <div className="w-full bg-black/30 backdrop-blur-md border border-white/10 rounded-xl p-3 mb-2">
+            <div className="w-full bg-black/30 backdrop-blur-md border border-white/10 rounded-xl p-3 mb-2" onClick={(e) => e.stopPropagation()}>
               <div className="flex items-center gap-2 mb-1">
                 <span className="material-symbols-outlined text-blue-300 text-[16px]">calendar_month</span>
                 <span className="text-white text-[11px] font-bold uppercase tracking-wider">{t('people.detail_booking_title')}</span>
@@ -475,7 +497,7 @@ export default function PeopleDetailPage() {
           )}
 
           {/* CTAs */}
-          <div className="grid grid-cols-2 gap-3 w-full">
+          <div className="grid grid-cols-2 gap-3 w-full" onClick={(e) => e.stopPropagation()}>
             <button className="bg-primary text-white py-3.5 rounded-xl text-[13px] font-semibold flex items-center justify-center gap-1 active:scale-95 transition-all shadow-lg">
               <span className="material-symbols-outlined text-[18px]">auto_stories</span> {t('people.detail_explore_journey')}
             </button>
@@ -702,6 +724,18 @@ export default function PeopleDetailPage() {
         targetSnapshot={`${person.name}\n${person.bio || ''}`}
         targetTitle={person.name}
       />
+      {/* Full Screen Media Viewer */}
+      {(person.heroImageUrl || person.profilePhotoUrl) && (
+        <MediaViewerPopup
+          isOpen={isMediaViewerOpen}
+          onClose={() => setIsMediaViewerOpen(false)}
+          media={[
+            ...(person.heroImageUrl ? [{ url: person.heroImageUrl, type: 'image' as const }] : []),
+            ...(person.profilePhotoUrl ? [{ url: person.profilePhotoUrl, type: 'image' as const }] : []),
+          ]}
+          initialIndex={viewerInitialIdx}
+        />
+      )}
     </main>
   );
 }

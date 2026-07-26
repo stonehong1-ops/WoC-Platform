@@ -154,7 +154,7 @@ const GroupShopItemEditor: React.FC<GroupShopItemEditorProps> = ({ group, onClos
       const finalImages = [...existingImages, ...uploadedUrls];
       const optionsArray = formData.optionsInput.split(',').map(s => s.trim()).filter(s => s);
 
-      const productData = {
+      const rawProductData = {
         groupId: group.id,
         groupName: group.name,
         sellerId: 'adminstone',
@@ -164,7 +164,7 @@ const GroupShopItemEditor: React.FC<GroupShopItemEditorProps> = ({ group, onClos
         category: formData.category,
         currency: formData.currency,
         price: Number(formData.price),
-        discountPrice: formData.discountPrice ? Number(formData.discountPrice) : undefined,
+        ...(formData.discountPrice ? { discountPrice: Number(formData.discountPrice) } : {}),
         brand: formData.brand || '',
         imageUrl: finalImages[0] || '',
         images: finalImages,
@@ -173,6 +173,8 @@ const GroupShopItemEditor: React.FC<GroupShopItemEditorProps> = ({ group, onClos
         status: formData.status as 'Active' | 'Stopped',
         deliveryType: 'both' as const,
       };
+
+      const productData = JSON.parse(JSON.stringify(rawProductData));
 
       if (isEditing && item) {
         await shopService.updateProduct(item.id, productData);
@@ -216,8 +218,8 @@ const GroupShopItemEditor: React.FC<GroupShopItemEditorProps> = ({ group, onClos
   if (!mounted) return null;
 
   const modalTitle = isEditing
-    ? (language === 'KR' ? '그룹 상품 수정' : 'Edit Group Product')
-    : (language === 'KR' ? '그룹 상품 등록' : 'Add Group Product');
+    ? (t('groupshop.edit_title') || '그룹상점 수정')
+    : (t('groupshop.create_title') || '새 그룹상점');
 
   const stepCategoryTitle = step === 1
     ? (language === 'KR' ? '사진 & 기본 정보' : 'Photos & Basic Info')
@@ -410,7 +412,8 @@ const GroupShopItemEditor: React.FC<GroupShopItemEditorProps> = ({ group, onClos
                     id="category"
                     value={formData.category}
                     onChange={handleInputChange}
-                    className="w-full bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-3 py-3 text-sm font-bold focus:border-[#007AFF] focus:ring-1 focus:ring-[#007AFF] outline-none transition-all"
+                    className="w-full bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-3 py-3 text-sm font-bold focus:border-[#007AFF] focus:ring-1 focus:ring-[#007AFF] outline-none transition-all appearance-none cursor-pointer"
+                    style={{ WebkitAppearance: 'none', appearance: 'none' }}
                   >
                     <option value="Shoes">Shoes (신발)</option>
                     <option value="Dresses">Dresses (의류)</option>
@@ -460,7 +463,8 @@ const GroupShopItemEditor: React.FC<GroupShopItemEditorProps> = ({ group, onClos
                       id="currency"
                       value={formData.currency}
                       onChange={handleInputChange}
-                      className="w-full bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-3 py-3 text-sm font-bold focus:border-[#007AFF] focus:ring-1 focus:ring-[#007AFF] outline-none transition-all"
+                      className="w-full bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-3 py-3 text-sm font-bold focus:border-[#007AFF] focus:ring-1 focus:ring-[#007AFF] outline-none transition-all appearance-none cursor-pointer"
+                      style={{ WebkitAppearance: 'none', appearance: 'none' }}
                     >
                       <option value="KRW">KRW (₩)</option>
                       <option value="USD">USD ($)</option>

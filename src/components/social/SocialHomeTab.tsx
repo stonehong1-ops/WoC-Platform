@@ -257,7 +257,32 @@ export default function SocialHomeTab({ social, targetDate, onChatWithOrganizer,
   const moments = social.moments || [];
 
   return (
-    <div className="pb-8">
+    <div className="space-y-4 pb-12 text-left">
+      {/* Moments Gallery (히어로 바로 아래 이동) */}
+      {moments.length > 0 && (
+        <div className="mx-4 mt-4 border border-[#e0e4e5] rounded-2xl overflow-hidden shadow-xs">
+          <div className="bg-[#f8f9fa] px-4 py-2.5 border-b border-[#e0e4e5] flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="material-symbols-rounded text-sm text-primary">photo_library</span>
+              <p className="text-[10px] font-black text-primary uppercase tracking-widest">{t('social.moments')}</p>
+            </div>
+            <span className="text-[10px] font-bold text-slate-400">{moments.length}개의 순간</span>
+          </div>
+          <div className="px-4 py-4">
+            <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide snap-x">
+              {moments.map((img, i) => (
+                <div 
+                  key={i} 
+                  onClick={() => onShowImages?.(moments, i)}
+                  className="flex-shrink-0 w-32 aspect-[3/4] rounded-xl overflow-hidden border border-[#e0e4e5] bg-slate-50 snap-start active:scale-95 transition-transform cursor-pointer shadow-xs hover:border-primary"
+                >
+                  <img src={img} alt={`${t('social.moment')} ${i + 1}`} className="w-full h-full object-cover" />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
       {/* Next Event */}
       <div className="mx-4 mt-4 border border-[#e0e4e5] rounded-2xl overflow-hidden bg-white">
         <div className="bg-[#f8f9fa] px-4 py-2.5 border-b border-[#e0e4e5] flex items-center gap-2">
@@ -642,29 +667,6 @@ export default function SocialHomeTab({ social, targetDate, onChatWithOrganizer,
           )}
         </div>
       </div>
-
-      {/* Moments Gallery */}
-      {moments.length > 0 && (
-        <div className="mx-4 mt-4 border border-[#e0e4e5] rounded-2xl overflow-hidden mb-4">
-          <div className="bg-[#f8f9fa] px-4 py-2.5 border-b border-[#e0e4e5] flex items-center gap-2">
-            <span className="material-symbols-rounded text-sm text-primary">photo_library</span>
-            <p className="text-[10px] font-black text-primary uppercase tracking-widest">{t('social.moments')}</p>
-          </div>
-          <div className="px-4 py-4">
-            <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide snap-x">
-              {moments.map((img, i) => (
-                <div 
-                  key={i} 
-                  onClick={() => onShowImages?.(moments, i)}
-                  className="flex-shrink-0 w-32 aspect-[3/4] rounded-xl overflow-hidden border border-[#e0e4e5] bg-slate-50 snap-start active:scale-95 transition-transform"
-                >
-                  <img src={img} alt={`${t('social.moment')} ${i + 1}`} className="w-full h-full object-cover" />
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
 
       {selectedNamecardUser && (
         <NamecardModal

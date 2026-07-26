@@ -27,48 +27,94 @@ if (!admin.apps.length) {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { tokens, title, message, data } = body;
+    const { targets, tokens, title, message, data, unreadCount } = body;
 
-    if (!tokens || tokens.length === 0) {
-      return NextResponse.json({ error: 'No tokens provided' }, { status: 400 });
+    // 1. 사용자별 개별 target 묶음 처리 (그룹 채팅 및 개별 사용자 Badge Count 오염 방지)
+    const targetList: Array<{ tokens: string[]; unreadCount?: number }> = [];
+
+    if (Array.isArray(targets) && targets.length > 0) {
+      targets.forEach(t => {
+        if (t.tokens && Array.isArray(t.tokens) && t.tokens.length > 0) {
+          targetList.push({
+            tokens: t.tokens,
+            unreadCount: typeof t.unreadCount === 'number' ? t.unreadCount : 0
+          });
+        }
+      });
+    } else if (Array.isArray(tokens) && tokens.length > 0) {
+      // 단일 사용자/단일 묶음 요청 하위 호환
+      targetList.push({
+        tokens: tokens,
+        unreadCount: typeof unreadCount === 'number' ? unreadCount : 0
+      });
     }
 
-    const payload = {
-      notification: {
-        title: title || '알림',
-        body: message || '',
-      },
-      data: data || {},
-      tokens: tokens,
-    };
+    if (targetList.length === 0) {
+      return NextResponse.json({ error: 'No tokens or targets provided' }, { status: 400 });
+    }
 
-    // sendEachForMulticast를 사용하여 여러 디바이스 토큰에 한 번에 전송
-    const response = await admin.messaging().sendEachForMulticast(payload);
+    // 2. 수신자 사용자별로 개별 FCM Message 생성
+    const messagesToSend: admin.messaging.Message[] = [];
+    const allTokensMap: string[] = [];
+
+    targetList.forEach(target => {
+      const badgeVal = Math.max(0, target.unreadCount || 0);
+
+      target.tokens.forEach(token => {
+        allTokensMap.push(token);
+        messagesToSend.push({
+          token: token,
+          notification: {
+            title: title || '알림',
+            body: message || '',
+          },
+          data: data || {},
+          android: {
+            notification: {
+              notificationCount: badgeVal
+            }
+          },
+          apns: {
+            payload: {
+              aps: {
+                badge: badgeVal
+              }
+            }
+          }
+        });
+      });
+    });
+
+    if (messagesToSend.length === 0) {
+      return NextResponse.json({ error: 'No valid message targets created' }, { status: 400 });
+    }
+
+    // sendEach를 사용하여 각 사용자별 독립 payload(badgeCount)로 전송
+    const response = await admin.messaging().sendEach(messagesToSend);
     
-    // 실패한 토큰 자동 정리 — 만료/무효 토큰은 Firestore에서 삭제
+    // 3. 무효/만료 토큰 자동 정리
     const failedTokens: any[] = [];
     const invalidTokens: string[] = [];
     if (response.failureCount > 0) {
       response.responses.forEach((resp, idx) => {
         if (!resp.success) {
           const errorCode = resp.error?.code;
+          const targetToken = allTokensMap[idx];
           failedTokens.push({
-            token: tokens[idx],
+            token: targetToken,
             error: resp.error?.message,
             code: errorCode
           });
-          // 무효 토큰 식별 (만료, 미등록, 잘못된 인수)
           if (
             errorCode === 'messaging/registration-token-not-registered' ||
             errorCode === 'messaging/invalid-registration-token' ||
             errorCode === 'messaging/invalid-argument'
           ) {
-            invalidTokens.push(tokens[idx]);
+            invalidTokens.push(targetToken);
           }
         }
       });
 
-      // 무효 토큰 일괄 정리
       if (invalidTokens.length > 0) {
         try {
           const firestore = admin.firestore();

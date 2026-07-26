@@ -231,70 +231,99 @@ interface ClassEntry {
   timeSlot: string;
 }
 
-function TimelineEventItem({ ev, onClick, language }: { ev: any; onClick: () => void; language: string }) {
-  const catColors: Record<string, { bg: string; text: string; labelKo: string; labelEn: string }> = {
-    milonga: { bg: "bg-rose-50 text-rose-600 border border-rose-100/30", text: "text-rose-700", labelKo: "소셜", labelEn: "Social" },
-    practica: { bg: "bg-amber-50 text-amber-600 border border-amber-100/30", text: "text-amber-700", labelKo: "쁘락띠까", labelEn: "Practica" },
-    class: { bg: "bg-blue-50 text-blue-600 border border-blue-100/30", text: "text-blue-700", labelKo: "클래스", labelEn: "Class" },
+function TimelineEventItem({ 
+  ev, 
+  onClick, 
+  language, 
+  isFirst, 
+  isLast, 
+  showTimeLabel 
+}: { 
+  ev: any; 
+  onClick: () => void; 
+  language: string; 
+  isFirst?: boolean; 
+  isLast?: boolean; 
+  showTimeLabel?: boolean; 
+}) {
+  const catColors: Record<string, { badgeBg: string; badgeText: string; accentBorder: string; dotBg: string; labelKo: string; labelEn: string }> = {
+    milonga: { badgeBg: "bg-red-50 text-red-500", badgeText: "text-red-500", accentBorder: "border-l-4 border-l-red-400", dotBg: "bg-red-500", labelKo: "소셜", labelEn: "Social" },
+    practica: { badgeBg: "bg-amber-50 text-amber-600", badgeText: "text-amber-600", accentBorder: "border-l-4 border-l-amber-400", dotBg: "bg-amber-400", labelKo: "쁘락띠까", labelEn: "Practica" },
+    class: { badgeBg: "bg-blue-50 text-blue-600", badgeText: "text-blue-600", accentBorder: "border-l-4 border-l-blue-400", dotBg: "bg-blue-500", labelKo: "클래스", labelEn: "Class" },
   };
 
-  const cat = catColors[ev.type] || { bg: "bg-slate-50 text-slate-600 border border-slate-100/30", text: "text-slate-700", labelKo: "기타", labelEn: "Misc" };
+  const cat = catColors[ev.type] || { badgeBg: "bg-slate-100 text-slate-600", badgeText: "text-slate-600", accentBorder: "border-l-4 border-l-slate-300", dotBg: "bg-slate-400", labelKo: "기타", labelEn: "Misc" };
   const label = language === "KR" ? cat.labelKo : cat.labelEn;
 
   return (
-    <button
-      onClick={onClick}
-      className="w-full flex items-center justify-between text-left py-2.5 px-3 hover:bg-slate-50 rounded-xl transition-all border border-transparent"
-    >
-      <div className="flex items-start gap-3.5 min-w-0 flex-1">
-        {/* 좌측: 시간 및 타입 칩 수직 스택 */}
-        <div className="flex flex-col items-center gap-1 flex-shrink-0 w-[52px]">
-          {/* 시간 */}
-          <span className="text-[11px] font-mono font-black text-slate-800 bg-slate-100/80 px-1.5 py-0.5 rounded-md leading-none w-full text-center">
-            {ev.startTime}
-          </span>
-          {/* 타입 칩 */}
-          <span className={`text-[8px] font-black px-1 py-0.5 rounded-md leading-none w-full text-center ${cat.bg}`}>
+    <div className="relative flex items-start gap-3">
+      {/* 1. 좌측 시간 & 세로 라인 + 원형 노드 */}
+      <div className="relative flex flex-col items-center shrink-0 w-16 pt-3 self-stretch">
+        {/* 세로 타임라인 이음선 (수직 통과) */}
+        <div 
+          className={`absolute w-[2px] bg-slate-200/90 left-1/2 -translate-x-1/2 z-0 ${
+            isFirst && isLast 
+              ? 'hidden' 
+              : isFirst 
+              ? 'top-4 -bottom-3' 
+              : isLast 
+              ? '-top-3 h-7' 
+              : '-top-3 -bottom-3'
+          }`} 
+        />
+
+        {/* 시간 텍스트 (동일시간 첫 카드에만 1회 노출) */}
+        <div className="h-4 flex items-center justify-center mb-2 z-10">
+          {showTimeLabel ? (
+            <span className="text-[13px] font-black text-slate-800 tracking-tight leading-none bg-slate-50/50 px-1 rounded">
+              {ev.startTime || '14:00'}
+            </span>
+          ) : null}
+        </div>
+
+        {/* 원형 노드 포인트 (위치는 현재 그대로 유지) */}
+        <div className={`w-3 h-3 rounded-full ${cat.dotBg} z-10 shadow-xs border-2 border-white shrink-0`} />
+      </div>
+
+      {/* 2. 우측 이벤트 카드 */}
+      <button
+        onClick={onClick}
+        className={`flex-1 bg-white rounded-2xl p-4 shadow-sm border border-slate-100/90 ${cat.accentBorder} hover:shadow-md transition-all active:scale-[0.99] text-left flex items-center justify-between gap-3 group`}
+      >
+        <div className="space-y-1.5 min-w-0 flex-1">
+          {/* 타입 뱃지 */}
+          <span className={`inline-block text-[11px] font-bold px-2.5 py-0.5 rounded-full ${cat.badgeBg}`}>
             {label}
           </span>
-        </div>
-        
-        {/* 우측: 제목 및 메타정보 */}
-        <div className="min-w-0 flex-1 flex flex-col gap-0.5 pt-0.5">
-          {/* 제목 라인 */}
-          <span className="text-[12.5px] font-black text-slate-700 leading-snug line-clamp-2">
+          {/* 이벤트 타이틀 */}
+          <h4 className="text-[15px] font-black text-slate-900 leading-tight group-hover:text-primary transition-colors truncate">
             {ev.title}
-          </span>
-          
-          {/* 하단 메타 정보 라인 */}
-          <div className="flex items-center gap-2 text-[10px] text-slate-400 font-semibold flex-wrap">
+          </h4>
+          {/* 베뉴 장소 & DJ/오너 메타 */}
+          <div className="flex items-center gap-3 text-xs font-semibold text-slate-400 flex-wrap">
             {ev.location && (
-              <span className="flex items-center gap-0.5 max-w-[100px] truncate">
-                <span className="material-symbols-outlined !text-[10px] text-slate-300">location_on</span>
-                {ev.location}
-              </span>
-            )}
-            {ev.org && (
-              <span className="flex items-center gap-0.5 max-w-[100px] truncate">
-                <span className="material-symbols-outlined !text-[10px] text-slate-300">person</span>
-                {ev.org}
+              <span className="flex items-center gap-1">
+                <span className="material-symbols-rounded text-sm text-slate-300">location_on</span>
+                <span>{ev.location}</span>
               </span>
             )}
             {ev.djOrInstructor && (
-              <span className="flex items-center gap-0.5 max-w-[100px] truncate">
-                <span className="material-symbols-outlined !text-[10px] text-slate-300">
+              <span className="flex items-center gap-1">
+                <span className="material-symbols-rounded text-sm text-slate-300">
                   {ev.type === "class" ? "school" : "headphones"}
                 </span>
-                {ev.djOrInstructor}
+                <span>{ev.djOrInstructor}</span>
               </span>
             )}
           </div>
         </div>
-      </div>
-      <span className="material-symbols-outlined !text-[16px] text-slate-300 flex-shrink-0 ml-2">
-        chevron_right
-      </span>
-    </button>
+
+        {/* 우측 꺾쇠 화살표 아이콘 */}
+        <span className="material-symbols-rounded text-slate-300 group-hover:text-primary transition-colors text-lg shrink-0">
+          chevron_right
+        </span>
+      </button>
+    </div>
   );
 }
 
@@ -376,6 +405,71 @@ export default function TodayPageContent() {
   const [djSortType, setDjSortType] = useState<"count" | "name">("count");
   const [groupSortType, setGroupSortType] = useState<"count" | "name">("count");
 
+  // DJ 일정 바텀시트 모달 상태
+  const [showDjScheduleBottomSheet, setShowDjScheduleBottomSheet] = useState(false);
+  const closeDjScheduleBottomSheet = useCallback(() => setShowDjScheduleBottomSheet(false), []);
+  useBackButtonClose(showDjScheduleBottomSheet, closeDjScheduleBottomSheet);
+
+  // 선택된 DJ의 오늘 이후 대기 중인 일정 계산
+  const upcomingDjSchedules = useMemo(() => {
+    if (selectedDjName === "All") return [];
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+
+    const upcoming: { social: Social; dateStr: string; dateObj: Date; djInfo: any }[] = [];
+
+    allSocials.forEach(s => {
+      if (!s.djs || s.djs.length === 0) return;
+      s.djs.forEach((dj: any) => {
+        if (!dj.djName) return;
+        const parts = dj.djName.split(/[,/&+\s]+/).map((n: string) => n.trim().toLowerCase());
+        if (parts.includes(selectedDjName.toLowerCase())) {
+          const dObj = normalizeDateStr(dj.date);
+          if (dObj && dObj.getTime() >= now.getTime()) {
+            upcoming.push({ social: s, dateStr: dj.date, dateObj: dObj, djInfo: dj });
+          }
+        }
+      });
+    });
+
+    upcoming.sort((a, b) => a.dateObj.getTime() - b.dateObj.getTime());
+    return upcoming;
+  }, [allSocials, selectedDjName]);
+
+  // 현재 선택된 그룹 객체
+  const selectedGroup = useMemo(() => {
+    return allGroups.find(g => g.id === selectedGroupId) || null;
+  }, [allGroups, selectedGroupId]);
+
+  // 선택된 그룹의 오늘 활동 개수 계산
+  const groupTodayEventsCount = useMemo(() => {
+    if (selectedGroupId === "All" || !selectedGroup) return 0;
+    const ymd = parseDateToYmd(selectedDate);
+    const matchedSocialsCount = allSocials.filter(s => {
+      const isGrp = isVenueMatched(s.venueId, selectedGroup) || (s.organizerId === selectedGroup.id);
+      if (!isGrp) return false;
+      if (s.type === "popup" && s.date) {
+        const d = toJsDate(s.date);
+        return parseDateToYmd(d) === ymd;
+      }
+      if (s.type === "regular" && s.dayOfWeek !== undefined) {
+        return Number(s.dayOfWeek) === selectedDate.getDay();
+      }
+      return false;
+    }).length;
+
+    const matchedClassesCount = allClasses.filter(({ cls }) => {
+      if (cls.groupId !== selectedGroup.id || cls.status !== "Open") return false;
+      return cls.schedule?.some((sch: any) => {
+        const dStr = parseDateStr(sch.date);
+        const cDate = normalizeDateStr(dStr);
+        return cDate && parseDateToYmd(cDate) === ymd;
+      });
+    }).length;
+
+    return matchedSocialsCount + matchedClassesCount;
+  }, [selectedGroupId, selectedGroup, allSocials, allClasses, selectedDate]);
+
   useEffect(() => {
     if (showFilterDropdown) {
       if (selectedDjName !== "All") {
@@ -392,11 +486,6 @@ export default function TodayPageContent() {
   const { value: viewSocialId, openModal: openSocialModal, closeModal: closeSocialModal, searchParams: socialParams } = useModalNavigation("viewSocial");
   const { value: viewClassId, openModal: openClassModal, closeModal: closeClassModal } = useModalNavigation("viewClass");
   const { value: viewEventId, openModal: openEventModal, closeModal: closeEventModal } = useModalNavigation("viewEvent");
-
-  // 현재 선택된 그룹 객체
-  const selectedGroup = useMemo(() => {
-    return allGroups.find(g => g.id === selectedGroupId) || null;
-  }, [allGroups, selectedGroupId]);
 
   const handleWeekNav = (direction: number) => {
     const nextOffset = weekOffset + direction;
@@ -2664,6 +2753,98 @@ export default function TodayPageContent() {
         )}
       </div>
 
+      {/* ── 클럽/DJ 선택 시 상단 요약 카드 (약 1.5cm / 60px 높이) ── */}
+      {selectedGroupId !== "All" && selectedGroup && (
+        <div className="bg-white border-b border-slate-100 px-4 py-2.5 flex items-center justify-between animate-in fade-in slide-in-from-top-2 duration-200">
+          <div className="flex items-center gap-3 min-w-0 flex-1">
+            <div className="w-10 h-10 rounded-xl overflow-hidden bg-slate-100 border border-slate-200 shrink-0 relative">
+              {selectedGroup.logoUrl || selectedGroup.imageUrl ? (
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <img src={selectedGroup.logoUrl || selectedGroup.imageUrl} alt="Venue" className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-primary font-black text-xs">
+                  {selectedGroup.name?.slice(0, 2)}
+                </div>
+              )}
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs font-black text-slate-800 truncate">
+                  {language === "KR" ? (selectedGroup.nativeName || selectedGroup.name) : selectedGroup.name}
+                </span>
+                {selectedGroup.ownerName && (
+                  <span className="text-[11px] font-medium text-slate-400 shrink-0">
+                    오너: {selectedGroup.ownerName}
+                  </span>
+                )}
+              </div>
+              <p className="text-[11px] font-medium text-slate-400 truncate">
+                {venuesMap[selectedGroup.venueId || '']?.address || selectedGroup.location?.address || 'Seoul'}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <span className="px-2.5 py-1 bg-primary/10 text-primary text-xs font-black rounded-full">
+              오늘 활동 {groupTodayEventsCount}개
+            </span>
+            <button
+              onClick={() => setSelectedGroupId("All")}
+              className="w-7 h-7 flex items-center justify-center rounded-full text-slate-400 hover:bg-slate-100 active:scale-95 transition-all"
+              title="필터 해제"
+            >
+              <span className="material-symbols-rounded text-sm">close</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {selectedDjName !== "All" && (
+        <div className="bg-white border-b border-slate-100 px-4 py-2.5 flex items-center justify-between animate-in fade-in slide-in-from-top-2 duration-200">
+          <div className="flex items-center gap-3 min-w-0 flex-1">
+            <div className="w-10 h-10 rounded-full overflow-hidden bg-primary/10 border border-primary/20 shrink-0 flex items-center justify-center">
+              <span className="material-symbols-rounded text-primary text-xl">headphones</span>
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs font-black text-slate-800 truncate">
+                  {selectedDjName}
+                </span>
+                {formatDjFilterName(selectedDjName, language) !== selectedDjName && (
+                  <span className="text-[11px] font-medium text-slate-400 shrink-0">
+                    ({formatDjFilterName(selectedDjName, language)})
+                  </span>
+                )}
+              </div>
+              <button
+                onClick={() => {
+                  toast.info(t('common.chat_connected', '1:1 채팅 문의로 이동합니다.'));
+                  router.push('/chat');
+                }}
+                className="inline-flex items-center gap-1 text-[11px] font-bold text-primary hover:underline mt-0.5"
+              >
+                <span className="material-symbols-rounded text-[13px]">chat</span>
+                <span>1:1 채팅 문의</span>
+              </button>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={() => setShowDjScheduleBottomSheet(true)}
+              className="px-2.5 py-1 bg-amber-50 text-amber-600 border border-amber-200 text-xs font-black rounded-full hover:bg-amber-100 transition-colors cursor-pointer"
+            >
+              대기 중인 DJ 일정 {upcomingDjSchedules.length}개
+            </button>
+            <button
+              onClick={() => setSelectedDjName("All")}
+              className="w-7 h-7 flex items-center justify-center rounded-full text-slate-400 hover:bg-slate-100 active:scale-95 transition-all"
+              title="필터 해제"
+            >
+              <span className="material-symbols-rounded text-sm">close</span>
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* ── Content ── */}
       <div className="px-4 pt-5 pb-6">
         {todayViewMode === "calendar" ? (
@@ -2688,28 +2869,34 @@ export default function TodayPageContent() {
                 </div>
 
                 {loadingSocials || loadingClasses ? (
-                  <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 space-y-3">
+                  <div className="space-y-3">
                     {[1, 2].map(i => (
-                      <div key={i} className="h-10 w-full rounded-xl bg-slate-100 animate-pulse" />
+                      <div key={i} className="h-16 w-full rounded-2xl bg-slate-100 animate-pulse" />
                     ))}
                   </div>
                 ) : dayTimelineEvents.length > 0 ? (
-                  <div className="bg-white rounded-2xl border border-slate-100 p-3 shadow-sm space-y-2">
-                    {dayTimelineEvents.map((ev) => (
-                      <TimelineEventItem 
-                        key={ev.id} 
-                        ev={ev} 
-                        onClick={() => {
-                          if (ev.type === "class") {
-                            openClassModal(ev.id);
-                          } else {
-                            const dateStr = parseDateToYmd(selectedDate);
-                            router.push(`/social?viewSocial=${ev.id}&viewDate=${dateStr}`);
-                          }
-                        }} 
-                        language={language}
-                      />
-                    ))}
+                  <div className="space-y-3">
+                    {dayTimelineEvents.map((ev, idx) => {
+                      const showTimeLabel = idx === 0 || dayTimelineEvents[idx - 1].startTime !== ev.startTime;
+                      return (
+                        <TimelineEventItem 
+                          key={ev.id} 
+                          ev={ev} 
+                          isFirst={idx === 0}
+                          isLast={idx === dayTimelineEvents.length - 1}
+                          showTimeLabel={showTimeLabel}
+                          onClick={() => {
+                            if (ev.type === "class") {
+                              openClassModal(ev.id);
+                            } else {
+                              const dateStr = parseDateToYmd(selectedDate);
+                              router.push(`/social?viewSocial=${ev.id}&viewDate=${dateStr}`);
+                            }
+                          }} 
+                          language={language}
+                        />
+                      );
+                    })}
                   </div>
                 ) : (
                   <div className="flex items-center justify-center py-6 bg-white rounded-2xl border border-dashed border-slate-200">
@@ -2731,28 +2918,34 @@ export default function TodayPageContent() {
                 </div>
 
                 {loadingSocials || loadingClasses ? (
-                  <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 space-y-3">
+                  <div className="space-y-3">
                     {[1, 2].map(i => (
-                      <div key={i} className="h-10 w-full rounded-xl bg-slate-100 animate-pulse" />
+                      <div key={i} className="h-16 w-full rounded-2xl bg-slate-100 animate-pulse" />
                     ))}
                   </div>
                 ) : nightTimelineEvents.length > 0 ? (
-                  <div className="bg-white rounded-2xl border border-slate-100 p-3 shadow-sm space-y-2">
-                    {nightTimelineEvents.map((ev) => (
-                      <TimelineEventItem 
-                        key={ev.id} 
-                        ev={ev} 
-                        onClick={() => {
-                          if (ev.type === "class") {
-                            openClassModal(ev.id);
-                          } else {
-                            const dateStr = parseDateToYmd(selectedDate);
-                            router.push(`/social?viewSocial=${ev.id}&viewDate=${dateStr}`);
-                          }
-                        }} 
-                        language={language}
-                      />
-                    ))}
+                  <div className="space-y-3">
+                    {nightTimelineEvents.map((ev, idx) => {
+                      const showTimeLabel = idx === 0 || nightTimelineEvents[idx - 1].startTime !== ev.startTime;
+                      return (
+                        <TimelineEventItem 
+                          key={ev.id} 
+                          ev={ev} 
+                          isFirst={idx === 0}
+                          isLast={idx === nightTimelineEvents.length - 1}
+                          showTimeLabel={showTimeLabel}
+                          onClick={() => {
+                            if (ev.type === "class") {
+                              openClassModal(ev.id);
+                            } else {
+                              const dateStr = parseDateToYmd(selectedDate);
+                              router.push(`/social?viewSocial=${ev.id}&viewDate=${dateStr}`);
+                            }
+                          }} 
+                          language={language}
+                        />
+                      );
+                    })}
                   </div>
                 ) : (
                   <div className="flex items-center justify-center py-6 bg-white rounded-2xl border border-dashed border-slate-200">
@@ -3450,6 +3643,99 @@ export default function TodayPageContent() {
         </div>
       )}
 
+
+      {/* ── 대기 중인 DJ 일정 바텀시트 팝업 ── */}
+      {showDjScheduleBottomSheet && (
+        <div className="fixed inset-0 z-[100000] flex items-end justify-center bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
+          <div
+            className="fixed inset-0"
+            onClick={closeDjScheduleBottomSheet}
+          />
+          <div className="relative w-full max-w-lg bg-white rounded-t-3xl shadow-2xl p-5 z-10 max-h-[80vh] flex flex-col animate-in slide-in-from-bottom duration-300">
+            {/* 드래그 핸들 바 */}
+            <div className="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-4 shrink-0" />
+
+            {/* 바텀시트 헤더 */}
+            <div className="flex items-center justify-between pb-4 border-b border-slate-100 shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="w-11 h-11 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center">
+                  <span className="material-symbols-rounded text-primary text-2xl">headphones</span>
+                </div>
+                <div>
+                  <h3 className="text-base font-black text-slate-800">
+                    {selectedDjName} <span className="text-xs font-bold text-slate-400">({formatDjFilterName(selectedDjName, language)})</span>
+                  </h3>
+                  <p className="text-xs font-bold text-amber-600">
+                    대기 중인 DJ 일정 {upcomingDjSchedules.length}개
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={closeDjScheduleBottomSheet}
+                className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200 active:scale-95 transition-all"
+              >
+                <span className="material-symbols-rounded text-lg">close</span>
+              </button>
+            </div>
+
+            {/* 일정 스크롤 목록 */}
+            <div className="flex-1 overflow-y-auto py-4 space-y-3 no-scrollbar">
+              {upcomingDjSchedules.length > 0 ? (
+                upcomingDjSchedules.map(({ social, dateStr, djInfo }, idx) => (
+                  <button
+                    key={`${social.id}_${dateStr}_${idx}`}
+                    onClick={() => {
+                      closeDjScheduleBottomSheet();
+                      router.push(`/social?viewSocial=${social.id}&date=${dateStr}`);
+                    }}
+                    className="w-full text-left bg-slate-50 hover:bg-slate-100/80 border border-slate-200/80 rounded-2xl p-4 transition-all active:scale-[0.98] group flex items-center justify-between gap-3"
+                  >
+                    <div className="space-y-1 min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="px-2.5 py-0.5 bg-amber-500 text-white text-[10px] font-black rounded-full shadow-xs">
+                          {dateStr}
+                        </span>
+                        <span className="text-xs font-bold text-slate-500">
+                          {social.startTime ? `${social.startTime} ~ ${social.endTime || ''}` : '시간 미정'}
+                        </span>
+                      </div>
+                      <h4 className="text-sm font-black text-slate-800 group-hover:text-primary transition-colors truncate">
+                        {social.titleNative || social.title}
+                      </h4>
+                      <p className="text-xs font-medium text-slate-500 truncate">
+                        📍 {venuesMap[social.venueId || '']?.name || social.venueName || '베뉴 미정'}
+                      </p>
+                    </div>
+                    <span className="material-symbols-rounded text-slate-300 group-hover:text-primary text-xl shrink-0">
+                      arrow_forward_ios
+                    </span>
+                  </button>
+                ))
+              ) : (
+                <div className="py-12 text-center text-slate-400">
+                  <span className="material-symbols-rounded text-4xl mb-2 block">event_busy</span>
+                  <p className="text-xs font-bold">예정된 DJ 일정이 없습니다.</p>
+                </div>
+              )}
+            </div>
+
+            {/* 하단 1:1 채팅 문의 버튼 */}
+            <div className="pt-3 border-t border-slate-100 shrink-0">
+              <button
+                onClick={() => {
+                  closeDjScheduleBottomSheet();
+                  toast.info(t('common.chat_connected', '1:1 채팅 문의로 이동합니다.'));
+                  router.push('/chat');
+                }}
+                className="w-full py-3.5 bg-primary text-white text-sm font-black rounded-2xl shadow-sm hover:bg-blue-600 active:scale-95 transition-all flex items-center justify-center gap-2"
+              >
+                <span className="material-symbols-rounded text-base">chat</span>
+                <span>{selectedDjName} 님에게 1:1 채팅 문의하기</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <Suspense fallback={null}>
         <SocialCreateModalTrigger />

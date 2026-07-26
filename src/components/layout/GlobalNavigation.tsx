@@ -257,16 +257,6 @@ export default function GlobalNavigation(props: { children: React.ReactNode }) {
   
   const isGroupDetailPage = pathname.startsWith("/groups/");
 
-  if (isGroupDetailPage) {
-    return (
-      <div className="min-h-screen bg-[#faf8ff] font-manrope flex flex-col">
-        <main className="flex-1 w-full relative">
-          {children}
-        </main>
-      </div>
-    );
-  }
-
   // 헤더 60px 고정 (서브메뉴 제거)
   const placeholderHeight = subHeader ? 60 + subHeaderHeight : 60;
 
@@ -295,6 +285,16 @@ export default function GlobalNavigation(props: { children: React.ReactNode }) {
       lastSentVisibility.current = true;
     }
   }, [effectiveIsGlobalNavHidden, setIsHeaderVisible]);
+
+  if (isGroupDetailPage) {
+    return (
+      <div className="min-h-screen bg-[#faf8ff] font-manrope flex flex-col">
+        <main className="flex-1 w-full relative">
+          {children}
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#faf8ff] font-manrope flex flex-col">

@@ -84,7 +84,7 @@ export function useBookingEngine() {
       // Automated Chat Notification to Host (Seller/Organizer)
       try {
         const hostId = data.hostId || 'adminstone';
-        if (hostId) {
+        if (hostId && hostId !== user.uid) {
           const roomId = await chatService.getOrCreatePrivateRoom([user.uid, hostId], user.uid, 'business');
           
           const sym = data.currency === 'USD' ? '$' : data.currency === 'KRW' ? '₩' : data.currency + ' ';

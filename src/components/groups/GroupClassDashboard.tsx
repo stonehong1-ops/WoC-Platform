@@ -13,7 +13,9 @@ import { classRegistrationService } from '@/lib/firebase/classRegistrationServic
 import UserBadge from '@/components/common/UserBadge';
 import { toast } from 'sonner';
 import ClassPageContent from '@/app/class/[groupId]/ClassPageContent';
+import ClassDetail from '@/components/class/ClassDetail';
 import { safeDate } from '@/lib/utils/safeDate';
+import { formatInstructorNames } from '@/app/social/constants/seoulRegions';
 
 
 interface GroupClassDashboardProps {
@@ -98,6 +100,7 @@ export default function GroupClassDashboard({ group, members, onApplyClick, open
   const { openModal: openDashboardClassModal, closeModal: closeDashboardClassModal, value: dashboardClassId } = useModalNavigation('dashboardClassId');
   const selectedDashboardClass = dashboardClassId;
   const [activeWeekIndex, setActiveWeekIndex] = useState<number>(0);
+  const [classDetailItemId, setClassDetailItemId] = useState<string | null>(null);
 
 
 
@@ -510,7 +513,7 @@ export default function GroupClassDashboard({ group, members, onApplyClick, open
   };
 
   const handleItemClick = (item: any) => {
-    openClassFlow('apply', { modal: item.id, month: currentMonthStr });
+    setClassDetailItemId(item.id);
   };
 
   const getDayOfWeek = (dateStr: string, targetMonth?: string): string => {
@@ -1083,7 +1086,7 @@ export default function GroupClassDashboard({ group, members, onApplyClick, open
                   <div className="flex flex-col gap-1.5">
                     {classesInDay.map((cls) => {
                       const stats = classRealtimeStats[cls.id] || { leaders: 0, followers: 0, percent: 0, membersList: [] };
-                      const teachers = cls.instructors?.map(ins => ins.name).join(' & ') || (language === 'KR' ? '미지정 강사' : 'TBD');
+                      const teachers = cls.instructors?.map(ins => formatInstructorNames((ins as any).instructorNativeName || (ins as any).nameNative || ins.name, language)).join(' & ') || (language === 'KR' ? '미지정 강사' : 'TBD');
                       
                       const currentClassObj = monthClasses.find(c => c.id === cls.id);
                       const sortedSched = currentClassObj?.schedule ? [...currentClassObj.schedule].sort((a, b) => (a.date || '').localeCompare(b.date || '')) : [];
@@ -2091,7 +2094,9 @@ export default function GroupClassDashboard({ group, members, onApplyClick, open
                           );
                         })()}
                       </div>
-                      <span className="text-[11px] font-black text-slate-700 leading-none">{ins.name}</span>
+                      <span className="text-[11px] font-black text-slate-700 leading-none">
+                        {formatInstructorNames(ins.instructorNativeName || ins.nameNative || ins.name, language)}
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -2686,6 +2691,18 @@ export default function GroupClassDashboard({ group, members, onApplyClick, open
           onClose={() => setEditRegistrationItem(null)}
         />
       )}
+
+      {/* 수업 상세 보기 모달 */}
+      <ClassDetail
+        groupId={group.id}
+        itemId={classDetailItemId || undefined}
+        isOpen={!!classDetailItemId}
+        onClose={() => setClassDetailItemId(null)}
+        onApplyClick={(targetId) => {
+          const finalId = targetId || classDetailItemId;
+          openClassFlow('apply', finalId ? { modal: finalId, month: currentMonthStr } : { month: currentMonthStr });
+        }}
+      />
     </div>
   );
 }

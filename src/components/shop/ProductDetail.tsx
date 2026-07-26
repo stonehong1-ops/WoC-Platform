@@ -9,11 +9,13 @@ import { chatService } from '@/lib/firebase/chatService';
 import { shopService } from '@/lib/firebase/shopService';
 import { groupService } from '@/lib/firebase/groupService';
 import { Product, CustomOptionDef } from '@/types/shop';
+import DetailHeader from '@/components/common/DetailHeader';
 import PurchaseFlow from './PurchaseFlow';
 import ChatRoom from '@/components/chat/ChatRoom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useNavigation } from '@/components/providers/NavigationProvider';
 import CreateProduct from './CreateProduct';
+import MediaViewerPopup from '@/components/feed/MediaViewerPopup';
 
 interface ProductDetailProps {
   product: Product;
@@ -32,7 +34,9 @@ export default function ProductDetail({ product, isLiked, onClose, onToggleLike,
   // Image carousel
   const [currentImg, setCurrentImg] = useState(0);
   const touchStartX = useRef(0);
-  const images = (product.images?.length ? product.images : (product.imageUrl ? [product.imageUrl] : []));
+  const images: string[] = (product.images?.length ? product.images : (product.imageUrl ? [product.imageUrl] : []));
+  const [isMediaViewerOpen, setIsMediaViewerOpen] = useState(false);
+  const [viewerInitialIdx, setViewerInitialIdx] = useState(0);
 
   // Options state
   const [selectedSize, setSelectedSize] = useState('');
@@ -67,11 +71,9 @@ export default function ProductDetail({ product, isLiked, onClose, onToggleLike,
 
   const { value: flow, openModal: openFlow, closeModal: handleClosePurchase } = useModalNavigation('flow');
   const { value: chatId, openModal: openChat, closeModal: handleCloseChat } = useModalNavigation('chatId');
-  const { value: imageModal, openModal: openImageModal, closeModal: closeImageModal } = useModalNavigation('imageModal');
 
   const showPurchase = flow === 'purchase';
   const chatRoomId = chatId;
-  const showImageModal = imageModal === 'true';
 
   // Scarcity: stable random viewer count per session
   const [viewerCount] = useState(() => Math.floor(Math.random() * 18) + 5);
@@ -296,58 +298,64 @@ export default function ProductDetail({ product, isLiked, onClose, onToggleLike,
       `}} />
 
       {/* ━━━ Header ━━━ */}
-      <div 
-        className={`fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4 pb-3 transition-all duration-300 ${isScrolled ? 'bg-white/95 backdrop-blur-md shadow-sm' : 'bg-gradient-to-b from-black/30 to-transparent'}`}
-        style={{ paddingTop: Capacitor.isNativePlatform() ? 'max(env(safe-area-inset-top), 24px)' : '24px' }}
-      >
-        <button onClick={onClose} className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${isScrolled ? 'bg-slate-100 text-[#2d3435]' : 'bg-black/20 backdrop-blur-sm text-white'}`}>
-          <span className="material-symbols-rounded text-xl">arrow_back</span>
-        </button>
-        <div className={`text-base font-bold truncate max-w-[180px] transition-opacity ${isScrolled ? 'opacity-100 text-[#2d3435]' : 'opacity-0'}`}>{product.title || product.name}</div>
-        <div className="flex items-center gap-2">
-          <button onClick={() => {
-            if (navigator.share) {
-              navigator.share({
-                title: product.title || product.name,
-                url: window.location.href,
-              }).catch(console.error);
-            } else {
-              alert(t('common.share_not_supported', 'Share not supported on this browser'));
-            }
-          }}
-            className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${isScrolled ? 'bg-slate-100' : 'bg-black/20 backdrop-blur-sm'} ${isScrolled ? 'text-[#2d3435]' : 'text-white'}`}>
-            <span className="material-symbols-rounded text-xl">share</span>
-          </button>
-          {canEditOrDelete && (
-            <div className="relative">
-              <button 
-                onClick={() => setShowMenu(!showMenu)}
-                className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${isScrolled ? 'bg-slate-100 text-[#2d3435]' : 'bg-black/20 backdrop-blur-sm text-white'}`}
-              >
-                <span className="material-symbols-rounded text-xl">more_vert</span>
-              </button>
-              {showMenu && (
-                <div className="absolute right-0 mt-2 z-[120] bg-white border border-slate-100 shadow-xl rounded-2xl py-1 w-28 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
-                  <button 
-                    onClick={() => { setShowMenu(false); setShowEditModal(true); }}
-                    className="w-full px-4 py-2.5 text-left text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors flex items-center gap-2"
-                  >
-                    <span className="material-symbols-rounded text-base text-slate-400">edit</span>
-                    {t('common.edit')}
-                  </button>
-                  <button 
-                    onClick={() => { setShowMenu(false); handleDelete(); }}
-                    className="w-full px-4 py-2.5 text-left text-xs font-bold text-red-600 hover:bg-red-50 transition-colors flex items-center gap-2"
-                  >
-                    <span className="material-symbols-rounded text-base text-red-400">delete</span>
-                    {t('common.delete')}
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      </div>
+      <DetailHeader
+        title={product.title || product.name || ''}
+        onClose={onClose}
+        isScrolled={isScrolled}
+        rightActions={
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                if (navigator.share) {
+                  navigator.share({
+                    title: product.title || product.name,
+                    url: window.location.href,
+                  }).catch(console.error);
+                } else {
+                  alert(t('common.share_not_supported', 'Share not supported on this browser'));
+                }
+              }}
+              aria-label="Share"
+              className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
+                isScrolled ? 'bg-slate-100 text-[#2d3435]' : 'bg-black/20 backdrop-blur-sm text-white'
+              }`}
+            >
+              <span className="material-symbols-rounded text-xl">share</span>
+            </button>
+            {canEditOrDelete && (
+              <div className="relative">
+                <button 
+                  onClick={() => setShowMenu(!showMenu)}
+                  aria-label="More options"
+                  className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
+                    isScrolled ? 'bg-slate-100 text-[#2d3435]' : 'bg-black/20 backdrop-blur-sm text-white'
+                  }`}
+                >
+                  <span className="material-symbols-rounded text-xl">more_vert</span>
+                </button>
+                {showMenu && (
+                  <div className="absolute right-0 mt-2 z-[120] bg-white border border-slate-100 shadow-xl rounded-2xl py-1 w-28 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                    <button 
+                      onClick={() => { setShowMenu(false); setShowEditModal(true); }}
+                      className="w-full px-4 py-2.5 text-left text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors flex items-center gap-2"
+                    >
+                      <span className="material-symbols-rounded text-base text-slate-400">edit</span>
+                      {t('common.edit')}
+                    </button>
+                    <button 
+                      onClick={() => { setShowMenu(false); handleDelete(); }}
+                      className="w-full px-4 py-2.5 text-left text-xs font-bold text-red-600 hover:bg-red-50 transition-colors flex items-center gap-2"
+                    >
+                      <span className="material-symbols-rounded text-base text-red-400">delete</span>
+                      {t('common.delete')}
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        }
+      />
 
       {/* ━━━ Scrollable Content ━━━ */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto detail-scrollbar pb-[80px]">
@@ -361,11 +369,12 @@ export default function ProductDetail({ product, isLiked, onClose, onToggleLike,
           </div>
           {/* Images */}
           {images.length > 0 && (
-            <div className="relative h-full" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd} onClick={() => {
-              openImageModal('true');
+            <div className="relative h-full cursor-pointer" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd} onClick={() => {
+              setViewerInitialIdx(currentImg);
+              setIsMediaViewerOpen(true);
             }}>
               <div className="flex h-full transition-transform duration-300 ease-out" style={{ transform: `translateX(-${currentImg * 100}%)` }}>
-                {images.map((img, i) => (
+                {images.map((img: string, i: number) => (
                   <div key={i} className="w-full flex-shrink-0 h-full">
                     <img src={img} alt={`${product.title} ${i + 1}`} className="w-full h-full object-cover"
                       onError={(e) => { e.currentTarget.style.display = 'none'; }} />
@@ -389,7 +398,7 @@ export default function ProductDetail({ product, isLiked, onClose, onToggleLike,
                   <>
                     <span className="bg-black/40 backdrop-blur-sm text-white text-[10px] font-bold px-2 py-0.5 rounded-full mb-1">{currentImg + 1}/{images.length}</span>
                     <div className="flex gap-1.5 items-center pl-1">
-                      {images.map((_, i) => (
+                      {images.map((_: string, i: number) => (
                         <button key={i} onClick={(e) => { e.stopPropagation(); setCurrentImg(i); }}
                           className={`rounded-full transition-all ${i === currentImg ? 'w-5 h-2 bg-white' : 'w-2 h-2 bg-white/50'}`} />
                       ))}
@@ -789,32 +798,13 @@ export default function ProductDetail({ product, isLiked, onClose, onToggleLike,
         />
       )}
 
-      {/* ━━━ Full Screen Image Viewer ━━━ */}
-      {showImageModal && (
-        <div className="fixed inset-0 z-[200] bg-black flex flex-col animate-in fade-in duration-200">
-          <div className="absolute top-0 left-0 right-0 z-10 flex justify-end p-4">
-            <button onClick={closeImageModal} className="w-10 h-10 rounded-full bg-black/40 text-white flex items-center justify-center">
-              <span className="material-symbols-rounded text-2xl">close</span>
-            </button>
-          </div>
-          <div className="flex-1 w-full h-full flex items-center justify-center" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
-            <div className="flex w-full transition-transform duration-300 ease-out h-full items-center" style={{ transform: `translateX(-${currentImg * 100}%)` }}>
-              {images.map((img, i) => (
-                <div key={i} className="w-full flex-shrink-0 flex items-center justify-center px-4">
-                  <img src={img} alt={`Fullscreen ${i + 1}`} className="w-full max-h-[80vh] object-contain" />
-                </div>
-              ))}
-            </div>
-          </div>
-          {images.length > 1 && (
-            <div className="absolute bottom-10 left-0 right-0 flex justify-center gap-2">
-              {images.map((_, i) => (
-                <div key={i} className={`rounded-full transition-all ${i === currentImg ? 'w-6 h-2 bg-white' : 'w-2 h-2 bg-white/40'}`} />
-              ))}
-            </div>
-          )}
-        </div>
-      )}
+      {/* ━━━ Full Screen Media Viewer ━━━ */}
+      <MediaViewerPopup
+        isOpen={isMediaViewerOpen}
+        onClose={() => setIsMediaViewerOpen(false)}
+        media={images.map((url: string) => ({ url, type: 'image' as const }))}
+        initialIndex={viewerInitialIdx}
+      />
 
       {/* ━━━ Full Screen Chat Room ━━━ */}
       {chatRoomId && (

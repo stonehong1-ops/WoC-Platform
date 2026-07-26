@@ -90,6 +90,10 @@ export interface Group {
   updatedAt?: Timestamp | Date | number | null;
   tags?: string[];
   logo?: string;
+  logoUrl?: string;
+  imageUrl?: string;
+  ownerName?: string;
+  location?: any;
   gallery?: GallerySection[];
   storageUsed?: number; // in bytes
   representative?: {

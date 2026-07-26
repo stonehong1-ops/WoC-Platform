@@ -7,6 +7,7 @@ import { db } from '@/lib/firebase/clientApp';
 import { Venue } from '@/types/venue';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useNavigation } from '@/components/providers/NavigationProvider';
+import MediaViewerPopup from '@/components/feed/MediaViewerPopup';
 
 export default function VenueDetailPage() {
   const { t } = useLanguage();
@@ -16,6 +17,7 @@ export default function VenueDetailPage() {
   const [venue, setVenue] = useState<Venue | null>(null);
   const [loading, setLoading] = useState(true);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [isMediaViewerOpen, setIsMediaViewerOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // Hide global nav on mount (ProductDetail standard)
@@ -102,7 +104,10 @@ export default function VenueDetailPage() {
       <div ref={scrollRef} className="flex-1 overflow-y-auto detail-scrollbar pb-6">
 
         {/* 1) Hero Image */}
-        <div className="relative aspect-[4/3] overflow-hidden bg-[#f2f4f4]">
+        <div 
+          className={`relative aspect-[4/3] overflow-hidden bg-[#f2f4f4] ${venue.imageUrl ? 'cursor-pointer' : ''}`}
+          onClick={() => { if (venue.imageUrl) setIsMediaViewerOpen(true); }}
+        >
           <div className="absolute inset-0 flex flex-col items-center justify-center text-[#c4cacc]">
             <span className="material-symbols-rounded text-5xl mb-1">location_on</span>
             <span className="text-[10px] font-bold tracking-wider uppercase">{t('venues.no_image', 'No Image')}</span>
@@ -185,6 +190,15 @@ export default function VenueDetailPage() {
           </div>
         </div>
       </div>
+      {/* Full Screen Media Viewer */}
+      {venue.imageUrl && (
+        <MediaViewerPopup
+          isOpen={isMediaViewerOpen}
+          onClose={() => setIsMediaViewerOpen(false)}
+          media={[{ url: venue.imageUrl, type: 'image' }]}
+          initialIndex={0}
+        />
+      )}
     </div>
   );
 }

@@ -19,7 +19,8 @@ import { useChatActions } from './hooks/useChatActions';
 import ChatHeader from './ChatHeader';
 import ChatMessageList from './ChatMessageList';
 import ChatInputBar from './ChatInputBar';
-import EmojiParticleCanvas, { EmojiParticleCanvasRef } from './EmojiParticleCanvas';
+import EmojiParticleCanvas, { EmojiParticleCanvasRef } from '@/components/chat/EmojiParticleCanvas';
+import MediaViewerPopup from '@/components/feed/MediaViewerPopup';
 import GroupMembersPopup from './GroupMembersPopup';
 import UserBadge from '../common/UserBadge';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -275,8 +276,6 @@ export default function ChatRoom({ roomId, onBack }: ChatRoomProps) {
     isMeetupModalOpen || 
     isSettlementModalOpen || 
     isPollModalOpen || 
-    isStickerDrawerOpen || 
-    isFeatureDrawerOpen ||
     !!selectedMedia;
 
   const closeAllModals = () => {
@@ -448,6 +447,19 @@ export default function ChatRoom({ roomId, onBack }: ChatRoomProps) {
     }
   };
 
+  const handleQuickReject = async () => {
+    if (!latestOrder) return;
+    if (isSeller) {
+      try {
+        await handleBookingAction(latestOrder.id, 'SELLER_REJECTED', latestOrder.msgId, roomId);
+        toast.success(t('chat.payment_rejected_toast', '신청 및 거래가 거절 처리되었습니다.'));
+      } catch (err) {
+        console.error(err);
+        toast.error(t('common.error', '처리에 실패했습니다.'));
+      }
+    }
+  };
+
   // Close media details popup
   const handleMediaClose = () => setSelectedMedia(null);
 
@@ -540,7 +552,16 @@ export default function ChatRoom({ roomId, onBack }: ChatRoomProps) {
             buyerId,
             msgId: msg.id,
             itemName: msg.metadata.itemName,
-            actionType: msg.metadata.actionType
+            actionType: msg.metadata.actionType,
+            applicantMemo: (() => {
+              if (!msg.text) return undefined;
+              const lines = msg.text.split('\n');
+              const line = lines.find(l => 
+                ['applicant memo', '신청자 메모', '신청 메모', '입금자 메모', '메모', 'memo', 'notes', '요청사항']
+                .some(k => l.toLowerCase().includes(k.toLowerCase()))
+              );
+              return line ? line.split(':').slice(1).join(':').trim() : undefined;
+            })()
           };
         }
       }
@@ -676,14 +697,29 @@ export default function ChatRoom({ roomId, onBack }: ChatRoomProps) {
               <span className="text-xs font-bold text-gray-700 leading-tight truncate">
                 {latestOrder.itemName} ({getStatusTranslation(latestOrder.status)})
               </span>
+              {latestOrder.applicantMemo && (
+                <span className="text-[11px] font-medium text-blue-600 truncate mt-0.5">
+                  📝 {t('common.applicant_memo', '신청자 메모')}: {latestOrder.applicantMemo}
+                </span>
+              )}
             </div>
           </div>
-          <button 
-            onClick={handleQuickAction}
-            className="px-4 py-2 bg-primary text-white text-xs font-black rounded-xl hover:bg-primary/95 transition-all shadow-sm"
-          >
-            {isSeller ? t('chat.approve_payment_btn', '입금 확인') : t('chat.view_status_btn', '상태 보기')}
-          </button>
+          <div className="flex items-center gap-1.5 shrink-0">
+            {isSeller && (
+              <button 
+                onClick={handleQuickReject}
+                className="px-3 py-2 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200/60 text-xs font-black rounded-xl transition-all active:scale-95"
+              >
+                {t('chat.reject_payment_btn', '거절')}
+              </button>
+            )}
+            <button 
+              onClick={handleQuickAction}
+              className="px-4 py-2 bg-primary text-white text-xs font-black rounded-xl hover:bg-primary/95 transition-all shadow-sm active:scale-95"
+            >
+              {isSeller ? t('chat.approve_payment_btn', '입금 확인') : t('chat.view_status_btn', '상태 보기')}
+            </button>
+          </div>
         </div>
       )}
 
@@ -746,7 +782,10 @@ export default function ChatRoom({ roomId, onBack }: ChatRoomProps) {
               transition={{ type: "tween", duration: 0.25 }}
               className="relative w-full max-w-[280px] h-full bg-white shadow-2xl flex flex-col z-10 text-gray-800 text-left"
             >
-              <div className="p-5 border-b border-gray-100 flex items-center justify-between shrink-0">
+              <div 
+                className="px-5 pb-5 border-b border-gray-100 flex items-center justify-between shrink-0"
+                style={{ paddingTop: 'calc(16px + env(safe-area-inset-top, 0px))' }}
+              >
                 <span className="text-base font-black uppercase tracking-tight">{t('CHAT.SIDEBAR_TITLE', '대화방 설정')}</span>
                 <button 
                   onClick={() => setIsSidebarOpen(false)}
@@ -864,7 +903,10 @@ export default function ChatRoom({ roomId, onBack }: ChatRoomProps) {
               </div>
 
               {/* Bottom Leave Action */}
-              <div className="p-5 border-t border-gray-100 shrink-0">
+              <div 
+                className="px-5 pt-5 border-t border-gray-100 shrink-0"
+                style={{ paddingBottom: 'calc(16px + env(safe-area-inset-bottom, 0px))' }}
+              >
                 <button 
                   onClick={handleLeaveRoom}
                   className="w-full py-3 bg-rose-50 text-rose-600 rounded-2xl flex items-center justify-center gap-2 hover:bg-rose-100 active:scale-98 transition-all text-xs font-black"
@@ -986,32 +1028,15 @@ export default function ChatRoom({ roomId, onBack }: ChatRoomProps) {
         )}
       </AnimatePresence>
 
-      {/* 6. Media Viewer details modal */}
-      <AnimatePresence>
-        {selectedMedia && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-95" onClick={handleMediaClose}>
-            <div className="absolute top-4 right-4 flex items-center gap-2 z-10">
-              <button 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleMediaClose();
-                }}
-                className="w-10 h-10 rounded-full bg-black bg-opacity-50 text-white flex items-center justify-center hover:bg-opacity-70 transition-all"
-              >
-                <span className="material-symbols-outlined text-[24px]">close</span>
-              </button>
-            </div>
-            
-            <div className="max-w-full max-h-full p-4 flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
-              {selectedMedia.type === 'image' ? (
-                <img src={selectedMedia.url} className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl" alt="" />
-              ) : (
-                <video src={selectedMedia.url} controls autoPlay className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl" />
-              )}
-            </div>
-          </div>
-        )}
-      </AnimatePresence>
+      {/* 6. Media Viewer details modal (공통 MediaViewerPopup으로 통합) */}
+      {selectedMedia && (
+        <MediaViewerPopup
+          isOpen={!!selectedMedia}
+          onClose={handleMediaClose}
+          media={[{ url: selectedMedia.url, type: selectedMedia.type === 'video' ? 'video' : 'image' }]}
+          initialIndex={0}
+        />
+      )}
 
       {/* 7. Notice Detail Full Modal */}
       <AnimatePresence>

@@ -6,6 +6,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import Portal from '@/components/common/Portal';
 import { useAuth } from '@/components/providers/AuthProvider';
+import { useBackButtonClose } from '@/hooks/useBackButtonClose';
 import { storageService } from '@/lib/firebase/storageService';
 import { userService } from '@/lib/firebase/userService';
 import { feedService } from '@/lib/firebase/feedService';
@@ -17,6 +18,7 @@ import { FeedContext, Post } from '@/types/feed';
 import { useLocation } from '@/components/providers/LocationProvider';
 import { helpDeskAIService } from '@/lib/ai/helpDeskAI';
 import { KIND_ICON, KIND_COLOR } from '@/constants/tags';
+import { useLocalBackClose } from '@/hooks/useLocalBackClose';
 import UserBadge from '@/components/common/UserBadge';
 
 /* ?€?€?€ Types ?€?€?€ */
@@ -114,12 +116,14 @@ export default function CreateFeedPopup({ isOpen, onClose, context, editingPost 
 
   /* ⚙ Reset ⚙ */
   useEffect(() => {
+    setStep(1);
     if (editingPost) {
       setContent(editingPost.content || '');
       setMedia((editingPost.media || []).map((m: any, i: number) => ({
         id: `e-${i}`, url: typeof m === 'string' ? m : m.url,
         type: typeof m === 'string' ? 'image' : (m.type || 'image'),
         status: 'completed', progress: 100,
+        ...(m.linkMetadata ? { linkMetadata: m.linkMetadata } : {})
       })));
     } else {
       setContent(''); setMedia([]); setTags([]);
@@ -128,25 +132,8 @@ export default function CreateFeedPopup({ isOpen, onClose, context, editingPost 
     setTagKeyword(''); setTagResults([]);
   }, [editingPost, isOpen]);
 
-  // Manage history stack for Android/Device back button in CreateFeedPopup
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const stateKey = `create_feed_${Date.now()}`;
-    window.history.pushState({ stateKey }, '');
-
-    const handlePopState = () => {
-      onClose();
-    };
-    window.addEventListener('popstate', handlePopState);
-
-    return () => {
-      window.removeEventListener('popstate', handlePopState);
-      if (window.history.state?.stateKey === stateKey) {
-        window.history.back();
-      }
-    };
-  }, [isOpen, onClose]);
+  // [스톤님 최종 원칙] CreateFeedPopup Local Back Owner (pure LIFO, 0ms history side-effect free)
+  useLocalBackClose(isOpen, onClose);
 
   /* 🔗 Link Auto Detection & Manual Adding 🔗 */
   const [showLinkInput, setShowLinkInput] = useState(false);
@@ -154,7 +141,10 @@ export default function CreateFeedPopup({ isOpen, onClose, context, editingPost 
 
   const handleLinkSubmit = async () => {
     if (!linkInputVal.trim()) return;
-    const url = linkInputVal.trim();
+    let url = linkInputVal.trim();
+    if (!/^https?:\/\//i.test(url)) {
+      url = `https://${url}`;
+    }
     setLinkInputVal('');
     setShowLinkInput(false);
     await fetchLinkMetadata(url);
@@ -163,6 +153,13 @@ export default function CreateFeedPopup({ isOpen, onClose, context, editingPost 
   const fetchLinkMetadata = async (url: string) => {
     // 이미 존재하는 링크가 있으면 스킵
     if (media.some(m => m.url === url)) return;
+
+    let domain = '';
+    try {
+      domain = new URL(url).hostname;
+    } catch {
+      domain = url;
+    }
 
     const tempId = Math.random().toString(36).slice(7);
     setMedia(prev => [...prev, {
@@ -183,14 +180,25 @@ export default function CreateFeedPopup({ isOpen, onClose, context, editingPost 
         status: 'completed',
         progress: 100,
         linkMetadata: {
-          title: data.title || '',
+          title: data.title || domain,
           description: data.description || '',
           image: data.image || '',
-          domain: data.domain || ''
+          domain: data.domain || domain
         }
       } : m));
     } catch {
-      setMedia(prev => prev.filter(m => m.id !== tempId));
+      // 실패 시에도 닫거나 삭제하지 않고 기본 URL/도메인 카드 fallback 생성
+      setMedia(prev => prev.map(m => m.id === tempId ? {
+        ...m,
+        status: 'completed',
+        progress: 100,
+        linkMetadata: {
+          title: domain,
+          description: url,
+          image: '',
+          domain
+        }
+      } : m));
     }
   };
 
@@ -431,7 +439,7 @@ export default function CreateFeedPopup({ isOpen, onClose, context, editingPost 
 
   return (
     <Portal>
-      <div className="fixed inset-0 z-[100] bg-black/60 flex justify-center items-center backdrop-blur-sm p-0 md:p-4">
+      <div className="fixed inset-0 z-[9990] bg-black/60 flex justify-center items-center backdrop-blur-sm p-0 md:p-4">
         <style dangerouslySetInnerHTML={{ __html: `.material-symbols-rounded { font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24; }` }} />
         
         <div className="w-full max-w-lg h-[100dvh] md:h-[90vh] md:max-h-[760px] bg-white md:rounded-3xl flex flex-col overflow-hidden relative shadow-2xl animate-in fade-in zoom-in-95 duration-200">
@@ -451,7 +459,7 @@ export default function CreateFeedPopup({ isOpen, onClose, context, editingPost 
               <span className="material-symbols-rounded text-2xl">arrow_back</span>
             </button>
             <h1 className="text-[16px] font-bold text-slate-800">
-              {editingPost ? (t('feed.edit_post') || '게시글 수정') : (t('feed.create_post') || '새 광장 글 작성')}
+              {editingPost ? (t('feed.edit_post') || '피드 수정') : (t('feed.create_post') || '새 피드')}
             </h1>
             <div className="w-10" />
           </header>

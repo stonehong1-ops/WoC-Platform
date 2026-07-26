@@ -13,9 +13,10 @@ import { groupService } from '@/lib/firebase/groupService';
 interface GroupShellHeaderProps {
   group: Group;
   onExit: () => void;
+  onCreateClick?: () => void;
 }
 
-export default function GroupShellHeader({ group, onExit }: GroupShellHeaderProps) {
+export default function GroupShellHeader({ group, onExit, onCreateClick }: GroupShellHeaderProps) {
   const router = useRouter();
   const { user, profile } = useAuth();
   const { t } = useLanguage();
@@ -105,8 +106,18 @@ export default function GroupShellHeader({ group, onExit }: GroupShellHeaderProp
           </div>
         </div>
 
-        {/* Leave/Switch 버튼 (텍스트 없이 아이콘만) */}
-        <div className="leave-wrap">
+        {/* 단일 등록 + 버튼 & Leave/Switch 드롭다운 */}
+        <div className="flex items-center gap-2">
+          {onCreateClick && (
+            <button
+              onClick={onCreateClick}
+              className="w-9 h-9 rounded-full bg-white/20 backdrop-blur-md border border-white/30 text-white flex items-center justify-center active:scale-95 transition-all shadow-md hover:bg-white/30"
+              title={t('common.create') || '등록'}
+            >
+              <span className="material-symbols-outlined text-lg font-bold">add</span>
+            </button>
+          )}
+          <div className="leave-wrap">
           <button
             className="leave-btn"
             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
@@ -186,6 +197,7 @@ export default function GroupShellHeader({ group, onExit }: GroupShellHeaderProp
               </>
             )}
           </AnimatePresence>
+          </div>
         </div>
       </div>
     </div>

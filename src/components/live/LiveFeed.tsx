@@ -25,7 +25,7 @@ import {
   FlipHorizontal,
   SlidersHorizontal
 } from 'lucide-react';
-import { galleryService, GalleryPost, GalleryComment, GalleryTag } from '@/lib/firebase/galleryService';
+import { galleryService, GalleryPost, GalleryComment, GalleryTag, dedupeAndSortPosts, mergeRealtimeAndHistory, checkPostExists } from '@/lib/firebase/galleryService';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { safeDate } from '@/lib/utils/safeDate';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -55,6 +55,11 @@ interface LiveFeedProps {
 export default function LiveFeed({ entityType, entityId, userId, viewMode, className = '' }: LiveFeedProps) {
   const { user } = useAuth();
   const [posts, setPosts] = useState<GalleryPost[]>([]);
+  const [hasMore, setHasMore] = useState(true);
+  const realtimePostsRef = useRef<GalleryPost[]>([]);
+  const historyPostsRef = useRef<GalleryPost[]>([]);
+  const lastDocSnapRef = useRef<any>(null);
+  const isFetchingMoreRef = useRef<boolean>(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
@@ -343,27 +348,38 @@ export default function LiveFeed({ entityType, entityId, userId, viewMode, class
     };
 
     const unsubscribe = galleryService.subscribeFeed(
-      (data) => {
-        setPosts(data);
+      (newRealtime, lastDocSnap) => {
+        if (lastDocSnap && !lastDocSnapRef.current) {
+          lastDocSnapRef.current = lastDocSnap;
+        }
+        const { finalPosts, newHistory, hasMoreHistory } = mergeRealtimeAndHistory(
+          newRealtime,
+          realtimePostsRef.current,
+          historyPostsRef.current
+        );
+        realtimePostsRef.current = newRealtime;
+        historyPostsRef.current = newHistory;
+        setPosts(finalPosts);
+        setHasMore(hasMoreHistory);
         setLoading(false);
 
         // 대시보드 영상/이미지 백그라운드 프리로드 최적화
         try {
-          if (data && data.length > 0) {
+          if (newRealtime && newRealtime.length > 0) {
             const yesterday = Date.now() - 24 * 60 * 60 * 1000;
-            const yesterdayPosts = data.filter(post => {
+            const yesterdayPosts = newRealtime.filter((post: GalleryPost) => {
               const createdTime = safeDate(post.createdAt)?.getTime() || 0;
               return createdTime >= yesterday;
             });
-            const targetPosts = yesterdayPosts.length >= 3 ? yesterdayPosts : data.slice(0, 15);
+            const targetPosts = yesterdayPosts.length >= 3 ? yesterdayPosts : newRealtime.slice(0, 15);
             
-            const classes = targetPosts.filter(p => Array.isArray(p.tags) && p.tags.some(t => t && t.type === 'class'));
-            const socials = targetPosts.filter(p => Array.isArray(p.tags) && p.tags.some(t => t && t.type === 'social'));
-            const events = targetPosts.filter(p => Array.isArray(p.tags) && (p.tags.some(t => t && t.type === 'event') || p.eventId));
+            const classes = targetPosts.filter((p: GalleryPost) => Array.isArray(p.tags) && p.tags.some(t => t && t.type === 'class'));
+            const socials = targetPosts.filter((p: GalleryPost) => Array.isArray(p.tags) && p.tags.some(t => t && t.type === 'social'));
+            const events = targetPosts.filter((p: GalleryPost) => Array.isArray(p.tags) && (p.tags.some(t => t && t.type === 'event') || p.eventId));
             
-            const classPost = classes[0] || data.find(p => p.media?.[0]);
-            const socialPost = socials[0] || data.find(p => p.media?.[0]);
-            const eventPost = events[0] || data.find(p => p.media?.[0]);
+            const classPost = classes[0] || newRealtime.find((p: GalleryPost) => p.media?.[0]);
+            const socialPost = socials[0] || newRealtime.find((p: GalleryPost) => p.media?.[0]);
+            const eventPost = events[0] || newRealtime.find((p: GalleryPost) => p.media?.[0]);
             
             if (classPost?.media?.[0]) preloadMedia(classPost.media[0]);
             if (socialPost?.media?.[0]) preloadMedia(socialPost.media[0]);
@@ -382,6 +398,42 @@ export default function LiveFeed({ entityType, entityId, userId, viewMode, class
     );
     return () => unsubscribe();
   }, [entityType, entityId, userId, retryCount]);
+
+  // 스톤님 정밀 100개 제한 남은 슬롯 동적 페이징 엔진
+  const handleLoadMore = async () => {
+    if (!hasMore || isFetchingMoreRef.current || !lastDocSnapRef.current) return;
+
+    const remainingSlots = 80 - historyPostsRef.current.length;
+    if (remainingSlots <= 0) {
+      setHasMore(false);
+      return;
+    }
+
+    const fetchLimit = Math.min(20, remainingSlots);
+    isFetchingMoreRef.current = true;
+
+    try {
+      const { posts: fetchedMore, lastDocSnap: newLastDocSnap, hasMore: isServerHasMore } =
+        await galleryService.fetchMoreFeed(lastDocSnapRef.current, fetchLimit);
+
+      if (newLastDocSnap) {
+        lastDocSnapRef.current = newLastDocSnap;
+      }
+
+      const updatedHistory = dedupeAndSortPosts([...historyPostsRef.current, ...fetchedMore]);
+      historyPostsRef.current = updatedHistory;
+
+      const finalPosts = dedupeAndSortPosts([...realtimePostsRef.current, ...updatedHistory]);
+      setPosts(finalPosts);
+
+      const canContinue = isServerHasMore && updatedHistory.length < 80;
+      setHasMore(canContinue);
+    } catch (e) {
+      console.error("fetchMoreFeed failed:", e);
+    } finally {
+      isFetchingMoreRef.current = false;
+    }
+  };
 
   // 스톤님 정적 HTML DIVE IN 버튼 이벤트 위임 핸들러 (비동기 데이터 갱신에 100% 면역 및 로딩 잠금 결합)
   const handleDashboardClick = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -667,8 +719,25 @@ export default function LiveFeed({ entityType, entityId, userId, viewMode, class
               handleProgress={idx === 0 ? handleProgress : undefined}
               entityType={entityType}
               entityId={entityId}
+              onDeletePost={(deletedId) => setPosts(prev => prev.filter(p => p.id !== deletedId))}
             />
           ))}
+          {hasMore ? (
+            <div className="py-6 flex justify-center">
+              <button
+                onClick={handleLoadMore}
+                className="px-6 py-2.5 rounded-full bg-slate-100 text-slate-700 hover:bg-slate-200 text-xs font-bold transition-all shadow-sm active:scale-95 flex items-center gap-2"
+              >
+                <span className="material-symbols-outlined text-sm">expand_more</span>
+                <span>이전 Moments 더 보기</span>
+              </button>
+            </div>
+          ) : (
+            <div className="py-12 flex flex-col items-center justify-center text-center text-slate-400 text-xs font-bold gap-2 select-none">
+              <span className="material-symbols-outlined text-[28px] opacity-40">auto_awesome</span>
+              <span>최근 100개의 Live Moments를 모두 시청하셨습니다.</span>
+            </div>
+          )}
         </div>
       )}
 
@@ -906,7 +975,8 @@ const GalleryCard = ({
   loadingPercent: parentLoadingPercent,
   handleProgress: parentHandleProgress,
   entityType,
-  entityId
+  entityId,
+  onDeletePost
 }: {
   post: GalleryPost,
   onOpenComments: () => void,
@@ -919,7 +989,8 @@ const GalleryCard = ({
   loadingPercent?: number,
   handleProgress?: (e: React.SyntheticEvent<HTMLVideoElement>) => void,
   entityType?: 'social' | 'group' | 'event' | 'class' | 'venue' | 'people',
-  entityId?: string
+  entityId?: string,
+  onDeletePost?: (postId: string) => void
 }) => {
   const { user, profile } = useAuth();
   const { t } = useLanguage();
@@ -1090,6 +1161,9 @@ const GalleryCard = ({
     if (!isAuthor && !isAdmin) return;
     if (confirm(t('gallery.confirm_delete'))) {
       await galleryService.deletePost(post.id);
+      if (onDeletePost) {
+        onDeletePost(post.id);
+      }
     }
   };
 
@@ -1103,8 +1177,16 @@ const GalleryCard = ({
     });
   };
 
-  const handleMediaClick = (e: React.MouseEvent) => {
+  const handleMediaClick = async (e: React.MouseEvent) => {
     e.stopPropagation();
+    // 21번째 이후 historyPosts 원격 삭제 2차 방어막: 클릭 시 Firestore 존재 검증
+    const exists = await checkPostExists(post.id);
+    if (!exists) {
+      alert('해당 게시물이 원격에서 삭제되었습니다.');
+      if (onDeletePost) onDeletePost(post.id);
+      return;
+    }
+
     if (!isImmersive) {
       onOpenImmersive();
       videoRefs.current.forEach(video => {

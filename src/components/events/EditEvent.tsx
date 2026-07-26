@@ -74,15 +74,92 @@ export default function EditEvent({ onClose, onSuccess, eventData }: Props) {
   const [venueResults, setVenueResults] = useState<Venue[]>([]);
   const [showVenueResults, setShowVenueResults] = useState(false);
 
-  // Host / Staff
+  // Host / Organizer
   const [allUsers, setAllUsers] = useState<PlatformUser[]>([]);
-  const [hostName, setHostName] = useState(eventData?.hostName || user?.displayName || '');
-  const [staffList, setStaffList] = useState<{id:string;name:string}[]>(
-    eventData?.staffIds?.map((id,i) => ({id, name: eventData?.staffNames?.[i]||''})) || []
+  const [organizerList, setOrganizerList] = useState<{ id: string; name: string; nativeName?: string }[]>(() => {
+    if (eventData?.organizerNames && eventData.organizerNames.length > 0) {
+      return eventData.organizerNames.map((n: string, i: number) => ({ id: `org_${i}_${Date.now()}`, name: n }));
+    }
+    if (eventData?.hostName) {
+      return [{ id: eventData.hostId || 'manual_host', name: eventData.hostName }];
+    }
+    return user?.displayName ? [{ id: user.uid, name: user.displayName }] : [];
+  });
+  const [organizerSearch, setOrganizerSearch] = useState('');
+  const [organizerResults, setOrganizerResults] = useState<PlatformUser[]>([]);
+  const [showOrganizerResults, setShowOrganizerResults] = useState(false);
+
+  // Staff
+  const [staffList, setStaffList] = useState<{ id: string; name: string }[]>(
+    eventData?.staffIds?.map((id, i) => ({ id, name: eventData?.staffNames?.[i] || '' })) || []
   );
   const [staffSearch, setStaffSearch] = useState('');
   const [staffResults, setStaffResults] = useState<PlatformUser[]>([]);
   const [showStaffResults, setShowStaffResults] = useState(false);
+
+  const handleOrganizerSearch = (val: string) => {
+    setOrganizerSearch(val);
+    if (val.length >= 1) {
+      const lower = val.toLowerCase();
+      const filtered = allUsers.filter(u =>
+        !organizerList.find(o => o.id === u.id) &&
+        ((u.nickname && u.nickname.toLowerCase().includes(lower)) ||
+        (u.nativeNickname && u.nativeNickname.includes(val)))
+      );
+      setOrganizerResults(filtered.slice(0, 6));
+      setShowOrganizerResults(filtered.length > 0);
+    } else {
+      setShowOrganizerResults(false);
+      setOrganizerResults([]);
+    }
+  };
+
+  const handleSelectOrganizer = (u: PlatformUser) => {
+    setOrganizerList([...organizerList, { id: u.id, name: u.nickname || t('social.anonymous') || 'Anonymous', nativeName: u.nativeNickname || '' }]);
+    setOrganizerSearch('');
+    setShowOrganizerResults(false);
+  };
+
+  const handleAddFreeTextOrganizer = () => {
+    const text = organizerSearch.trim();
+    if (!text) return;
+    if (organizerList.find(o => o.name === text)) return;
+    setOrganizerList([...organizerList, { id: `manual_${Date.now()}`, name: text, nativeName: '' }]);
+    setOrganizerSearch('');
+    setShowOrganizerResults(false);
+  };
+
+  const handleStaffSearch = (val: string) => {
+    setStaffSearch(val);
+    if (val.length >= 1) {
+      const lower = val.toLowerCase();
+      const filtered = allUsers.filter(u =>
+        !staffList.find(s => s.id === u.id) &&
+        ((u.nickname && u.nickname.toLowerCase().includes(lower)) ||
+        (u.nativeNickname && u.nativeNickname.includes(val)))
+      );
+      setStaffResults(filtered.slice(0, 6));
+      setShowStaffResults(filtered.length > 0);
+    } else {
+      setShowStaffResults(false);
+      setStaffResults([]);
+    }
+  };
+
+  const handleSelectStaff = (u: PlatformUser) => {
+    setStaffList([...staffList, { id: u.id, name: u.nickname || u.nativeNickname || u.id }]);
+    setStaffSearch('');
+    setShowStaffResults(false);
+  };
+
+  const handleAddFreeTextStaff = () => {
+    const text = staffSearch.trim();
+    if (!text) return;
+    if (staffList.find(s => s.name === text)) return;
+    setStaffList([...staffList, { id: `manual_staff_${Date.now()}`, name: text }]);
+    setStaffSearch('');
+    setShowStaffResults(false);
+  };
 
   // Image
   const [images, setImages] = useState<string[]>(eventData?.imageUrl ? [eventData.imageUrl] : []);
@@ -158,27 +235,33 @@ export default function EditEvent({ onClose, onSuccess, eventData }: Props) {
       const startObj = new Date(startDate); startObj.setHours(0,0,0,0);
       const endObj = endDate ? new Date(endDate) : new Date(startDate); endObj.setHours(0,0,0,0);
 
-      const pricing: EventPricing = {
+      const rawPricing: EventPricing = {
         currency,
-        ...(classAdv ? { classPrice: { advance: classAdv, door: classDoor || undefined } } : {}),
-        ...(milongaAdv ? { milongaPrice: { advance: milongaAdv, door: milongaDoor || undefined } } : {}),
-        ...(fullPassAdv ? { fullPassPrice: { advance: fullPassAdv, door: fullPassDoor || undefined, label: fullPassLabel || undefined } } : {}),
+        ...(classAdv ? { classPrice: { advance: classAdv, ...(classDoor ? { door: classDoor } : {}) } } : {}),
+        ...(milongaAdv ? { milongaPrice: { advance: milongaAdv, ...(milongaDoor ? { door: milongaDoor } : {}) } } : {}),
+        ...(fullPassAdv ? { fullPassPrice: { advance: fullPassAdv, ...(fullPassDoor ? { door: fullPassDoor } : {}), ...(fullPassLabel ? { label: fullPassLabel } : {}) } } : {}),
         ...(earlyBird ? { earlyBirdDeadline: earlyBird } : {}),
       };
 
-      const finalData: any = {
-        title, titleNative, description, category,
+      const primaryHost = organizerList[0];
+      const primaryHostName = primaryHost?.name || user.displayName || 'Anonymous';
+      const primaryHostId = primaryHost && !primaryHost.id.startsWith('manual_') ? primaryHost.id : (eventData?.hostId || user.uid);
+      const organizerNames = organizerList.map(o => o.name);
+
+      const rawFinalData: any = {
+        ...(eventData || {}),
+        title: title || '', titleNative: titleNative || '', description: description || '', category: category || 'WORKSHOP',
         location: `${formCity}, ${formCountry}`,
-        startDate: Timestamp.fromDate(startObj),
-        endDate: Timestamp.fromDate(endObj),
-        hostId: eventData?.hostId || user.uid,
-        hostName: hostName || user.displayName || 'Anonymous',
+        hostId: primaryHostId,
+        hostName: primaryHostName,
+        organizerName: primaryHostName,
+        organizerNames: organizerNames,
         hostPhoto: eventData?.hostPhoto || user.photoURL || '',
-        imageUrl: finalImageUrl,
-        venueId, venueName,
-        staffIds: staffList.map(s=>s.id),
-        staffNames: staffList.map(s=>s.name),
-        programs, pricing,
+        imageUrl: finalImageUrl || '',
+        venueId: venueId || '', venueName: venueName || '',
+        staffIds: staffList.map(s => s.id),
+        staffNames: staffList.map(s => s.name),
+        programs: programs || [], pricing: rawPricing || {},
         galleryImages: galleryImages.filter(Boolean),
         artists: artists.filter(a => a.name),
         eventVenues: eventVenues.filter(v => v.name),
@@ -186,6 +269,11 @@ export default function EditEvent({ onClose, onSuccess, eventData }: Props) {
         scheduleDays: scheduleDays.filter(d => d.dayLabel),
         dressCode, websiteUrl, registrationUrl, bankInfo,
       };
+
+      const finalData = JSON.parse(JSON.stringify(rawFinalData));
+      finalData.startDate = Timestamp.fromDate(startObj);
+      finalData.endDate = Timestamp.fromDate(endObj);
+      finalData.updatedAt = Timestamp.now();
 
       let savedId = eventData?.id || '';
       if (eventData?.id) {
@@ -385,72 +473,111 @@ export default function EditEvent({ onClose, onSuccess, eventData }: Props) {
               </div>
             </div>
 
-            {/* 3. 호스트 & 스태프 지정 (배지 상단 고정) */}
+            {/* 3. 호스트 & 스태프 지정 (소셜 표준 다중 칩 + 비회원 직입력) */}
             <div className="border border-[#e0e4e5] rounded-2xl bg-white">
               <div className="bg-[#f8f9fa] px-4 py-3 border-b border-[#e0e4e5] flex items-center gap-2 rounded-t-[15px]">
                 <span className="material-symbols-rounded text-sm text-primary">group</span>
-                <p className="text-[14px] font-bold text-primary">주최자 및 아티스트 스태프</p>
+                <p className="text-[14px] font-bold text-primary">{t('social.roles_staff') || '주최자 및 아티스트 스태프'}</p>
               </div>
               <div className="p-4 space-y-4">
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1.5">대표 오거나이저</label>
-                  <div className={boxCls}><input value={hostName} onChange={e => setHostName(e.target.value)} className={inputCls} placeholder="Organizer Name" /></div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1.5">아티스트 / 스태프 검색 및 지정</label>
-                  {/* 상단 칩 배지 패널 */}
-                  {staffList.length > 0 && (
+                {/* 오거나이저 (주최자) */}
+                <div className="relative z-30">
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5">{t('social.organizer_label') || '주최자 (오거나이저)'}</label>
+                  {organizerList.length > 0 && (
                     <div className="flex flex-wrap gap-2 mb-3 p-3 bg-[#f8f9fa] rounded-xl border border-[#e0e4e5]">
-                      {staffList.map((st, idx) => (
-                        <div key={st.id + idx} className="flex items-center gap-1.5 bg-white border border-[#e0e4e5] px-3 py-1.5 rounded-full shadow-sm">
+                      {organizerList.map(o => (
+                        <div key={o.id} className="flex items-center gap-1.5 bg-white border border-[#e0e4e5] px-3 py-1.5 rounded-full shadow-sm">
                           <span className="material-symbols-rounded text-[14px] text-primary">person</span>
-                          <span className="text-xs font-bold text-[#2d3435]">{st.name}</span>
-                          <button type="button" onClick={() => setStaffList(prev => prev.filter((_, i) => i !== idx))} className="text-[#acb3b4] hover:text-red-500 transition-colors ml-1 flex items-center justify-center">
+                          <span className="text-xs font-bold text-[#2d3435]">{o.name}</span>
+                          <button type="button" onClick={() => setOrganizerList(organizerList.filter(x => x.id !== o.id))} className="text-[#acb3b4] hover:text-red-500 transition-colors ml-1 flex items-center justify-center">
                             <span className="material-symbols-rounded text-[14px]">cancel</span>
                           </button>
                         </div>
                       ))}
                     </div>
                   )}
-                  <div className="relative">
-                    <div className={boxCls}>
-                      <span className="material-symbols-rounded text-[#acb3b4] mr-2">search</span>
-                      <input
-                        value={staffSearch}
-                        onChange={e => {
-                          setStaffSearch(e.target.value);
-                          if (e.target.value.length >= 1) {
-                            const l = e.target.value.toLowerCase();
-                            const f = allUsers.filter(u => u.nickname?.toLowerCase().includes(l) || u.nativeNickname?.includes(e.target.value));
-                            setStaffResults(f.slice(0, 6)); setShowStaffResults(f.length > 0);
-                          } else { setShowStaffResults(false); }
-                        }}
-                        className={inputCls}
-                        placeholder="이름/닉네임 검색 후 클릭..."
-                      />
-                    </div>
-                    {showStaffResults && (
-                      <div className="absolute top-full left-0 w-full mt-1 bg-white border border-[#e0e4e5] rounded-xl shadow-lg z-50 max-h-48 overflow-y-auto">
-                        {staffResults.map(u => (
-                          <button
-                            key={u.id}
-                            type="button"
-                            onClick={() => {
-                              if (!staffList.some(s => s.id === u.id)) {
-                                setStaffList(prev => [...prev, { id: u.id, name: u.nickname || u.nativeNickname || u.id }]);
-                              }
-                              setStaffSearch(''); setShowStaffResults(false);
-                            }}
-                            className="w-full text-left px-4 py-3 hover:bg-[#f8f9fa] font-bold text-[#2d3435] text-sm border-b border-[#f2f4f4] last:border-0 flex items-center gap-2"
-                          >
-                            <span className="material-symbols-rounded text-primary text-sm">person</span>
-                            {u.nickname || u.nativeNickname}
-                          </button>
-                        ))}
-                      </div>
+                  <div className="relative flex items-center px-4 py-3 border border-[#e0e4e5] rounded-xl bg-[#f8f9fa] focus-within:bg-white focus-within:ring-2 focus-within:ring-[#007AFF]/20 transition-all">
+                    <span className="material-symbols-rounded text-[#acb3b4] mr-2">person_filled</span>
+                    <input
+                      value={organizerSearch}
+                      onChange={(e) => handleOrganizerSearch(e.target.value)}
+                      onBlur={() => setTimeout(() => setShowOrganizerResults(false), 200)}
+                      onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddFreeTextOrganizer(); } }}
+                      className="flex-1 bg-transparent border-none p-0 focus:ring-0 text-sm font-bold text-[#2d3435] placeholder:text-[#acb3b4] placeholder:font-normal outline-none"
+                      placeholder={t('social.search_user_placeholder') || '회원 검색 또는 외부 이름 입력 후 엔터...'}
+                      type="text"
+                    />
+                    {organizerSearch.trim() && (
+                      <button type="button" onClick={handleAddFreeTextOrganizer}
+                        className="ml-2 px-2 py-1 bg-primary/10 text-primary rounded-lg text-xs font-black hover:bg-primary/20 transition-colors shrink-0">
+                        <span className="material-symbols-rounded text-[14px]">add</span>
+                      </button>
                     )}
                   </div>
+                  {showOrganizerResults && (
+                    <div className="absolute top-full left-0 w-full mt-1 bg-white border border-[#e0e4e5] rounded-xl shadow-lg z-50 overflow-hidden">
+                      {organizerResults.map(u => (
+                        <button key={u.id} type="button" onClick={() => handleSelectOrganizer(u)}
+                          className="w-full text-left px-4 py-3 hover:bg-[#f8f9fa] flex items-center gap-3 group transition-colors border-b border-[#f2f4f4] last:border-0 border-none">
+                          <span className="material-symbols-rounded text-[#acb3b4] text-[18px]">person</span>
+                          <div className="flex flex-col">
+                            <p className="font-bold text-[#2d3435] text-sm group-hover:text-primary leading-tight">{u.nickname}</p>
+                            {u.nativeNickname && <span className="text-xs text-[#acb3b4] font-medium leading-tight">{u.nativeNickname}</span>}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* 아티스트 / 스태프 */}
+                <div className="relative z-20">
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5">{t('social.staff_registration') || '아티스트 / 스태프 지정'}</label>
+                  {staffList.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mb-3 p-3 bg-[#f8f9fa] rounded-xl border border-[#e0e4e5]">
+                      {staffList.map(st => (
+                        <div key={st.id} className="flex items-center gap-1.5 bg-white border border-[#e0e4e5] px-3 py-1.5 rounded-full shadow-sm">
+                          <span className="material-symbols-rounded text-[14px] text-primary">person</span>
+                          <span className="text-xs font-bold text-[#2d3435]">{st.name}</span>
+                          <button type="button" onClick={() => setStaffList(staffList.filter(x => x.id !== st.id))} className="text-[#acb3b4] hover:text-red-500 transition-colors ml-1 flex items-center justify-center">
+                            <span className="material-symbols-rounded text-[14px]">cancel</span>
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <div className="relative flex items-center px-4 py-3 border border-[#e0e4e5] rounded-xl bg-[#f8f9fa] focus-within:bg-white focus-within:ring-2 focus-within:ring-[#007AFF]/20 transition-all">
+                    <span className="material-symbols-rounded text-[#acb3b4] mr-2">search</span>
+                    <input
+                      value={staffSearch}
+                      onChange={(e) => handleStaffSearch(e.target.value)}
+                      onBlur={() => setTimeout(() => setShowStaffResults(false), 200)}
+                      onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddFreeTextStaff(); } }}
+                      className="flex-1 bg-transparent border-none p-0 focus:ring-0 text-sm font-bold text-[#2d3435] placeholder:text-[#acb3b4] placeholder:font-normal outline-none"
+                      placeholder="이름/닉네임 검색 또는 직접 입력 후 엔터..."
+                      type="text"
+                    />
+                    {staffSearch.trim() && (
+                      <button type="button" onClick={handleAddFreeTextStaff}
+                        className="ml-2 px-2 py-1 bg-primary/10 text-primary rounded-lg text-xs font-black hover:bg-primary/20 transition-colors shrink-0">
+                        <span className="material-symbols-rounded text-[14px]">add</span>
+                      </button>
+                    )}
+                  </div>
+                  {showStaffResults && (
+                    <div className="absolute top-full left-0 w-full mt-1 bg-white border border-[#e0e4e5] rounded-xl shadow-lg z-50 overflow-hidden">
+                      {staffResults.map(u => (
+                        <button key={u.id} type="button" onClick={() => handleSelectStaff(u)}
+                          className="w-full text-left px-4 py-3 hover:bg-[#f8f9fa] flex items-center gap-3 group transition-colors border-b border-[#f2f4f4] last:border-0 border-none">
+                          <span className="material-symbols-rounded text-[#acb3b4] text-[18px]">person</span>
+                          <div className="flex flex-col">
+                            <p className="font-bold text-[#2d3435] text-sm group-hover:text-primary leading-tight">{u.nickname}</p>
+                            {u.nativeNickname && <span className="text-xs text-[#acb3b4] font-medium leading-tight">{u.nativeNickname}</span>}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -684,7 +811,7 @@ export default function EditEvent({ onClose, onSuccess, eventData }: Props) {
           <span className="material-symbols-rounded text-2xl">arrow_back</span>
         </button>
         <h1 className="text-[16px] font-bold text-slate-800">
-          {eventData ? (t('event.edit_event') || '이벤트 수정') : (t('event.create_event') || '이벤트 등록')}
+          {eventData ? (t('event.edit_event') || '이벤트 수정') : (t('event.create_event') || '새 이벤트')}
         </h1>
         <div className="flex items-center gap-2">
           {eventData && (

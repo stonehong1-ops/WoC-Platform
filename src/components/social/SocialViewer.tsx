@@ -20,6 +20,8 @@ import { extractPosterData } from "./poster/posterTypes";
 import { POSTER_LAYOUTS } from "./poster/PosterLayouts";
 import { useLanguage } from '@/contexts/LanguageContext';
 import { isVideoUrl } from '@/lib/utils/socialUtils';
+import { QuickMediaChangeBottomSheet } from './QuickMediaChangeBottomSheet';
+import MediaViewerPopup from '@/components/feed/MediaViewerPopup';
 
 interface SocialViewerProps {
   social: Social;
@@ -85,14 +87,9 @@ export default function SocialViewer({ social: initialSocial, onClose, targetDat
     openModal: openChat,
     closeModal: handleCloseChat,
   } = useModalNavigation("chatId");
-  const {
-    value: imageModal,
-    openModal: openImageModal,
-    closeModal: closeImageModal,
-  } = useModalNavigation("imageModal");
-
-  const showImageModal = imageModal === "true";
+  const [isMediaViewerOpen, setIsMediaViewerOpen] = useState(false);
   const [showPosterEditor, setShowPosterEditor] = useState(false);
+  const [showQuickMediaSheet, setShowQuickMediaSheet] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const heroRef = useRef<HTMLDivElement>(null);
@@ -274,7 +271,7 @@ export default function SocialViewer({ social: initialSocial, onClose, targetDat
             </div>
           )}
           {images.length > 0 && (
-            <div className="relative w-full" style={{ height: (social.posterLayoutId && social.posterLayoutId !== "none") ? "100%" : "auto" }} onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd} onClick={() => openImageModal("true")}>
+            <div className="relative w-full" style={{ height: (social.posterLayoutId && social.posterLayoutId !== "none") ? "100%" : "auto" }} onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd} onClick={() => setIsMediaViewerOpen(true)}>
               <div className="flex w-full transition-transform duration-300 ease-out" style={{ height: (social.posterLayoutId && social.posterLayoutId !== "none") ? "100%" : "auto", transform: `translateX(-${currentImg * 100}%)` }}>
                 {images.map((img, i) => (
                   <div key={i} className="w-full flex-shrink-0 flex items-center justify-center" style={{ height: (social.posterLayoutId && social.posterLayoutId !== "none") ? "100%" : "auto" }}>
@@ -293,42 +290,73 @@ export default function SocialViewer({ social: initialSocial, onClose, targetDat
                   </div>
                 ))}
               </div>
-              {/* Live poster overlay on detail hero */}
-              {social.posterLayoutId && social.posterLayoutId !== "none" && (
-                <PosterOverlay social={social} targetDate={targetDate} />
-              )}
-            </div>
-          )}
-        </div>
+              {/* 히어로 이미지 우측 하단 수직 배치 액션 버튼 (카메라 퀵교체 & 공유) */}
+              <div className="absolute bottom-3 right-3 z-30 flex flex-col items-center gap-2">
+                {/* 1. 포스터/동영상 퀵 교체 카메라 버튼 (권한이 있거나 작성자인 경우) */}
+                {canEdit && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowQuickMediaSheet(true);
+                    }}
+                    className="w-10 h-10 rounded-full bg-black/60 backdrop-blur-md border border-white/20 text-white flex items-center justify-center hover:bg-black/80 active:scale-95 transition-all shadow-md group"
+                    title={t('social.quick_media_change_title', '포스터/동영상 5초 퀵 교체')}
+                  >
+                    <span className="material-symbols-rounded text-xl group-hover:scale-110 transition-transform">photo_camera</span>
+                  </button>
+                )}
 
-        <div className="px-4 pt-4 pb-4 border-b border-[#f2f4f4] text-left">
-          <p className="text-sm text-[#596061] whitespace-pre-wrap leading-relaxed">
-            {(() => {
-              const descText = (social as any).description || "";
-              const lines = descText.split('\n');
-              if (lines.length > 10 && !isDescExpanded) {
-                return lines.slice(0, 10).join('\n');
-              }
-              return descText || t('social.no_description');
-            })()}
-          </p>
-          {((social as any).description || "").split('\n').length > 10 && (
-            <button 
-              onClick={() => setIsDescExpanded(!isDescExpanded)} 
-              className="text-xs font-black text-blue-600 mt-2 hover:underline active:scale-95 transition-all flex items-center gap-0.5"
-            >
-              {isDescExpanded ? (
-                <>
-                  <span>{t('common.show_less')}</span>
-                  <span className="material-symbols-rounded text-[14px]">expand_less</span>
-                </>
-              ) : (
-                <>
-                  <span>{t('common.show_more')}</span>
-                  <span className="material-symbols-rounded text-[14px]">expand_more</span>
-                </>
-              )}
-            </button>
+                {/* 2. 공유 버튼 */}
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (navigator.share) {
+                      navigator.share({ title: titleStr, url: window.location.href }).catch(() => {});
+                    } else {
+                      navigator.clipboard?.writeText(window.location.href);
+                      alert(t('social.link_copied'));
+                    }
+                  }}
+                  className="w-10 h-10 rounded-full bg-black/60 backdrop-blur-md border border-white/20 text-white flex items-center justify-center hover:bg-black/80 active:scale-95 transition-all shadow-md group"
+                  title={t('social.menu_share_link', '공유하기')}
+                >
+                  <span className="material-symbols-rounded text-xl group-hover:scale-110 transition-transform">share</span>
+                </button>
+              </div>
+
+              {/* 히어로 이미지 좌측 하단 3줄 설명 (진한 배경 박스 제거 및 텍스트 음영 가독성 최적화) */}
+              <div className="absolute bottom-3 left-4 right-[65px] z-30 text-left bg-gradient-to-t from-black/70 via-black/30 to-transparent p-2 rounded-xl backdrop-blur-[2px]">
+                <p 
+                  className={`text-xs font-semibold text-white/95 leading-snug drop-shadow-md ${isDescExpanded ? '' : 'line-clamp-3'}`}
+                  style={{ textShadow: '0 1px 3px rgba(0,0,0,0.8)' }}
+                >
+                  {(social as any).description || t('social.no_description')}
+                </p>
+                {((social as any).description || "").length > 60 && (
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setIsDescExpanded(!isDescExpanded);
+                    }} 
+                    className="text-[11px] font-black text-amber-300 hover:text-amber-200 mt-1 flex items-center gap-0.5"
+                  >
+                    {isDescExpanded ? (
+                      <>
+                        <span>{t('common.show_less')}</span>
+                        <span className="material-symbols-rounded text-xs">expand_less</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>... {t('common.show_more')}</span>
+                        <span className="material-symbols-rounded text-xs">expand_more</span>
+                      </>
+                    )}
+                  </button>
+                )}
+              </div>
+            </div>
           )}
         </div>
 
@@ -348,7 +376,7 @@ export default function SocialViewer({ social: initialSocial, onClose, targetDat
             onShowImages={(imgs, idx) => {
               setImages(imgs);
               setCurrentImg(idx);
-              openImageModal("true");
+              setIsMediaViewerOpen(true);
             }}
             isUnclaimed={isUnclaimed}
             isClaiming={isClaiming}
@@ -383,34 +411,12 @@ export default function SocialViewer({ social: initialSocial, onClose, targetDat
       </div>
 
       {/* Full Screen Image Viewer */}
-      {showImageModal && (
-        <div className="fixed inset-0 z-[200] bg-black flex flex-col animate-in fade-in duration-200">
-          <div className="absolute top-0 left-0 right-0 z-10 flex justify-end p-4">
-            <button onClick={closeImageModal} className="w-10 h-10 rounded-full bg-black/40 text-white flex items-center justify-center">
-              <span className="material-symbols-rounded text-2xl">close</span>
-            </button>
-          </div>
-          <div className="flex-1 w-full h-full flex items-center justify-center" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
-            <div className="flex w-full transition-transform duration-300 ease-out h-full items-center" style={{ transform: `translateX(-${currentImg * 100}%)` }}>
-              {images.map((img, i) => (
-                <div key={i} className="w-full flex-shrink-0 flex items-center justify-center px-4">
-                  {isVideoUrl(img) ? (
-                    <video 
-                      src={img} 
-                      className="w-full max-h-[80vh] object-contain" 
-                      controls 
-                      autoPlay 
-                      playsInline 
-                    />
-                  ) : (
-                    <img src={img} alt={`Fullscreen ${i + 1}`} className="w-full max-h-[80vh] object-contain" />
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
+      <MediaViewerPopup
+        isOpen={isMediaViewerOpen}
+        onClose={() => setIsMediaViewerOpen(false)}
+        media={images.map(url => ({ url, type: isVideoUrl(url) ? 'video' : 'image' }))}
+        initialIndex={currentImg}
+      />
 
       {/* Chat Room */}
       {chatId && (
@@ -539,6 +545,19 @@ export default function SocialViewer({ social: initialSocial, onClose, targetDat
         <SocialPosterEditor 
           social={social} 
           onClose={() => setShowPosterEditor(false)} 
+        />
+      )}
+
+      {/* 5초 퀵 미디어(포스터/동영상) 교체 바텀시트 */}
+      {showQuickMediaSheet && (
+        <QuickMediaChangeBottomSheet
+          socialId={social.id}
+          currentMediaUrl={social.imageUrl || social.posterExportUrl}
+          isOpen={showQuickMediaSheet}
+          onClose={() => setShowQuickMediaSheet(false)}
+          onSuccess={(newUrl) => {
+            setSocial(prev => ({ ...prev, imageUrl: newUrl, posterExportUrl: newUrl }));
+          }}
         />
       )}
 

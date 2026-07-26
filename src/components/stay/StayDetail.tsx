@@ -16,11 +16,14 @@ import ChatRoom from '@/components/chat/ChatRoom';
 import Link from 'next/link';
 import { useModalNavigation } from '@/hooks/useModalNavigation';
 import { useNavigation } from '@/components/providers/NavigationProvider';
+import UserProfileClickable from '@/components/common/UserProfileClickable';
 import UserBadge from '@/components/common/UserBadge';
 import { db } from '@/lib/firebase/clientApp';
 import { doc, getDoc, Timestamp, setDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
 import { useBlockedUsers } from '@/hooks/useBlockedUsers';
 import ReportModal from '@/components/common/ReportModal';
+import MediaViewerPopup from '@/components/feed/MediaViewerPopup';
+import DetailHeader from '@/components/common/DetailHeader';
 import StayReservationFlow from './StayReservationFlow';
 import { isWeekendOrHolidayStay } from '@/lib/utils/dateUtils';
 import { safeDate } from '@/lib/utils/safeDate';
@@ -104,6 +107,8 @@ export default function StayDetail({ stayId, onClose, isLiked, onToggleLike, isE
   const [stay, setStay] = useState<Stay | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [currentImgIdx, setCurrentImgIdx] = useState(0);
+  const [isMediaViewerOpen, setIsMediaViewerOpen] = useState(false);
+  const [viewerInitialIdx, setViewerInitialIdx] = useState(0);
 
   const { blockedUsers } = useBlockedUsers();
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
@@ -730,52 +735,59 @@ export default function StayDetail({ stayId, onClose, isLiked, onToggleLike, isE
       <style dangerouslySetInnerHTML={{ __html: DETAIL_STYLES }} />
 
       {/* Header */}
-      <div 
-        className={`fixed top-0 left-0 right-0 z-[130] pointer-events-auto flex items-center justify-between px-4 pb-3 transition-all duration-300 ${isScrolled ? 'bg-white/95 backdrop-blur-md shadow-sm' : 'bg-gradient-to-b from-black/30 to-transparent'}`}
-        style={{ paddingTop: Capacitor.isNativePlatform() ? 'max(env(safe-area-inset-top), 24px)' : '24px' }}
-      >
-        <button onClick={() => {
+      <DetailHeader
+        title={stay.title}
+        onClose={() => {
           if (window.history.length > 1) {
             router.back();
           } else {
             onClose();
           }
-        }} className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors relative z-[140] ${isScrolled ? 'bg-slate-100 text-[#2d3435]' : 'bg-black/20 backdrop-blur-sm text-white'}`}>
-          <span className="material-symbols-rounded text-xl">arrow_back</span>
-        </button>
-        <div className={`text-base font-bold truncate max-w-[180px] transition-opacity ${isScrolled ? 'opacity-100 text-[#2d3435]' : 'opacity-0'}`}>{stay.title}</div>
-        <div className="flex items-center gap-2">
-          <button onClick={handleShare} className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${isScrolled ? 'bg-slate-100 text-[#2d3435]' : 'bg-black/20 backdrop-blur-sm text-white'}`}>
-            <span className="material-symbols-rounded text-xl">share</span>
-          </button>
-          <div className="relative">
-            <button 
-              onClick={() => setShowDropdown(!showDropdown)}
-              className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${isScrolled ? 'bg-slate-100 text-[#2d3435]' : 'bg-black/20 backdrop-blur-sm text-white'}`}
+        }}
+        isScrolled={isScrolled}
+        rightActions={
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleShare}
+              aria-label="Share"
+              className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
+                isScrolled ? 'bg-slate-100 text-[#2d3435]' : 'bg-black/20 backdrop-blur-sm text-white'
+              }`}
             >
-              <span className="material-symbols-rounded text-xl">more_vert</span>
+              <span className="material-symbols-rounded text-xl">share</span>
             </button>
-            {showDropdown && (
-              <div className="absolute right-0 mt-2 z-[120] bg-white border border-slate-100 shadow-xl rounded-2xl py-1 w-32 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
-                <button 
-                  onClick={() => { setShowDropdown(false); setIsReportModalOpen(true); }}
-                  className="w-full px-4 py-2.5 text-left text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors flex items-center gap-2"
-                >
-                  <span className="material-symbols-rounded text-base text-red-500">campaign</span>
-                  {t('plaza.report') || '신고하기'}
-                </button>
-                <button 
-                  onClick={() => { setShowDropdown(false); handleBlockToggle(); }}
-                  className="w-full px-4 py-2.5 text-left text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors flex items-center gap-2"
-                >
-                  <span className="material-symbols-rounded text-base text-slate-500">block</span>
-                  {isBlocked ? (t('block.unblock') || '차단 해제') : (t('block.button') || '차단하기')}
-                </button>
-              </div>
-            )}
+            <div className="relative">
+              <button 
+                onClick={() => setShowDropdown(!showDropdown)}
+                aria-label="More options"
+                className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
+                  isScrolled ? 'bg-slate-100 text-[#2d3435]' : 'bg-black/20 backdrop-blur-sm text-white'
+                }`}
+              >
+                <span className="material-symbols-rounded text-xl">more_vert</span>
+              </button>
+              {showDropdown && (
+                <div className="absolute right-0 mt-2 z-[120] bg-white border border-slate-100 shadow-xl rounded-2xl py-1 w-32 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                  <button 
+                    onClick={() => { setShowDropdown(false); setIsReportModalOpen(true); }}
+                    className="w-full px-4 py-2.5 text-left text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors flex items-center gap-2"
+                  >
+                    <span className="material-symbols-rounded text-base text-red-500">campaign</span>
+                    {t('plaza.report') || '신고하기'}
+                  </button>
+                  <button 
+                    onClick={() => { setShowDropdown(false); handleBlockToggle(); }}
+                    className="w-full px-4 py-2.5 text-left text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors flex items-center gap-2"
+                  >
+                    <span className="material-symbols-rounded text-base text-slate-500">block</span>
+                    {isBlocked ? (t('block.unblock') || '차단 해제') : (t('block.button') || '차단하기')}
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
-        </div>
-      </div>
+        }
+      />
 
       <div ref={scrollRef} className="flex-1 overflow-y-auto detail-scrollbar pb-[80px]">
         {/* Images */}
@@ -800,7 +812,7 @@ export default function StayDetail({ stayId, onClose, isLiked, onToggleLike, isE
           
           <div className="flex h-full transition-transform duration-300 ease-out" style={{ transform: `translateX(-${safeImgIdx * 100}%)` }}>
             {images.map((img, i) => (
-              <div key={i} className="w-full flex-shrink-0 h-full" onClick={() => openModal('images')}>
+              <div key={i} className="w-full flex-shrink-0 h-full cursor-pointer" onClick={() => { setViewerInitialIdx(i); setIsMediaViewerOpen(true); }}>
                 <img src={img} className="w-full h-full object-cover" loading={i === 0 ? 'eager' : 'lazy'} />
               </div>
             ))}
@@ -1149,35 +1161,13 @@ export default function StayDetail({ stayId, onClose, isLiked, onToggleLike, isE
         </div>
       )}
 
-      {/* Image Viewer */}
-      {modal === 'images' && (
-        <div className="fixed inset-0 z-[200] bg-black flex flex-col justify-between animate-in fade-in duration-200">
-          <div className="absolute top-0 right-0 p-4 z-10">
-            <button onClick={closeModal} className="w-10 h-10 rounded-full bg-black/40 text-white flex items-center justify-center">
-              <span className="material-symbols-rounded">close</span>
-            </button>
-          </div>
-
-          <div className="flex-1 flex items-center justify-center">
-            <img src={images[safeImgIdx]} className="max-w-full max-h-[80vh] object-contain" />
-          </div>
-
-          {/* 1:1 Caption Overlay in Lightbox */}
-          {gallery[safeImgIdx] && (gallery[safeImgIdx].descKo || gallery[safeImgIdx].descEn) && (
-            <div className="bg-black/60 backdrop-blur-md p-6 text-center text-white border-t border-white/5 z-10">
-              <p className="text-sm font-bold leading-relaxed mb-1 drop-shadow-sm">
-                {language === 'KR' ? gallery[safeImgIdx].descKo : gallery[safeImgIdx].descEn}
-              </p>
-              {language === 'KR' && gallery[safeImgIdx].descEn && (
-                <p className="text-xs text-white/50">{gallery[safeImgIdx].descEn}</p>
-              )}
-              {language !== 'KR' && gallery[safeImgIdx].descKo && (
-                <p className="text-xs text-white/50">{gallery[safeImgIdx].descKo}</p>
-              )}
-            </div>
-          )}
-        </div>
-      )}
+      {/* Media Viewer Popup */}
+      <MediaViewerPopup
+        isOpen={isMediaViewerOpen}
+        onClose={() => setIsMediaViewerOpen(false)}
+        media={images.map(url => ({ url, type: 'image' }))}
+        initialIndex={viewerInitialIdx}
+      />
 
       {/* Reservation Flow Modal */}
       {showReservationFlow && startDate && endDate && (

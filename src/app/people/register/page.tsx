@@ -8,6 +8,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { peopleService } from '@/lib/firebase/peopleService';
 import { Person, PersonRole, ActivityEntry, TourStop } from '@/types/people';
 import { storageService } from '@/lib/firebase/storageService';
+import { StandardImageUploader } from '@/components/common/StandardImageUploader';
 
 const TOTAL_STEPS = 4;
 const ROLE_OPTIONS: PersonRole[] = ['Instructor', 'DJ', 'Organizer', 'Seller', 'Couple', 'Touring', 'Dancer'];
@@ -39,8 +40,48 @@ function RegisterPageContent() {
   const [isLiveNow, setIsLiveNow] = useState(false);
   const [liveStatus, setLiveStatus] = useState('');
   const [partnerName, setPartnerName] = useState('');
+  const [partnerSearch, setPartnerSearch] = useState('');
+  const [allUsers, setAllUsers] = useState<any[]>([]);
+  const [partnerResults, setPartnerResults] = useState<any[]>([]);
+  const [showPartnerResults, setShowPartnerResults] = useState(false);
   const [style, setStyle] = useState('');
   const [partnerSince, setPartnerSince] = useState('');
+
+  useEffect(() => {
+    import('@/lib/firebase/userService').then(({ userService }) => {
+      userService.getAllUsers().then(setAllUsers).catch(console.error);
+    });
+  }, []);
+
+  const handlePartnerSearch = (val: string) => {
+    setPartnerSearch(val);
+    if (val.trim().length >= 1) {
+      const lower = val.toLowerCase().trim();
+      const filtered = allUsers.filter(u =>
+        (u.nickname && u.nickname.toLowerCase().includes(lower)) ||
+        (u.nativeNickname && u.nativeNickname.toLowerCase().includes(lower))
+      );
+      setPartnerResults(filtered.slice(0, 6));
+      setShowPartnerResults(filtered.length > 0);
+    } else {
+      setShowPartnerResults(false);
+      setPartnerResults([]);
+    }
+  };
+
+  const handleSelectPartner = (u: any) => {
+    setPartnerName(u.nickname || u.nativeNickname || u.id);
+    setPartnerSearch('');
+    setShowPartnerResults(false);
+  };
+
+  const handleAddFreePartner = () => {
+    const text = partnerSearch.trim();
+    if (!text) return;
+    setPartnerName(text);
+    setPartnerSearch('');
+    setShowPartnerResults(false);
+  };
 
   // Bio & Communication (Step 3)
   const [bio, setBio] = useState('');
@@ -200,7 +241,7 @@ function RegisterPageContent() {
         featuredVideoUrls: [],
         authorId: user.uid,
         authorName: user.displayName || 'Anonymous',
-        authorPhoto: user.photoURL || undefined,
+        authorPhoto: user.photoURL || '',
       };
 
       if (editId) {
@@ -219,8 +260,8 @@ function RegisterPageContent() {
   };
 
   const headerTitle = editId
-    ? (language === 'KR' ? '주요 인물정보 수정' : 'Edit Key People')
-    : (language === 'KR' ? '주요 인물등록' : 'Register Key People');
+    ? (t('people.edit_title') || '피플 수정')
+    : (t('people.create_title') || '새 피플');
 
   const stepCategoryTitle = 
     step === 1 ? (language === 'KR' ? '기본 인적 정보' : 'Basic Info') :
@@ -292,48 +333,36 @@ function RegisterPageContent() {
 
               {/* Profile Photo */}
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-2">
-                  {t('people.form_profile', '프로필 사진')}
-                </label>
-                <div className="flex items-center gap-4">
-                  <div
-                    onClick={() => profileRef.current?.click()}
-                    className="w-20 h-20 rounded-full overflow-hidden border-2 border-dashed border-slate-200 bg-slate-50 flex items-center justify-center cursor-pointer hover:border-[#007AFF]/40 transition-colors"
-                  >
-                    {profilePreview
-                      ? <img src={profilePreview} alt="Profile" className="w-full h-full object-cover" />
-                      : <span className="material-symbols-rounded text-3xl text-slate-300">person</span>
+                <StandardImageUploader
+                  mode="single"
+                  aspectRatio="1/1"
+                  storageFolderPath="people"
+                  value={profilePreview}
+                  onChange={(url) => {
+                    if (typeof url === 'string') {
+                      setProfilePreview(url);
                     }
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => profileRef.current?.click()}
-                    className="text-xs font-bold text-[#007AFF] bg-[#007AFF]/10 px-3.5 py-2 rounded-xl"
-                  >
-                    {t('people.form_profile_tap', '사진 등록/변경')}
-                  </button>
-                </div>
-                <input ref={profileRef} type="file" accept="image/*" className="hidden" onChange={handleProfileChange} />
+                  }}
+                  label={t('people.form_profile', '프로필 사진')}
+                  placeholder={t('people.form_profile_tap', '프로필 사진 업로드')}
+                />
               </div>
 
               {/* Hero Image */}
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-2">
-                  {t('people.form_hero', '메인 배너/히어로 사진')}
-                </label>
-                <div
-                  onClick={() => heroRef.current?.click()}
-                  className="w-full h-40 rounded-2xl overflow-hidden border-2 border-dashed border-slate-200 bg-slate-50 flex items-center justify-center cursor-pointer hover:border-[#007AFF]/40 transition-colors relative"
-                >
-                  {heroPreview
-                    ? <img src={heroPreview} alt="Hero" className="w-full h-full object-cover" />
-                    : <div className="flex flex-col items-center text-slate-300">
-                        <span className="material-symbols-rounded text-3xl">add_photo_alternate</span>
-                        <span className="text-xs font-bold text-slate-400 mt-1">{t('people.form_hero_tap', '터치하여 대표 이미지 등록')}</span>
-                      </div>
-                  }
-                </div>
-                <input ref={heroRef} type="file" accept="image/*" className="hidden" onChange={handleHeroChange} />
+                <StandardImageUploader
+                  mode="single"
+                  aspectRatio="16/9"
+                  storageFolderPath="people"
+                  value={heroPreview}
+                  onChange={(url) => {
+                    if (typeof url === 'string') {
+                      setHeroPreview(url);
+                    }
+                  }}
+                  label={t('people.form_hero', '메인 배너/히어로 사진')}
+                  placeholder={t('people.form_hero_tap', '16:9 배너 이미지 업로드')}
+                />
               </div>
             </div>
 
@@ -496,13 +525,54 @@ function RegisterPageContent() {
                 <p className="text-[14px] font-bold text-[#007AFF]">
                   {t('people.form_partner_info', '파트너 정보')}
                 </p>
-                <input
-                  type="text"
-                  value={partnerName}
-                  onChange={e => setPartnerName(e.target.value)}
-                  placeholder={t('people.form_partner_name', '파트너 성함')}
-                  className="w-full bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-3.5 py-2.5 text-sm font-bold outline-none focus:border-[#007AFF]"
-                />
+                <div className="relative z-30">
+                  <label className="block text-xs font-bold text-slate-700 mb-1.5">{t('people.form_partner_name', '파트너 성함 (회원 검색 또는 비회원 입력)')}</label>
+                  {partnerName.trim() && (
+                    <div className="flex flex-wrap gap-2 mb-3 p-3 bg-[#f8f9fa] rounded-xl border border-[#e0e4e5]">
+                      <div className="flex items-center gap-1.5 bg-white border border-[#e0e4e5] px-3 py-1.5 rounded-full shadow-sm">
+                        <span className="material-symbols-rounded text-[14px] text-primary">person</span>
+                        <span className="text-xs font-bold text-[#2d3435]">{partnerName}</span>
+                        <button type="button" onClick={() => { setPartnerName(''); setPartnerSearch(''); }} className="text-[#acb3b4] hover:text-red-500 transition-colors ml-1 flex items-center justify-center">
+                          <span className="material-symbols-rounded text-[14px]">cancel</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                  {!partnerName.trim() && (
+                    <div className="relative flex items-center px-4 py-2.5 border border-[#e0e4e5] rounded-xl bg-[#f8f9fa] focus-within:bg-white focus-within:ring-2 focus-within:ring-[#007AFF]/20 transition-all">
+                      <span className="material-symbols-rounded text-[#acb3b4] mr-2">search</span>
+                      <input
+                        type="text"
+                        value={partnerSearch}
+                        onChange={e => handlePartnerSearch(e.target.value)}
+                        onBlur={() => setTimeout(() => setShowPartnerResults(false), 200)}
+                        onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAddFreePartner(); } }}
+                        placeholder={t('people.form_partner_placeholder', '회원 검색 또는 직접 이름 입력 후 엔터...')}
+                        className="w-full bg-transparent border-none p-0 text-sm font-bold outline-none focus:ring-0 text-slate-800 placeholder:text-[#acb3b4] placeholder:font-normal"
+                      />
+                      {partnerSearch.trim() && (
+                        <button type="button" onClick={handleAddFreePartner}
+                          className="ml-2 px-2 py-1 bg-primary/10 text-primary rounded-lg text-xs font-black hover:bg-primary/20 transition-colors shrink-0">
+                          <span className="material-symbols-rounded text-[14px]">add</span>
+                        </button>
+                      )}
+                    </div>
+                  )}
+                  {showPartnerResults && (
+                    <div className="absolute top-full left-0 w-full mt-1 bg-white border border-[#e0e4e5] rounded-xl shadow-lg z-50 overflow-hidden">
+                      {partnerResults.map(u => (
+                        <button key={u.id} type="button" onClick={() => handleSelectPartner(u)}
+                          className="w-full text-left px-4 py-3 hover:bg-[#f8f9fa] flex items-center gap-3 group transition-colors border-b border-[#f2f4f4] last:border-0 border-none">
+                          <span className="material-symbols-rounded text-[#acb3b4] text-[18px]">person</span>
+                          <div className="flex flex-col">
+                            <p className="font-bold text-[#2d3435] text-sm group-hover:text-primary leading-tight">{u.nickname}</p>
+                            {u.nativeNickname && <span className="text-xs text-[#acb3b4] font-medium leading-tight">{u.nativeNickname}</span>}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
                 <div className="grid grid-cols-2 gap-3">
                   <input
                     type="text"

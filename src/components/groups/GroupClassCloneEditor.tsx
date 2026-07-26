@@ -82,12 +82,12 @@ const GroupClassCloneEditor: React.FC<GroupClassCloneEditorProps> = ({
 
   const sourceDisplay = useMemo(() => {
     const [y, m] = sourceMonthStr.split('-').map(Number);
-    return `${MONTH_NAMES[m - 1]} ${y}`;
+    return `${y}년 ${m}월`;
   }, [sourceMonthStr]);
 
   const targetDisplay = useMemo(() => {
     const [y, m] = targetMonth.split('-').map(Number);
-    return `${MONTH_NAMES[m - 1]} ${y}`;
+    return `${y}년 ${m}월`;
   }, [targetMonth]);
 
   const sourceClasses = useMemo(() => {
@@ -147,7 +147,7 @@ const GroupClassCloneEditor: React.FC<GroupClassCloneEditorProps> = ({
   const handleClone = async () => {
     const selected = candidates.filter(c => c.selected);
     if (!selected.length) {
-      toast.error(t('toast.class.no_classes_selected'));
+      toast.error("복제할 클래스를 선택해주세요.");
       return;
     }
 
@@ -168,12 +168,12 @@ const GroupClassCloneEditor: React.FC<GroupClassCloneEditorProps> = ({
         delete (clone as any).isTodayBookingClosed;
         await groupService.addClass(group.id, clone);
       }
-      toast.success(`${selected.length} classes cloned to ${targetDisplay}.`);
+      toast.success(`${selected.length}개 클래스가 ${targetDisplay}로 복제되었습니다.`);
       onComplete();
       onClose();
     } catch (err) {
       console.error("Clone failed:", err);
-      toast.error(t('toast.class.clone_failed'));
+      toast.error("클래스 복제에 실패했습니다.");
     } finally {
       setIsCloning(false);
     }
@@ -187,45 +187,48 @@ const GroupClassCloneEditor: React.FC<GroupClassCloneEditorProps> = ({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: "100%" }}
       transition={{ type: "spring", damping: 25, stiffness: 200 }}
-      className="fixed inset-0 z-[110] bg-white flex items-center justify-center font-['Plus_Jakarta_Sans']"
+      className="fixed inset-0 z-[1000] bg-white flex flex-col items-center justify-center font-['Inter',sans-serif] overflow-hidden"
     >
-      <main className="max-w-md w-full h-[100dvh] bg-white flex flex-col overflow-hidden relative text-left">
+      <main className="w-full max-w-[896px] h-[100dvh] flex flex-col bg-[#f8f9fa] relative text-left pt-[env(safe-area-inset-top,0px)]">
         {/* Header */}
-        <div className="flex-shrink-0 bg-white border-b border-slate-100 px-4 h-14 flex items-center justify-between z-50">
+        <div className="flex-shrink-0 bg-white border-b border-[#e0e4e5] px-4 h-14 flex items-center justify-between z-50 sticky top-0 shadow-sm">
           <button type="button" onClick={onClose} className="w-10 h-10 flex items-center justify-center -ml-2 active:scale-95 transition-transform text-slate-700">
             <span className="material-symbols-rounded text-2xl">arrow_back</span>
           </button>
-          <h1 className="text-[14px] font-black uppercase tracking-widest text-slate-800">
-            {t("group.class.clone_title") || "CLONE CLASSES"}
+          <h1 className="text-base font-bold text-slate-800">
+            지난달 참조
           </h1>
           <div className="w-10" />
         </div>
 
         <form onSubmit={(e) => { e.preventDefault(); handleClone(); }} className="flex-1 flex flex-col overflow-hidden">
           {/* Scrollable Content */}
-          <div className="flex-1 overflow-y-auto px-4 mt-4 space-y-6 pb-6 text-left no-scrollbar">
+          <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4 text-left no-scrollbar">
             
-            {/* Navigation & Target warning */}
-            <div className="space-y-4">
-              {/* Month Navigation */}
-              <div className="bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl p-4 flex flex-col items-center justify-center">
-                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">{t("group.class.clone_from") || "CLONE FROM"}</p>
+            {/* Month Navigation Card */}
+            <div className="space-y-3">
+              <div className="bg-white border border-[#e0e4e5] rounded-2xl p-4 flex flex-col items-center justify-center shadow-sm">
                 <div className="flex items-center justify-between w-full">
-                  <button type="button" onClick={() => setSourceMonthOffset(p => p - 1)} className="p-2 hover:bg-white rounded-full transition-all border border-transparent hover:border-slate-100 shadow-none hover:shadow-sm active:scale-95">
-                    <span className="material-symbols-rounded text-slate-600">chevron_left</span>
+                  <button type="button" onClick={() => setSourceMonthOffset(p => p - 1)} className="w-9 h-9 rounded-xl hover:bg-slate-100 flex items-center justify-center border border-[#e0e4e5] text-slate-700 active:scale-95 transition-all">
+                    <span className="material-symbols-rounded text-xl">chevron_left</span>
                   </button>
-                  <h2 className="text-base font-bold text-slate-800">{sourceDisplay}</h2>
-                  <button type="button" onClick={() => setSourceMonthOffset(p => p + 1)} className="p-2 hover:bg-white rounded-full transition-all border border-transparent hover:border-slate-100 shadow-none hover:shadow-sm active:scale-95">
-                    <span className="material-symbols-rounded text-slate-600">chevron_right</span>
+                  <h2 className="text-base font-bold text-slate-800">{sourceDisplay} 수업 목록</h2>
+                  <button
+                    type="button"
+                    onClick={() => setSourceMonthOffset(p => p + 1)}
+                    disabled={sourceMonthOffset >= -1}
+                    className="w-9 h-9 rounded-xl hover:bg-slate-100 flex items-center justify-center border border-[#e0e4e5] text-slate-700 active:scale-95 transition-all disabled:opacity-30 disabled:pointer-events-none"
+                  >
+                    <span className="material-symbols-rounded text-xl">chevron_right</span>
                   </button>
                 </div>
               </div>
 
-              {/* Arrow Info & Target */}
+              {/* Target Month Info */}
               <div className="flex items-center justify-center gap-2">
-                <span className="material-symbols-rounded text-primary text-base">arrow_downward</span>
-                <span className="text-[10px] font-bold text-primary bg-primary/5 border border-primary/10 px-3 py-1 rounded-full">
-                  {t("group.class.clone_to")?.replace("{target}", targetDisplay) || `Clone to ${targetDisplay}`}
+                <span className="material-symbols-rounded text-[#007AFF] text-base">arrow_downward</span>
+                <span className="text-xs font-bold text-[#007AFF] bg-[#007AFF]/10 border border-[#007AFF]/20 px-3.5 py-1 rounded-full">
+                  {targetDisplay}로 복제 적용
                 </span>
               </div>
 
@@ -347,21 +350,21 @@ const GroupClassCloneEditor: React.FC<GroupClassCloneEditorProps> = ({
 
           {/* Submit Save Floating Bar */}
           {sourceClasses.length > 0 && (
-            <div className="flex-shrink-0 w-full p-4 border-t border-slate-100 bg-white pb-[calc(1rem+env(safe-area-inset-bottom))] z-50">
+            <div className="flex-shrink-0 w-full p-4 border-t border-[#e0e4e5] bg-white z-50 shadow-lg">
               <button
                 type="submit"
                 disabled={isCloning || selectedCount === 0}
-                className="w-full bg-primary text-white font-bold py-3.5 rounded-xl shadow-lg shadow-primary/20 active:scale-[0.98] transition-transform disabled:opacity-50 flex items-center justify-center gap-2"
+                className="w-full bg-[#007AFF] hover:bg-[#0066CC] text-white text-sm font-bold py-3.5 rounded-xl shadow-md active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 {isCloning ? (
                   <>
                     <span className="material-symbols-rounded animate-spin text-sm">progress_activity</span>
-                    {t("common.saving") || "Cloning..."}
+                    <span>클래스 복제 진행 중...</span>
                   </>
                 ) : (
                   <>
                     <span className="material-symbols-rounded text-lg">content_copy</span>
-                    {t("group.class.clone_count_classes")?.replace("{count}", String(selectedCount)) || `Clone ${selectedCount} Classes`}
+                    <span>선택한 {selectedCount}개 클래스 {targetDisplay}로 복제하기</span>
                   </>
                 )}
               </button>

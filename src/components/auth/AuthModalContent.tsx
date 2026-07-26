@@ -53,7 +53,7 @@ export function AuthModalContent() {
   return (
     <div className="fixed inset-0 z-[100] bg-background text-on-surface flex flex-col overflow-y-auto min-h-screen animate-in fade-in duration-300">
       {/* TopAppBar */}
-      <header className="fixed top-0 w-full z-50 flex items-center px-4 h-16 bg-white border-b border-gray-100 transition-colors duration-200">
+      <header className="fixed top-0 w-full z-50 flex items-center px-4 h-16 pt-[env(safe-area-inset-top,0px)] bg-white border-b border-gray-100 transition-colors duration-200">
         <div className="flex items-center w-full max-w-2xl mx-auto justify-between">
           <div className="flex items-center gap-4">
             <h1 className="font-manrope text-base font-semibold text-gray-900 font-headline leading-none">

@@ -11,6 +11,7 @@ import UserAvatar from '@/components/common/UserAvatar';
 import UserName from '@/components/common/UserName';
 import { useNavigation } from '@/components/providers/NavigationProvider';
 import { useLanguage } from '@/contexts/LanguageContext';
+import DetailHeader from '@/components/common/DetailHeader';
 
 interface EventDetailProps {
   event: Event;
@@ -63,30 +64,22 @@ export default function EventDetail({ event, onClose, onEdit, onDelete }: EventD
     <div className="fixed inset-0 z-[100] flex flex-col bg-white animate-in slide-in-from-bottom duration-300">
       <div className="relative bg-white w-full max-w-xl mx-auto flex flex-col flex-1 overflow-hidden">
         {/* Floating Header */}
-        <div className={`absolute top-0 left-0 right-0 z-50 flex items-center justify-between p-4 transition-all duration-300 ${isScrolled ? 'bg-white/90 backdrop-blur-md shadow-sm' : 'bg-transparent pointer-events-none'}`}>
-          <div className="flex-1 flex justify-start pointer-events-auto">
+        <DetailHeader
+          title={language === 'KR' && event.titleNative ? event.titleNative : event.title}
+          titleNative={event.titleNative && language !== 'KR' ? event.titleNative : undefined}
+          onClose={onClose}
+          isScrolled={isScrolled}
+          rightActions={
             <button 
-              onClick={onClose}
-              className={`w-10 h-10 rounded-full flex items-center justify-center transition-all shadow-sm ${isScrolled ? 'bg-gray-100 hover:bg-gray-200 text-[#2d3435]' : 'bg-black/40 hover:bg-black/60 backdrop-blur-md text-white'}`}
+              aria-label="Share"
+              className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
+                isScrolled ? 'bg-slate-100 text-[#2d3435]' : 'bg-black/20 backdrop-blur-sm text-white'
+              }`}
             >
-              <span className="material-symbols-outlined text-[20px]">close</span>
+              <span className="material-symbols-rounded text-xl">share</span>
             </button>
-          </div>
-          
-          <div className={`flex-[2] flex justify-center items-center transition-all duration-300 ${isScrolled ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2 pointer-events-none'}`}>
-             <span className="text-[15px] font-bold text-[#2d3435] tracking-tight truncate max-w-[200px]">
-               {language === 'KR' && event.titleNative ? event.titleNative : event.title}
-             </span>
-          </div>
-
-          <div className="flex-1 flex justify-end gap-2 pointer-events-auto">
-             <button 
-              className={`w-10 h-10 rounded-full flex items-center justify-center transition-all shadow-sm ${isScrolled ? 'bg-gray-100 hover:bg-gray-200 text-[#2d3435]' : 'bg-black/40 hover:bg-black/60 backdrop-blur-md text-white'}`}
-            >
-              <span className="material-symbols-rounded text-[20px]">share</span>
-            </button>
-          </div>
-        </div>
+          }
+        />
 
         <div 
           className="flex-1 overflow-y-auto no-scrollbar scroll-smooth pb-[100px]"

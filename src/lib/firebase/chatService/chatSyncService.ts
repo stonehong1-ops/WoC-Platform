@@ -54,7 +54,13 @@ export const chatSyncService = {
 
   // Private/Business Chat Creation
   getOrCreatePrivateRoom: async (participantIds: string[], creatorId: string, type: 'personal' | 'business' = 'personal') => {
-    const sortedIds = [...participantIds].sort();
+    const sortedIds = Array.from(new Set(participantIds)).sort();
+    
+    // 동일 UID가 양쪽에 들어온 경우 (자기 자신에게 신청) 채팅방 생성 거부
+    if (sortedIds.length < 2) {
+      throw new Error('Cannot create a chat room with yourself');
+    }
+    
     const roomsRef = collection(db, ROOMS_COLLECTION);
     
     if (sortedIds.length === 2) {

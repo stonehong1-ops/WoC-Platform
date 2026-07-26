@@ -34,6 +34,7 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
                     pathname.startsWith('/class') ||
                     pathname.startsWith('/shop') ||
                     pathname.startsWith('/resale') ||
+                    pathname.startsWith('/groups') ||
                     pathname.startsWith('/stay') ||
                     pathname.startsWith('/lost') ||
                     pathname.startsWith('/hub') ||

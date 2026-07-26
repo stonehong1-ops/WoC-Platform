@@ -33,6 +33,7 @@ interface GroupAppShellProps {
   onChatClick?: () => void;
   onDashboardClick?: () => void;
   onFirstTabDetect?: (tabId: string) => void;
+  onCreateClick?: () => void;
 }
 
 export default function GroupAppShell({
@@ -53,6 +54,7 @@ export default function GroupAppShell({
   onChatClick,
   onDashboardClick,
   onFirstTabDetect,
+  onCreateClick,
 }: GroupAppShellProps) {
 
   const { t } = useLanguage();
@@ -66,9 +68,19 @@ export default function GroupAppShell({
   const serializedSelectedFunctions = JSON.stringify(group.selectedFunctions || []);
   const serializedMenuOrder = JSON.stringify(group.menuOrder || []);
 
-  // 탭 목록 계산 — 기존 FUNCTION_TAB_MAP 로직 재사용
+  // 탭 목록 계산 — 데모용 임시 모듈 언셋팅 및 기존 FUNCTION_TAB_MAP 로직 정돈
   const { navTabs, moreMenuItems, adminMenuItems } = useMemo(() => {
-    const rawSelectedFns = group.selectedFunctions || [];
+    // 데모를 위해 설정된 비정규 특수 모듈 언셋팅 대상 필터링
+    const DEMO_UNSET_IDS = new Set([
+      'ticket-booking', 'workshop-registration', 'venue-booking', 'table-reservation',
+      'parent-consultation', 'exam-scheduler', 'attendance-check', 'surveys',
+      'class-manager-a', 'class-manager-b', 'class-manager-c', 'student-reports',
+      'tuition-manager', 'homework-tracker', 'grade-system', 'parent-notifications',
+      'qr-checkin', 'event-staff-manager', 'guest-list-manager', 'retreat-planner',
+      'waitlist-system', 'task-manager', 'internal-wiki'
+    ]);
+
+    const rawSelectedFns = (group.selectedFunctions || []).filter(fnId => !DEMO_UNSET_IDS.has(fnId));
     const selectedFns = [...rawSelectedFns];
 
     if (selectedFns.includes('class-setting') && !selectedFns.includes('class')) {
@@ -105,7 +117,7 @@ export default function GroupAppShell({
 
     const aboutTab = { id: 'about', key: 'group.tab.about', icon: 'info' };
     const coreTabs: { id: string; key: string; icon: string }[] = [];
-    const menuOrder = group.menuOrder || [];
+    const menuOrder = (group.menuOrder || []).filter((item: any) => !DEMO_UNSET_IDS.has(item.id));
     const isAboutInOrder = menuOrder.some((item: any) => item.id === 'about');
 
     if (menuOrder.length > 0) {
@@ -234,8 +246,9 @@ export default function GroupAppShell({
           flex-shrink: 0;
           position: sticky;
           top: 0;
-          z-index: 100;
+          z-index: 400;
           background: #FAF8FF;
+          box-shadow: 0 4px 16px rgba(0,0,0,0.03);
         }
 
         /* HEADER */
@@ -611,7 +624,7 @@ export default function GroupAppShell({
       {/* Sticky Header + Nav Wrapper */}
       <div className="sticky-header-wrapper">
         {/* Header */}
-        <GroupShellHeader group={group} onExit={onExit} />
+        <GroupShellHeader group={group} onExit={onExit} onCreateClick={onCreateClick} />
 
         {/* Nav + More (relative wrapper for More positioning) */}
         <div style={{ position: 'relative', zIndex: 1 }}>

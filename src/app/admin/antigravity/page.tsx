@@ -146,23 +146,7 @@ export default function AntigravityTerminalPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] text-slate-800 flex flex-col font-sans selection:bg-blue-500/10">
-      {/* Sleek Appbar */}
-      <header className="px-4 py-3.5 bg-white/90 backdrop-blur-md border-b border-slate-200/80 flex items-center justify-between shrink-0 shadow-sm relative z-20">
-        <div className="flex items-center gap-2.5">
-          <span className="material-symbols-outlined text-blue-500 text-[20px] fill-1 animate-pulse" style={{ fontVariationSettings: "'FILL' 1" }}>terminal</span>
-          <span className="text-sm font-bold text-slate-800 tracking-wide">
-            {language === "KR" ? "모바일 에이전트" : "Mobile Agent"}
-          </span>
-        </div>
-        <button
-          onClick={() => router.push("/profile")}
-          className="text-xs font-bold text-slate-500 hover:text-slate-800 px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200/80 transition-colors flex items-center gap-1.5"
-        >
-          <span className="material-symbols-outlined !text-[14px]">arrow_back</span>
-          {language === "KR" ? "돌아가기" : "Back"}
-        </button>
-      </header>
+    <div className="flex-1 flex flex-col bg-[#f8fafc] text-slate-800 font-sans selection:bg-blue-500/10 overflow-hidden">
 
       {/* Main Container: Expanded to full width without sidebars */}
       <div className="flex-grow flex flex-col overflow-hidden relative w-full max-w-3xl mx-auto">
@@ -254,7 +238,10 @@ export default function AntigravityTerminalPage() {
         </div>
 
         {/* Input Bar Section with Photo Upload Button */}
-        <div className="shrink-0 bg-white border-t border-slate-200/60 p-4 shadow-xl relative z-10 flex flex-col gap-2 rounded-t-3xl">
+        <div 
+          className="shrink-0 bg-white border-t border-slate-200/60 p-4 pb-safe shadow-xl relative z-10 flex flex-col gap-2 rounded-t-3xl"
+          style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom, 0px))' }}
+        >
           {/* File Attachment Status Bar */}
           {isUploading && (
             <div className="flex items-center gap-2 px-3 py-2 bg-slate-50 rounded-xl border border-slate-200/80 animate-pulse text-[11px] font-medium text-slate-500">

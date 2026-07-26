@@ -93,30 +93,12 @@ const GroupCalendar: React.FC<GroupCalendarProps> = ({ group }) => {
   };
 
   // ============================================================
-  // FORM VIEW (Design 2: Schedule Register)
-  // ============================================================
-  if (isFormOpen) {
-    return (
-      <GroupCalendarForm
-        formData={formData}
-        setFormData={setFormData}
-        isSaving={isSaving}
-        handleFormClose={handleFormClose}
-        handleSaveEvent={handleSaveEvent}
-        getTypeLabel={getTypeLabel}
-        t={t}
-      />
-    );
-  }
-
-  // ============================================================
   // UNIFIED VIEW RENDERING
   // ============================================================
   return (
     <div className="max-w-[600px] mx-auto w-full pb-20 bg-background min-h-screen">
-      {/* 1. Header: Tabs + Add Button */}
+      {/* 1. Header: Sub-navigation Tabs */}
       <div className="flex justify-between items-end px-4 pt-4 mb-6 border-b border-slate-200">
-        {/* Sub-navigation Tabs */}
         <div className="flex gap-6">
           {(['day', 'week', 'month'] as ViewMode[]).map((mode) => (
             <button
@@ -132,15 +114,6 @@ const GroupCalendar: React.FC<GroupCalendarProps> = ({ group }) => {
             </button>
           ))}
         </div>
-
-        {/* Add Event Button (Simplified Shop style) */}
-        <button 
-          onClick={() => handleOpenForm()} 
-          className="bg-[#0057bd] text-white font-['Plus_Jakarta_Sans'] font-bold py-1.5 px-3 rounded-lg shadow-sm shadow-[#0057bd]/20 flex items-center justify-center gap-1.5 hover:bg-[#004ca6] transition-colors active:scale-[0.99] text-xs mb-2"
-        >
-          <span className="material-symbols-outlined text-[14px]">add</span>
-          {t('calendar.addSchedule') || 'Add Schedule'}
-        </button>
       </div>
 
       {/* 2. Unified Calendar Navigation – week/month only */}
@@ -274,6 +247,19 @@ const GroupCalendar: React.FC<GroupCalendarProps> = ({ group }) => {
             formatDate={formatDate}
           />
         </section>
+      )}
+
+      {/* 일정 추가/수정 풀스크린 포탈 모달 */}
+      {isFormOpen && (
+        <GroupCalendarForm
+          formData={formData}
+          setFormData={setFormData}
+          isSaving={isSaving}
+          handleFormClose={handleFormClose}
+          handleSaveEvent={handleSaveEvent}
+          getTypeLabel={getTypeLabel}
+          t={t}
+        />
       )}
     </div>
   );

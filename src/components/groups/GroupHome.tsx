@@ -8,12 +8,13 @@ import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import dynamic from "next/dynamic";
 import { toast } from "sonner";
 
-import { Group, Member } from "@/types/group";
+import { Group, Member, Post } from "@/types/group";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useNavigation } from "@/components/providers/NavigationProvider";
 import { useModalNavigation } from "@/hooks/useModalNavigation";
 import { useBackButtonClose } from "@/hooks/useBackButtonClose";
+import { useLocalBackClose } from "@/hooks/useLocalBackClose";
 
 import ImageWithFallback from "@/components/common/ImageWithFallback";
 import GroupJoinModal from "./GroupJoinModal";
@@ -24,9 +25,13 @@ import { FUNCTION_TAB_MAP, TabType } from '@/constants/groupTabs';
 import { useGroupData } from "./hooks/useGroupData";
 import GroupFeedSection from "./GroupFeedSection";
 import GroupModuleRenderer from "./GroupModuleRenderer";
+import CreateFeedPopup from "../feed/CreateFeedPopup";
+import PostEditorModal from "./PostEditorModal";
+import { GroupCalendarForm } from "./GroupCalendarForm";
 
 const MemberProfileOverlay = dynamic(() => import("./MemberProfileOverlay"));
 const ChatRoomComponent = dynamic(() => import("../chat/ChatRoom"));
+const PostDetailModal = dynamic(() => import("./PostDetailModal"));
 
 const PALETTE_COLORS = [
   "#0057bd", // WoC Blue
@@ -53,14 +58,12 @@ export default function GroupHome({ group: initialGroup, isModal, onClose }: { g
   const { t } = useLanguage();
   const { user, profile, loading } = useAuth();
   const { setGlobalNavHidden } = useNavigation();
-  const { openModal: originalOpenClassFlow } = useModalNavigation('classFlow');
   const openClassFlow = useCallback((flow: string, options?: any) => {
     setLocalClassFlow(flow);
     if (options?.modal) {
       setLocalModalId(options.modal);
     }
-    originalOpenClassFlow(flow, options);
-  }, [originalOpenClassFlow]);
+  }, []);
 
   // 커스텀 훅을 통한 모든 데이터 바인딩 로직 호출
   const {
@@ -119,7 +122,75 @@ export default function GroupHome({ group: initialGroup, isModal, onClose }: { g
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
   const [selectedMoment, setSelectedMoment] = useState<any | null>(null);
 
+  const [selectedNoticePost, setSelectedNoticePost] = useState<Post | null>(null);
+  const [editingNoticePost, setEditingNoticePost] = useState<Post | null>(null);
+
+  // [스톤님 지침] Group Overlay State 단일화 (Pure React State)
+  type GroupOverlay =
+    | null
+    | { type: 'feed-create' }
+    | { type: 'post-editor'; postType: 'notice' | 'board' };
+
+  const [groupOverlay, setGroupOverlay] = useState<GroupOverlay>(null);
+  const [isCalendarFormOpen, setIsCalendarFormOpen] = useState(false);
+  const [calendarFormData, setCalendarFormData] = useState({
+    title: '',
+    description: '',
+    startDate: new Date().toISOString().split('T')[0],
+    startTime: '19:00',
+    endDate: new Date().toISOString().split('T')[0],
+    endTime: '20:00',
+    type: 'general' as any,
+    weekPlans: [] as string[],
+    org: '',
+    dj: '',
+  });
+
+  const handleSaveCalendarEvent = async () => {
+    if (!calendarFormData.title.trim()) {
+      toast.error(t('calendar.eventTitle') || "일정 제목을 입력해주세요.");
+      return;
+    }
+    try {
+      const { groupClassService } = await import('@/lib/firebase/groupService/groupClassService');
+      await groupClassService.addCalendarEvent(currentGroup.id, {
+        title: calendarFormData.title.trim(),
+        description: calendarFormData.description || '',
+        startDate: calendarFormData.startDate,
+        startTime: calendarFormData.startTime,
+        endDate: calendarFormData.endDate,
+        endTime: calendarFormData.endTime,
+        type: calendarFormData.type,
+      });
+      toast.success(t('calendar.scheduleAddedSuccessfully') || "일정이 저장되었습니다.");
+      setIsCalendarFormOpen(false);
+    } catch (e) {
+      console.error(e);
+      toast.error(t('calendar.failedToSaveSchedule') || "저장 중 오류가 발생했습니다.");
+    }
+  };
+
   const [showJoinPromptSheet, setShowJoinPromptSheet] = useState(false);
+
+  // [스톤님 지침] Pure React State 전용 Group Create Action
+  const handleUnifiedGroupCreate = () => {
+    if (activeTab === 'calendar') {
+      setIsCalendarFormOpen(true);
+    } else if (String(activeTab) === 'live' || String(activeTab) === 'moments') {
+      const returnUrl = encodeURIComponent(`/groups/${currentGroup.id}?tab=live`);
+      router.push(`/live/create?groupId=${currentGroup.id}&groupName=${encodeURIComponent(currentGroup.name)}&returnTo=${returnUrl}`);
+    } else if (activeTab === 'class' || activeTab === 'about') {
+      return;
+    } else if (String(activeTab) === 'notice') {
+      setEditingNoticePost(null);
+      setGroupOverlay({ type: 'post-editor', postType: 'notice' });
+    } else if (String(activeTab) === 'board') {
+      setEditingNoticePost(null);
+      setGroupOverlay({ type: 'post-editor', postType: 'board' });
+    } else {
+      setGroupOverlay({ type: 'feed-create' });
+    }
+  };
 
   // 회원 여부 브라우저 로컬 캐시 실시간 갱신 및 보관
   useEffect(() => {
@@ -198,65 +269,12 @@ export default function GroupHome({ group: initialGroup, isModal, onClose }: { g
   const handleCloseClassDetail = () => {
     setLocalClassFlow(null);
     setLocalModalId(null);
-    if (searchParams.has('classFlow') || searchParams.has('modal')) {
-      router.back();
-    } else {
-      const params = new URLSearchParams(searchParams.toString());
-      params.delete('classFlow');
-      params.delete('modal');
-      if (!params.has('active')) {
-        params.set('active', 'true');
-      }
-      const newQuery = params.toString();
-      router.replace(`${pathname}${newQuery ? `?${newQuery}` : ''}`, { scroll: false });
-    }
   };
 
-  // 안전한 Exit UX (Hybrid Trap + Exit Modal)
+  // [스톤님 0단계 Cleanup] 단일 Back Ownership 원칙: 부모(GroupHome)는 open state만 보존하고
+  // 자식 Fullscreen 모달 컴포넌트(ClassDetail, MediaViewerPopup) 본인만 단일 Back Owner로 설정함.
   const exitAttempted = useRef(false);
-  const trapReady = useRef(false);
   const hasInitiallyDetected = useRef(false);
-
-  // Trap 초기 셋업: active=true를 push하여 뒤로가기 1회분 방어벽 생성
-  useEffect(() => {
-    if (!searchParams.has('active') && !searchParams.has('modal')) {
-      router.push(pathname + '?active=true', { scroll: false });
-    }
-  }, []);
-
-  // Trap 준비 완료 감지 및 상태 리셋
-  useEffect(() => {
-    if (searchParams.has('active')) {
-      trapReady.current = true;
-      exitAttempted.current = false;
-    }
-  }, [searchParams]);
-
-  // 이탈 감지: active도 modal도 없을 때 작동
-  useEffect(() => {
-    if (!trapReady.current) return;
-    if (searchParams.has('active') || searchParams.has('modal')) return;
-    // 클래스 상세 모달(classFlow)이 띄워져 있을 때는 뒤로가기 시 이탈 트랩이 작동해서 이전 메뉴로 강제 튕겨내는 오작동을 차단합니다.
-    if (localClassFlow === 'apply' || searchParams.has('classFlow')) return;
-
-    if (activeTab !== 'home') {
-      // Dashboard가 아닌 탭에서 뒤로가기 시 -> Dashboard(home)로 복귀하고 트랩 복구
-      setActiveTab('home');
-      setVisitedTabs(prev => { const newSet = new Set(prev); newSet.add('home'); return newSet; });
-      const params = new URLSearchParams(searchParams.toString());
-      params.delete('tab');
-      params.set('active', 'true');
-      router.replace(pathname + '?' + params.toString(), { scroll: false });
-      exitAttempted.current = false;
-    } else {
-      // 이미 Dashboard(home)에서 뒤로가기 시 -> Group 목록(/groups)으로 바로 이동 (확인 팝업 없이)
-      if (onClose) {
-        onClose();
-      } else {
-        router.replace('/groups');
-      }
-    }
-  }, [searchParams, localClassFlow, activeTab, pathname, router, onClose]);
 
   // Stay: 트랩 복구 + 모달 닫기
   const handleStay = () => {
@@ -264,7 +282,10 @@ export default function GroupHome({ group: initialGroup, isModal, onClose }: { g
     router.replace(pathname + '?active=true', { scroll: false });
   };
 
-  // 모달/팝업 뒤로가기 우선 닫기 처리
+  // [스톤님 최종 원칙] 단일 Back Ownership: 부모(GroupHome)는 isFeedPopupOpen, isPostEditorOpen 등 open state만 소유함.
+  // 자식 모달(CreateFeedPopup, PostEditorModal) 본인이 단일 Back Owner로 소유함.
+  useBackButtonClose(!!selectedNoticePost, () => setSelectedNoticePost(null));
+  useLocalBackClose(isCalendarFormOpen, () => setIsCalendarFormOpen(false));
   useBackButtonClose(!!selectedMember, () => setSelectedMember(null));
   useBackButtonClose(showJoinPromptSheet, () => setShowJoinPromptSheet(false));
   useBackButtonClose(isExitModalOpen, handleStay);
@@ -301,6 +322,7 @@ export default function GroupHome({ group: initialGroup, isModal, onClose }: { g
 
 
   const handleTabClick = (tab: TabType) => {
+
     if (!isFullMember && !isAdminUser) {
       const isAllowed = tab === 'about' || tab === 'board' || tab === 'class';
       if (!isAllowed) {
@@ -413,6 +435,7 @@ export default function GroupHome({ group: initialGroup, isModal, onClose }: { g
         activeTab={activeTab}
         onTabClick={handleTabClick}
         onExit={handleExit}
+        onCreateClick={(activeTab === 'class' || activeTab === 'about') ? undefined : handleUnifiedGroupCreate}
         isAdmin={isAdminUser}
         isFullMember={isFullMember}
         members={members}
@@ -436,9 +459,11 @@ export default function GroupHome({ group: initialGroup, isModal, onClose }: { g
                   isFullMember={isFullMember}
                   isAdminUser={isAdminUser}
                   noticePost={noticePost}
+                  onNoticeClick={(post) => setSelectedNoticePost(post)}
                   recentFeedPosts={recentFeedPosts}
                   upcomingEvents={upcomingEvents}
                   moments={moments}
+                  onMomentClick={(moment) => setSelectedMoment(moment)}
                   adminTodos={adminTodos}
                   handleTabClick={handleTabClick}
                   safeFormat={safeFormat}
@@ -666,6 +691,56 @@ export default function GroupHome({ group: initialGroup, isModal, onClose }: { g
           />
         )}
       </AnimatePresence>
+
+      {/* 공지사항 전용 풀스크린 상세 보기 모달 */}
+      {selectedNoticePost && (
+        <PostDetailModal
+          group={currentGroup}
+          post={selectedNoticePost}
+          isOpen={!!selectedNoticePost}
+          onClose={() => setSelectedNoticePost(null)}
+          onEditPost={(post) => {
+            setSelectedNoticePost(null);
+            setEditingNoticePost(post);
+            setGroupOverlay({ type: 'post-editor', postType: 'notice' });
+          }}
+        />
+      )}
+
+      {/* [스톤님 지침] 광장/피드 숏폼 포스트 등록 팝업 (Pure React State) */}
+      <CreateFeedPopup
+        isOpen={groupOverlay?.type === 'feed-create'}
+        onClose={() => setGroupOverlay(null)}
+        context={{ scope: 'group', scopeId: currentGroup.id }}
+      />
+
+      {/* [스톤님 지침] 통합 게시글/공지 글쓰기 모달 (Pure React State) */}
+      {(groupOverlay?.type === 'post-editor' || editingNoticePost) && (
+        <PostEditorModal
+          group={currentGroup}
+          post={editingNoticePost}
+          defaultPostType={groupOverlay?.type === 'post-editor' ? groupOverlay.postType : (String(activeTab) === 'notice' ? 'notice' : 'board')}
+          isOpen={groupOverlay?.type === 'post-editor' || !!editingNoticePost}
+          onClose={() => {
+            setGroupOverlay(null);
+            setEditingNoticePost(null);
+          }}
+        />
+      )}
+
+      {/* 일정 추가/수정 모달 마운트 */}
+      {isCalendarFormOpen && (
+        <GroupCalendarForm
+          formData={calendarFormData}
+          setFormData={setCalendarFormData as any}
+          isSaving={false}
+          handleFormClose={() => setIsCalendarFormOpen(false)}
+          handleSaveEvent={handleSaveCalendarEvent}
+          getTypeLabel={(type) => type}
+          t={t}
+        />
+      )}
+
     </div>
   );
 }

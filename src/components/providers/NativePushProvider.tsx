@@ -1,13 +1,67 @@
 'use client';
 
 import React, { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { doc, updateDoc, arrayUnion } from 'firebase/firestore';
 import { db } from '@/lib/firebase/clientApp';
 import { useAuth } from '@/components/providers/AuthProvider';
 
 export default function NativePushProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
+  const router = useRouter();
 
+  // Effect A: Push Action Listener (Registered immediately on native mount regardless of user auth state)
+  useEffect(() => {
+    let listenerRef: any = null;
+
+    const setupActionListener = async () => {
+      try {
+        const { Capacitor } = await import('@capacitor/core');
+        if (!Capacitor.isNativePlatform()) return;
+
+        const { PushNotifications } = await import('@capacitor/push-notifications');
+
+        listenerRef = await PushNotifications.addListener(
+          'pushNotificationActionPerformed',
+          (action) => {
+            console.log('[NativePush] Notification action performed:', action);
+            const data = action.notification?.data || {};
+            let targetUrl = data.url || data.targetUrl || data['gcm.notification.url'] || data['google.c.a.c_l'];
+
+            if (!targetUrl && data.roomId) {
+              targetUrl = `/chat?roomId=${data.roomId}`;
+            }
+
+            // URL Whitelist Validation: must start with single '/'
+            if (
+              typeof targetUrl === 'string' &&
+              targetUrl.startsWith('/') &&
+              !targetUrl.startsWith('//')
+            ) {
+              try {
+                sessionStorage.setItem('pendingNativeDeepLink', targetUrl);
+              } catch (e) {
+                // Storage fail-safe
+              }
+              router.push(targetUrl);
+            }
+          }
+        );
+      } catch (err) {
+        console.log('[NativePush] Push action listener setup skipped:', err);
+      }
+    };
+
+    setupActionListener();
+
+    return () => {
+      if (listenerRef && typeof listenerRef.remove === 'function') {
+        listenerRef.remove();
+      }
+    };
+  }, [router]);
+
+  // Effect B: Permission / Register / FCM Token Save (Requires authenticated user)
   useEffect(() => {
     if (!user || !user.uid) return;
 

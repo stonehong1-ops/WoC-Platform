@@ -19,6 +19,8 @@ import RentalRequestFlow from './RentalRequestFlow';
 import ImageWithFallback from '@/components/common/ImageWithFallback';
 import { useBlockedUsers } from '@/hooks/useBlockedUsers';
 import ReportModal from '@/components/common/ReportModal';
+import DetailHeader from '@/components/common/DetailHeader';
+import MediaViewerPopup from '@/components/feed/MediaViewerPopup';
 import { doc, setDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase/clientApp';
 
@@ -43,7 +45,6 @@ export default function RentalDetail({ space, isLiked, onClose, onToggleLike }: 
   const [isScrolled, setIsScrolled] = useState(false);
   const [showFullDesc, setShowFullDesc] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const [showImageModal, setShowImageModal] = useState(false);
 
   // Form & Chat State (URL Derived)
   const [showRequestFlow, setShowRequestFlow] = useState(false);
@@ -115,6 +116,8 @@ export default function RentalDetail({ space, isLiked, onClose, onToggleLike }: 
   // Image carousel
   const [currentImg, setCurrentImg] = useState(0);
   const touchStartX = useRef(0);
+  const [isMediaViewerOpen, setIsMediaViewerOpen] = useState(false);
+  const [viewerInitialIdx, setViewerInitialIdx] = useState(0);
   const images = useMemo(() => {
     const candidateImages: string[] = [];
     
@@ -267,56 +270,62 @@ export default function RentalDetail({ space, isLiked, onClose, onToggleLike }: 
       `}} />
 
       {/* ━━━ Header ━━━ */}
-      <div 
-        className={`fixed top-0 left-0 right-0 z-[110] flex items-center justify-between px-4 pb-3 transition-all duration-300 ${isScrolled ? 'bg-white/95 backdrop-blur-md shadow-sm' : 'bg-gradient-to-b from-black/30 to-transparent'}`}
-        style={{ paddingTop: Capacitor.isNativePlatform() ? 'max(env(safe-area-inset-top), 24px)' : '24px' }}
-      >
-        <button onClick={onClose} className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${isScrolled ? 'bg-slate-100 text-[#2d3435]' : 'bg-black/20 backdrop-blur-sm text-white'}`}>
-          <span className="material-symbols-rounded text-xl">arrow_back</span>
-        </button>
-        <div className={`text-base font-bold truncate max-w-[180px] transition-opacity ${isScrolled ? 'opacity-100 text-[#2d3435]' : 'opacity-0'}`}>{space.title}</div>
-        <div className="flex items-center gap-2">
-          <button onClick={() => {
-            if (navigator.share) {
-              navigator.share({
-                title: space.title,
-                url: window.location.href,
-              }).catch(console.error);
-            } else {
-              alert('Share not supported on this browser');
-            }
-          }}
-            className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${isScrolled ? 'bg-slate-100 text-[#2d3435]' : 'bg-black/20 backdrop-blur-sm text-white'}`}>
-            <span className="material-symbols-rounded text-xl">share</span>
-          </button>
-          <div className="relative">
-            <button 
-              onClick={() => setShowDropdown(!showDropdown)}
-              className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${isScrolled ? 'bg-slate-100 text-[#2d3435]' : 'bg-black/20 backdrop-blur-sm text-white'}`}
+      <DetailHeader
+        title={space.title}
+        onClose={onClose}
+        isScrolled={isScrolled}
+        rightActions={
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                if (navigator.share) {
+                  navigator.share({
+                    title: space.title,
+                    url: window.location.href,
+                  }).catch(console.error);
+                } else {
+                  alert('Share not supported on this browser');
+                }
+              }}
+              aria-label="Share"
+              className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
+                isScrolled ? 'bg-slate-100 text-[#2d3435]' : 'bg-black/20 backdrop-blur-sm text-white'
+              }`}
             >
-              <span className="material-symbols-rounded text-xl">more_vert</span>
+              <span className="material-symbols-rounded text-xl">share</span>
             </button>
-            {showDropdown && (
-              <div className="absolute right-0 mt-2 z-[120] bg-white border border-slate-100 shadow-xl rounded-2xl py-1 w-32 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
-                <button 
-                  onClick={() => { setShowDropdown(false); setIsReportModalOpen(true); }}
-                  className="w-full px-4 py-2.5 text-left text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors flex items-center gap-2"
-                >
-                  <span className="material-symbols-rounded text-base text-red-500">campaign</span>
-                  {t('plaza.report') || '신고하기'}
-                </button>
-                <button 
-                  onClick={() => { setShowDropdown(false); handleBlockToggle(); }}
-                  className="w-full px-4 py-2.5 text-left text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors flex items-center gap-2"
-                >
-                  <span className="material-symbols-rounded text-base text-slate-500">block</span>
-                  {isBlocked ? (t('block.unblock') || '차단 해제') : (t('block.button') || '차단하기')}
-                </button>
-              </div>
-            )}
+            <div className="relative">
+              <button 
+                onClick={() => setShowDropdown(!showDropdown)}
+                aria-label="More options"
+                className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
+                  isScrolled ? 'bg-slate-100 text-[#2d3435]' : 'bg-black/20 backdrop-blur-sm text-white'
+                }`}
+              >
+                <span className="material-symbols-rounded text-xl">more_vert</span>
+              </button>
+              {showDropdown && (
+                <div className="absolute right-0 mt-2 z-[120] bg-white border border-slate-100 shadow-xl rounded-2xl py-1 w-32 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                  <button 
+                    onClick={() => { setShowDropdown(false); setIsReportModalOpen(true); }}
+                    className="w-full px-4 py-2.5 text-left text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors flex items-center gap-2"
+                  >
+                    <span className="material-symbols-rounded text-base text-red-500">campaign</span>
+                    {t('plaza.report') || '신고하기'}
+                  </button>
+                  <button 
+                    onClick={() => { setShowDropdown(false); handleBlockToggle(); }}
+                    className="w-full px-4 py-2.5 text-left text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors flex items-center gap-2"
+                  >
+                    <span className="material-symbols-rounded text-base text-slate-500">block</span>
+                    {isBlocked ? (t('block.unblock') || '차단 해제') : (t('block.button') || '차단하기')}
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
-        </div>
-      </div>
+        }
+      />
 
       {/* ━━━ Scrollable Content ━━━ */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto detail-scrollbar pb-[80px]">
@@ -324,7 +333,7 @@ export default function RentalDetail({ space, isLiked, onClose, onToggleLike }: 
         {/* 1) Image Carousel */}
         <div className="relative aspect-square w-full overflow-hidden bg-[#f2f4f4]">
           {images.length > 0 && (
-            <div className="relative h-full" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd} onClick={() => setShowImageModal(true)}>
+            <div className="relative h-full cursor-pointer" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd} onClick={() => { setViewerInitialIdx(currentImg); setIsMediaViewerOpen(true); }}>
               <div className="flex h-full transition-transform duration-300 ease-out" style={{ transform: `translateX(-${currentImg * 100}%)` }}>
                 {images.map((img, i) => (
                   <div key={i} className="min-w-full shrink-0 h-full">
@@ -540,31 +549,13 @@ export default function RentalDetail({ space, isLiked, onClose, onToggleLike }: 
       )}
 
       {/* ━━━ Full Screen Image Viewer ━━━ */}
-      {showImageModal && (
-        <div className="fixed inset-0 z-[200] bg-black flex flex-col animate-in fade-in duration-200">
-          <div className="absolute top-0 left-0 right-0 z-10 flex justify-end p-4">
-            <button onClick={() => setShowImageModal(false)} className="w-10 h-10 rounded-full bg-black/40 text-white flex items-center justify-center">
-              <span className="material-symbols-rounded text-2xl">close</span>
-            </button>
-          </div>
-          <div className="flex-1 w-full h-full flex items-center justify-center" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
-            <div className="flex w-full transition-transform duration-300 ease-out h-full items-center" style={{ transform: `translateX(-${currentImg * 100}%)` }}>
-              {images.map((img, i) => (
-                <div key={i} className="min-w-full shrink-0 flex items-center justify-center px-4">
-                  <ImageWithFallback src={img} alt={`Fullscreen ${i + 1}`} className="w-full max-h-[80vh] object-contain" fallbackType="cover" category={space.category || 'Rental'} />
-                </div>
-              ))}
-            </div>
-          </div>
-          {images.length > 1 && (
-            <div className="absolute bottom-10 left-0 right-0 flex justify-center gap-2">
-              {images.map((_, i) => (
-                <div key={i} className={`rounded-full transition-all ${i === currentImg ? 'w-6 h-2 bg-white' : 'w-2 h-2 bg-white/40'}`} />
-              ))}
-            </div>
-          )}
-        </div>
-      )}
+      {/* ━━━ Full Screen Media Viewer ━━━ */}
+      <MediaViewerPopup
+        isOpen={isMediaViewerOpen}
+        onClose={() => setIsMediaViewerOpen(false)}
+        media={images.map(url => ({ url, type: 'image' }))}
+        initialIndex={viewerInitialIdx}
+      />
 
       {/* ━━━ Full Screen Chat Room ━━━ */}
       {chatRoomId && (

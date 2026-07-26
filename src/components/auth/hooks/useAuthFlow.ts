@@ -333,13 +333,9 @@ export function useAuthFlow() {
       const provider = new GoogleAuthProvider();
       let isNativeApp = false;
       try { const { Capacitor } = require('@capacitor/core'); isNativeApp = Capacitor.isNativePlatform(); } catch {}
-      const isStandalone = isNativeApp || (typeof window !== 'undefined' && (
-        (window.navigator as any).standalone || 
-        window.matchMedia('(display-mode: standalone)').matches
-      ));
-      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      const isMobile = typeof window !== 'undefined' && /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
-      if (isStandalone || isMobile) {
+      if (isNativeApp || isMobile) {
         await signInWithRedirect(auth, provider);
       } else {
         const result = await signInWithPopup(auth, provider);
@@ -373,13 +369,9 @@ export function useAuthFlow() {
       const provider = new FacebookAuthProvider();
       let isNativeApp = false;
       try { const { Capacitor } = require('@capacitor/core'); isNativeApp = Capacitor.isNativePlatform(); } catch {}
-      const isStandalone = isNativeApp || (typeof window !== 'undefined' && (
-        (window.navigator as any).standalone || 
-        window.matchMedia('(display-mode: standalone)').matches
-      ));
-      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      const isMobile = typeof window !== 'undefined' && /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
-      if (isStandalone || isMobile) {
+      if (isNativeApp || isMobile) {
         await signInWithRedirect(auth, provider);
       } else {
         const result = await signInWithPopup(auth, provider);
@@ -431,19 +423,19 @@ export function useAuthFlow() {
         const appVerifier = (window as any).recaptchaVerifier;
         
         let cleanedNumber = phoneNumber.replace(/[^\d]/g, '');
-        const currentCC = phoneCountryCode;
-        const currentCCNumeric = currentCC.replace('+', '');
+        const ccMatch = phoneCountryCode.match(/\+\d+/);
+        const cleanCC = ccMatch ? ccMatch[0] : '+82';
+        const ccNumeric = cleanCC.replace(/[^\d]/g, '');
         
-        if (cleanedNumber.startsWith(currentCCNumeric)) {
-          cleanedNumber = cleanedNumber.slice(currentCCNumeric.length);
+        if (cleanedNumber.startsWith(ccNumeric)) {
+          cleanedNumber = cleanedNumber.slice(ccNumeric.length);
         }
         
-        if (currentCC === '+82') {
+        if (cleanCC === '+82' || cleanCC.endsWith('82')) {
           cleanedNumber = cleanedNumber.replace(/^0+/, '');
         }
-        setPhoneNumber(cleanedNumber);
         
-        const finalPhoneE164 = `${currentCC}${cleanedNumber}`;
+        const finalPhoneE164 = `${cleanCC}${cleanedNumber}`;
         return await signInWithPhoneNumber(auth, finalPhoneE164, appVerifier);
       };
 

@@ -9,6 +9,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { CITY_COORDINATES } from '@/constants/locations';
 import { useLocation } from '@/components/providers/LocationProvider';
 import { REGIONS } from '@/components/layout/LocationSelector';
+import { StandardImageUploader } from '@/components/common/StandardImageUploader';
 
 interface CreateResaleItemProps {
   isOpen: boolean;
@@ -199,8 +200,8 @@ export default function CreateResaleItem({ isOpen, onClose, onSuccess, itemToEdi
   };
 
   const modalTitle = itemToEdit
-    ? (t('resale.edit_title') || '중고상품 수정')
-    : (t('resale.create_title') || '중고상품 등록');
+    ? (t('resale.edit_title') || '중고장터 수정')
+    : (t('resale.create_title') || '새 중고장터');
 
   const stepCategoryTitle = step === 1
     ? (t('shop.product_details') || '상품 기본정보')
@@ -253,38 +254,23 @@ export default function CreateResaleItem({ isOpen, onClose, onSuccess, itemToEdi
                     {t('resale.add_photo') || 'PHOTOS'} <span className="text-red-500">*</span>
                   </p>
                 </div>
-                <span className="text-xs font-bold text-slate-400">{previewUrls.length}/{MAX_PHOTOS}</span>
               </div>
               <div className="p-4">
-                <div className="flex gap-3 overflow-x-auto no-scrollbar py-1">
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    className="shrink-0 w-24 h-30 border-2 border-dashed border-[#e0e4e5] rounded-2xl flex flex-col items-center justify-center gap-1 hover:border-[#007AFF] hover:bg-blue-50/50 transition-colors"
-                  >
-                    <span className="material-symbols-rounded text-2xl text-[#007AFF]">add_a_photo</span>
-                    <span className="text-[11px] font-bold text-slate-500">Add Photo</span>
-                  </button>
-                  <input ref={fileInputRef} type="file" accept="image/*" multiple onChange={handleFileChange} className="hidden" />
-
-                  {previewUrls.map((url, idx) => (
-                    <div key={idx} className="relative shrink-0 w-24 h-30 border border-slate-200 rounded-2xl overflow-hidden shadow-sm group">
-                      <img src={url} alt={`Preview ${idx}`} className="w-full h-full object-cover" />
-                      {idx === 0 && (
-                        <div className="absolute top-1.5 left-1.5 bg-[#FF9500] text-white text-[9px] font-black tracking-wider px-1.5 py-0.5 rounded shadow-sm z-10">
-                          PRIMARY
-                        </div>
-                      )}
-                      <button
-                        type="button"
-                        onClick={() => removePhoto(idx)}
-                        className="absolute top-1.5 right-1.5 bg-black/60 text-white rounded-full p-1 hover:bg-red-500 transition-colors"
-                      >
-                        <span className="material-symbols-rounded text-[14px]">close</span>
-                      </button>
-                    </div>
-                  ))}
-                </div>
+                <StandardImageUploader
+                  mode="multiple"
+                  aspectRatio="1/1"
+                  maxCount={MAX_PHOTOS}
+                  storageFolderPath="resale"
+                  value={previewUrls}
+                  onChange={(urls) => {
+                    if (Array.isArray(urls)) {
+                      setPreviewUrls(urls);
+                      setExistingUrls(urls);
+                      setMediaFiles([]);
+                    }
+                  }}
+                  placeholder={t('resale.add_photo') || '상품 사진 추가'}
+                />
               </div>
             </div>
 
@@ -386,7 +372,8 @@ export default function CreateResaleItem({ isOpen, onClose, onSuccess, itemToEdi
                     <select
                       value={currency}
                       onChange={(e) => setCurrency(e.target.value)}
-                      className="w-full bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-3 py-3 text-sm font-bold focus:border-[#007AFF] outline-none"
+                      className="w-full bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-3 py-3 text-sm font-bold focus:border-[#007AFF] outline-none appearance-none cursor-pointer"
+                      style={{ WebkitAppearance: 'none', appearance: 'none' }}
                     >
                       {CURRENCIES.map(curr => (
                         <option key={curr} value={curr}>{curr}</option>
@@ -471,7 +458,8 @@ export default function CreateResaleItem({ isOpen, onClose, onSuccess, itemToEdi
                   <select
                     value={tradeMethod}
                     onChange={(e) => setTradeMethod(e.target.value as TradeMethod)}
-                    className="w-full bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-4 py-3 text-sm font-bold focus:border-[#007AFF] outline-none"
+                    className="w-full bg-[#f8f9fa] border border-[#e0e4e5] rounded-xl px-4 py-3 text-sm font-bold focus:border-[#007AFF] outline-none appearance-none cursor-pointer"
+                    style={{ WebkitAppearance: 'none', appearance: 'none' }}
                   >
                     <option value="direct">{t('resale.trade_direct') || 'Direct'}</option>
                     <option value="delivery">{t('resale.trade_delivery') || 'Delivery'}</option>

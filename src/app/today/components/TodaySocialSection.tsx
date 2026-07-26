@@ -135,7 +135,7 @@ function SocialCard({ social, date, venuesMap, onPress }: {
               POPUP
             </span>
           )}
-          {social.type === "regular" && recurrenceText && (
+          {social.type === "regular" && recurrenceText && !recurrenceText.startsWith("매주") && !recurrenceText.startsWith("Every") && (
             <span className="bg-indigo-600 text-white text-[8px] font-black px-1.5 py-0.5 rounded-md leading-none uppercase tracking-wide shadow-sm">
               {recurrenceText}
             </span>
@@ -153,9 +153,9 @@ function SocialCard({ social, date, venuesMap, onPress }: {
 
         {/* 장소 오버레이 (이미지 하단) */}
         {venue && (
-          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent px-2 pb-1.5 pt-3 z-10">
-            <div className="flex items-center gap-0.5 text-[9px] font-bold text-white/90">
-              <span className="material-symbols-outlined !text-[10px]">location_on</span>
+          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/85 via-black/45 to-transparent px-2 pb-1.5 pt-4 z-10">
+            <div className="flex items-center gap-0.5 text-[9.5px] font-black text-white drop-shadow-[0_1.5px_2px_rgba(0,0,0,0.95)] drop-shadow-[0_0.5px_1px_rgba(0,0,0,0.95)]">
+              <span className="material-symbols-outlined !text-[11px] drop-shadow-[0_1px_2px_rgba(0,0,0,0.95)]">location_on</span>
               <span className="truncate">{venue}</span>
             </div>
           </div>

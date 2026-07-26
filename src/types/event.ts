@@ -156,6 +156,8 @@ export interface Event {
   venueId?: string;
   venueName?: string;
   venueNameNative?: string;
+  organizerName?: string;
+  organizerNames?: string[];
   organizerPhone?: string;
   staffIds?: string[];
   staffNames?: string[];
