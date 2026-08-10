@@ -27,6 +27,9 @@ import EventViewer from "@/components/events/EventViewer";
 import { toast } from "sonner";
 import { useBlockedUsers } from "@/hooks/useBlockedUsers";
 import { tabCache } from "@/lib/utils/tabCache";
+import { useSocialScope } from "@/app/social/hooks/useSocialScope";
+import SocialScopeTabs from "@/app/social/components/SocialScopeTabs";
+import GlobalSocialView from "@/app/social/components/GlobalSocialView";
 
 const ensureLegacySchedule = (cls: any) => {
   if (!cls) return cls;
@@ -54,6 +57,33 @@ const ensureLegacySchedule = (cls: any) => {
     };
   }
   return cls;
+};
+
+const getSafeSchedulesArray = (cls: any): any[] => {
+  if (!cls) return [];
+  if (Array.isArray(cls.schedule)) return cls.schedule;
+  if (Array.isArray(cls.sessions)) {
+    return cls.sessions.map((sess: any, idx: number) => ({
+      week: idx + 1,
+      date: sess.date || null,
+      startTime: sess.startTime,
+      endTime: sess.endTime,
+      timeSlot: sess.startTime && sess.endTime ? `${sess.startTime} - ${sess.endTime}` : "시간 조율",
+      content: sess.content || ""
+    }));
+  }
+  if (cls.schedule && typeof cls.schedule === 'object') {
+    const s = cls.schedule;
+    return [{
+      week: 1,
+      date: s.startDate || s.date || null,
+      startTime: s.startTime,
+      endTime: s.endTime,
+      timeSlot: s.startTime && s.endTime ? `${s.startTime} - ${s.endTime}` : "시간 조율",
+      content: ""
+    }];
+  }
+  return [];
 };
 
 // 분리된 하위 컴포넌트 임포트
@@ -155,6 +185,12 @@ function parseDateStr(date: any): string {
   return "";
 }
 
+function parseDateToYmd(dateVal: any): string {
+  if (!dateVal) return "";
+  const d = toJsDate(dateVal);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
 function isSystemOwner(ownerId?: string): boolean {
   if (!ownerId) return false;
   const SYSTEM_OWNERS = ["system", "system1", "admin_seeding", "adminstone", "7iaZAmaYY9dNNEShmJmROI8XrtH2"];
@@ -163,34 +199,41 @@ function isSystemOwner(ownerId?: string): boolean {
 
 function isVenueMatched(sVenueId?: string, selectedGroup?: Group | null): boolean {
   if (!selectedGroup) return false;
-  const gVenueId = selectedGroup.venueId;
-  const gId = selectedGroup.id;
-  const gSlug = selectedGroup.slug;
-  const gName = selectedGroup.name;
+  const gVenueId = selectedGroup.venueId || "";
+  const gId = (selectedGroup.id || "").toLowerCase().trim();
+  const gSlug = (selectedGroup.slug || "").toLowerCase().trim();
+  const gName = (selectedGroup.name || "").toLowerCase().trim();
 
   if (!sVenueId) return false;
+  const sId = sVenueId.toLowerCase().trim();
 
-  if (gVenueId && sVenueId === gVenueId) return true;
+  // 1. 베뉴 ID 직접 일치
+  if (gVenueId && sId === gVenueId.toLowerCase().trim()) return true;
 
-  if (sVenueId.startsWith("v_manual_")) {
-    const rawAlias = sVenueId.replace("v_manual_", "").toLowerCase().trim();
-    
-    if (gId && gId.toLowerCase().includes(rawAlias)) return true;
-    if (gSlug && gSlug.toLowerCase().includes(rawAlias)) return true;
-    if (gName && gName.toLowerCase().includes(rawAlias)) return true;
+  // 2. 소셜 베뉴 ID와 그룹 ID/슬러그/이름 직접 교차 포함 일치
+  if (gId && sId.includes(gId)) return true;
+  if (gSlug && sId.includes(gSlug)) return true;
+  if (gName && sId.includes(gName)) return true;
 
-    const MANUAL_VENUE_MAP: Record<string, string[]> = {
-      "solotango": ["soltang-studio", "ocho"],
-      "lavida": ["mi-vida-tango-studio"],
-      "pasion": ["tango-pasion"],
-      "troilo": ["club-troilo"],
-      "bonita": ["bonita-seoul"],
-      "arbol": ["ocho"],
-    };
+  // 3. 수동 스튜디오/베뉴 앨리어스 매핑
+  const rawAlias = sId.replace("v_manual_", "").replace("v_", "").toLowerCase().trim();
 
-    if (MANUAL_VENUE_MAP[rawAlias]) {
-      const matchedGroupIds = MANUAL_VENUE_MAP[rawAlias];
-      if (matchedGroupIds.includes(gId)) return true;
+  const MANUAL_VENUE_MAP: Record<string, string[]> = {
+    "solotango": ["soltang-studio", "ocho", "ocho-studio"],
+    "lavida": ["mi-vida-tango-studio"],
+    "pasion": ["tango-pasion"],
+    "troilo": ["club-troilo"],
+    "bonita": ["bonita-seoul"],
+    "arbol": ["ocho", "ocho-studio"],
+    "ocho": ["ocho", "ocho-studio", "ocho_studio", "오초"],
+    "ocho-studio": ["ocho", "ocho-studio", "ocho_studio", "오초"],
+    "오초": ["ocho", "ocho-studio", "ocho_studio", "오초"],
+  };
+
+  if (MANUAL_VENUE_MAP[rawAlias]) {
+    const matchedGroupIds = MANUAL_VENUE_MAP[rawAlias];
+    if (matchedGroupIds.some(targetId => gId.includes(targetId) || gSlug.includes(targetId) || gName.includes(targetId))) {
+      return true;
     }
   }
 
@@ -332,10 +375,19 @@ export default function TodayPageContent() {
   const { location } = useLocation();
   const { blockedUsers } = useBlockedUsers();
 
+  // LOCAL/GLOBAL 모드 + date의 canonical state (URL Query Parameter 기반)
+  const socialScope = useSocialScope();
+
   const today = new Date();
   const [weekOffset, setWeekOffset] = useState(0);
-  const [selectedDate, setSelectedDate] = useState<Date>(today);
+  const [selectedDate, setSelectedDate] = useState<Date>(() => socialScope.date);
   const weekDates = getWeekDates(today, weekOffset);
+
+  // selectedDate 변경 시 URL의 date 파라미터로 반영 (기존 setSelectedDate 호출부는 그대로 둔 채 단방향 동기화)
+  useEffect(() => {
+    socialScope.setDate(selectedDate);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedDate]);
 
   const [rawSocials, setRawSocials] = useState<Social[]>([]);
   const socials = useMemo(() => {
@@ -460,7 +512,7 @@ export default function TodayPageContent() {
 
     const matchedClassesCount = allClasses.filter(({ cls }) => {
       if (cls.groupId !== selectedGroup.id || cls.status !== "Open") return false;
-      return cls.schedule?.some((sch: any) => {
+      return getSafeSchedulesArray(cls).some((sch: any) => {
         const dStr = parseDateStr(sch.date);
         const cDate = normalizeDateStr(dStr);
         return cDate && parseDateToYmd(cDate) === ymd;
@@ -632,7 +684,7 @@ export default function TodayPageContent() {
     return seoulStudios.filter(grp => {
       const hasClassThisMonth = allClasses.some(({ cls }) => {
         if (cls.groupId !== grp.id || cls.status !== "Open") return false;
-        return cls.schedule?.some((s: any) => {
+        return getSafeSchedulesArray(cls).some((s: any) => {
           const dStr = parseDateStr(s.date);
           const clsDate = normalizeDateStr(dStr);
           if (!clsDate) return false;
@@ -711,7 +763,7 @@ export default function TodayPageContent() {
     const result: { cls: GroupClass; date: Date }[] = [];
     allClasses.forEach(({ cls }) => {
       if (cls.status !== "Open") return;
-      cls.schedule?.forEach((s: any) => {
+      getSafeSchedulesArray(cls).forEach((s: any) => {
         const dStr = parseDateStr(s.date);
         const clsDate = normalizeDateStr(dStr);
         if (clsDate) {
@@ -962,7 +1014,7 @@ export default function TodayPageContent() {
       if (!isAll) {
         if (!activeGroupIds.has(cls.groupId || "")) return;
       }
-      cls.schedule?.forEach((s: any) => {
+      getSafeSchedulesArray(cls).forEach((s: any) => {
         const dStr = parseDateStr(s.date);
         const clsDate = normalizeDateStr(dStr);
         if (clsDate && clsDate.toDateString() === targetStr) {
@@ -991,11 +1043,7 @@ export default function TodayPageContent() {
     return `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, "0")}-${String(selectedDate.getDate()).padStart(2, "0")}`;
   }, [selectedDate]);
 
-  const parseDateToYmd = (dateVal: any): string => {
-    if (!dateVal) return "";
-    const d = toJsDate(dateVal);
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-  };
+  // parseDateToYmd는 모듈 레벨 function으로 이동 완료 (TDZ 방지)
 
   // 1. 소셜 목록 필터링
   const milongas = useMemo(() => {
@@ -1056,7 +1104,7 @@ export default function TodayPageContent() {
 
   // 서울 및 광역권 정렬된 소셜 목록 가공
   const milongasSorted = useMemo(() => {
-    if (Object.keys(venuesMap).length === 0) return [];
+    const safeVenuesMap = venuesMap || {};
     
     const mapped = milongas.map(s => {
       const dbCity = s.city || "";
@@ -1368,12 +1416,14 @@ export default function TodayPageContent() {
 
   // 2. 선택된 날짜의 소셜들
   const socialEvents = useMemo(() => {
+    try {
     const events: any[] = [];
     const eventType = "social";
     const cityLower = (location?.city || "All").toLowerCase().trim();
     const isSeoul = cityLower.includes("seoul") || cityLower.includes("서울") || cityLower.includes("soul");
 
     const locationFiltered = djAndGroupMatchedSocials.filter(s => {
+      if (selectedGroupId !== "All") return true;
       const venue = s.venueId ? venuesMap[s.venueId] : null;
       const resolvedCity = s.city || venue?.city || venue?.address || '';
       return matchLocationGroup(location.city, resolvedCity);
@@ -1455,17 +1505,19 @@ export default function TodayPageContent() {
       }
     });
     return events;
-  }, [djAndGroupMatchedSocials, weekDates, location, selectedDjName, venuesMap, language]);
+    } catch (e) { console.error('[WoC] socialEvents useMemo crash:', e); return []; }
+  }, [djAndGroupMatchedSocials, weekDates, location, selectedDjName, selectedGroupId, venuesMap, language]);
 
   // 3. 선택된 날짜의 클래스들
   const classEvents = useMemo(() => {
+    try {
     const events: any[] = [];
     const eventType = "class";
     allClasses.forEach(({ cls }) => {
       if (cls.status !== "Open") return;
       if (selectedGroupId !== "All" && cls.groupId !== selectedGroupId) return;
 
-      cls.schedule?.forEach((s: any) => {
+      getSafeSchedulesArray(cls).forEach((s: any) => {
         const dStr = parseDateStr(s.date);
         const clsDate = normalizeDateStr(dStr);
         if (clsDate) {
@@ -1491,17 +1543,19 @@ export default function TodayPageContent() {
               createdAt: Date.now(),
               instructor: getInstructorsLabel(cls.instructors || []),
               level: cls.level || "",
-              weekPlans: cls.schedule ? cls.schedule.map((sch: any) => sch.content || "") : [],
+              weekPlans: getSafeSchedulesArray(cls).map((sch: any) => sch.content || ""),
             });
           }
         }
       });
     });
     return events;
+    } catch (e) { console.error('[WoC] classEvents useMemo crash:', e); return []; }
   }, [allClasses, weekDates, selectedGroupId, language]);
 
   // 월간용 전체 클래스 일정 목록 수집
   const monthlyClassEvents = useMemo(() => {
+    try {
     const events: any[] = [];
     const eventType = "class";
     const now = new Date();
@@ -1512,7 +1566,7 @@ export default function TodayPageContent() {
       if (cls.status !== "Open") return;
       if (selectedGroupId !== "All" && cls.groupId !== selectedGroupId) return;
 
-      cls.schedule?.forEach((s: any) => {
+      getSafeSchedulesArray(cls).forEach((s: any) => {
         const dStr = parseDateStr(s.date);
         const clsDate = normalizeDateStr(dStr);
         if (clsDate) {
@@ -1542,17 +1596,19 @@ export default function TodayPageContent() {
               level: cls.level || "",
               imageUrl: cls.imageUrl || "",
               org: orgName,
-              weekPlans: cls.schedule ? cls.schedule.map((sch: any) => sch.content || "") : [],
+              weekPlans: getSafeSchedulesArray(cls).map((sch: any) => sch.content || ""),
             });
           }
         }
       });
     });
     return events;
+    } catch (e) { console.error('[WoC] monthlyClassEvents useMemo crash:', e); return []; }
   }, [allClasses, selectedGroupId, language, allGroups]);
 
   // 4. 월간 달력 소셜 이벤트 목록
   const monthlySocialEvents = useMemo(() => {
+    try {
     const events: any[] = [];
     const eventType = "social";
     const now = new Date();
@@ -1573,6 +1629,7 @@ export default function TodayPageContent() {
     const isSeoul = cityLower.includes("seoul") || cityLower.includes("서울") || cityLower.includes("soul");
 
     const locationFiltered = djAndGroupMatchedSocials.filter(s => {
+      if (selectedGroupId !== "All") return true;
       const venue = s.venueId ? venuesMap[s.venueId] : null;
       const resolvedCity = s.city || venue?.city || venue?.address || '';
       return matchLocationGroup(location.city, resolvedCity);
@@ -1670,6 +1727,7 @@ export default function TodayPageContent() {
       }
     });
     return events;
+    } catch (e) { console.error('[WoC] monthlySocialEvents useMemo crash:', e); return []; }
   }, [djAndGroupMatchedSocials, selectedDjName, selectedGroupId, venuesMap, language, location]);
 
   // 전체 일정 합산 (소셜 및 쁘락띠가만 남기고 클래스/이벤트 원천 제거)
@@ -2445,8 +2503,41 @@ export default function TodayPageContent() {
     );
   };
 
+  // GLOBAL 모드: Local(Group/Class/월간뷰 등) 렌더 트리는 완전히 건드리지 않고 별도 화면으로 분기.
+  // 위쪽의 모든 훅/데이터 로딩은 scope와 무관하게 이미 동일하게 실행되므로 Hooks 규칙 위반 없음.
+  if (socialScope.scope === "global") {
+    return (
+      <div className="min-h-screen bg-[#f5f7fa]">
+        <SocialScopeTabs scope={socialScope.scope} onChange={socialScope.setScope} language={language} />
+        <GlobalSocialView
+          socials={socials}
+          venuesMap={venuesMap}
+          selectedDate={selectedDate}
+          weekDates={weekDates}
+          onSelectDate={setSelectedDate}
+          country={socialScope.country}
+          city={socialScope.city}
+          onSelectCountry={socialScope.setCountry}
+          onSelectCity={socialScope.setCity}
+          onOpenSocial={openSocialModal}
+          language={language}
+        />
+
+        {/* 소셜 상세 뷰어 (Local과 동일 컴포넌트/상태 재사용 — Back navigation 동일하게 동작) */}
+        {selectedSocial && (
+          <SocialViewer
+            social={selectedSocial}
+            targetDate={socialTargetDate}
+            onClose={closeSocialModal}
+          />
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#f5f7fa]">
+      <SocialScopeTabs scope={socialScope.scope} onChange={socialScope.setScope} language={language} />
 
       {/* ── 라인1: 그룹 선택 + DJ 선택 + 카드|시간|주간 토글 ── */}
       <div className="relative z-30 px-4 py-2.5 flex items-center justify-between bg-white border-b border-slate-100/80">
@@ -2533,6 +2624,7 @@ export default function TodayPageContent() {
                             setSelectedGroupId(grp.id);
                             setSelectedDjName("All");
                             setShowGroupDropdown(false);
+                            if (todayViewMode === "list") setTodayViewMode("timeline");
                           }}
                           className={`px-3 py-2 rounded-xl text-[10.5px] font-bold text-left transition-all border cursor-pointer ${
                             isSelected
@@ -2630,6 +2722,7 @@ export default function TodayPageContent() {
                             setSelectedDjName(dj);
                             setSelectedGroupId("All");
                             setShowDjDropdown(false);
+                            setTodayViewMode("calendar");
                           }}
                           className={`px-3 py-2 rounded-xl text-[10.5px] font-bold text-left transition-all border cursor-pointer ${
                             isSelected
@@ -2650,6 +2743,8 @@ export default function TodayPageContent() {
 
         {/* 카드 / 시간 / 주간 뷰방식 토글 */}
         <div className="flex items-center bg-slate-100 p-0.5 rounded-xl border border-slate-200/50 shadow-inner">
+          {/* 카드 버튼: 그룹/DJ 선택 시 숨김 */}
+          {selectedGroupId === "All" && selectedDjName === "All" && (
           <button
             onClick={() => setTodayViewMode("list")}
             className={`px-3.5 py-1.5 flex items-center justify-center rounded-lg text-[12px] font-black transition-all cursor-pointer ${
@@ -2660,6 +2755,7 @@ export default function TodayPageContent() {
           >
             {language === "KR" ? "카드" : "Card"}
           </button>
+          )}
           <button
             onClick={() => setTodayViewMode("timeline")}
             className={`px-3.5 py-1.5 flex items-center justify-center rounded-lg text-[12px] font-black transition-all cursor-pointer ${
@@ -2802,7 +2898,22 @@ export default function TodayPageContent() {
         <div className="bg-white border-b border-slate-100 px-4 py-2.5 flex items-center justify-between animate-in fade-in slide-in-from-top-2 duration-200">
           <div className="flex items-center gap-3 min-w-0 flex-1">
             <div className="w-10 h-10 rounded-full overflow-hidden bg-primary/10 border border-primary/20 shrink-0 flex items-center justify-center">
-              <span className="material-symbols-rounded text-primary text-xl">headphones</span>
+              {(() => {
+                const djSocial = allSocials.find(s => {
+                  if (!s.djs || s.djs.length === 0) return false;
+                  return s.djs.some((d: any) => {
+                    const parts = (d.djName || '').split(/[,/&+\s]+/).map((n: string) => n.trim().toLowerCase());
+                    return parts.includes(selectedDjName.toLowerCase());
+                  });
+                });
+                const posterUrl = djSocial?.imageUrl || djSocial?.posterExportUrl;
+                return posterUrl ? (
+                  /* eslint-disable-next-line @next/next/no-img-element */
+                  <img src={posterUrl} alt="DJ" className="w-full h-full object-cover" />
+                ) : (
+                  <span className="material-symbols-rounded text-primary text-xl">headphones</span>
+                );
+              })()}
             </div>
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-1.5">
@@ -2852,9 +2963,8 @@ export default function TodayPageContent() {
           <div className="space-y-4 animate-in fade-in duration-300 text-left">
             {renderWeeklyCalendarView()}
           </div>
-        ) : selectedGroupId === "All" && selectedDjName === "All" ? (
-          todayViewMode === "timeline" ? (
-            /* 타임라인 방식 뷰 (이미지 배제한 텍스트 중심) */
+        ) : todayViewMode === "timeline" ? (
+          /* 타임라인 방식 뷰 - 그룹/DJ 선택 상태 무관하게 동작 */
             <div className="space-y-6 animate-in fade-in duration-300">
               {/* 낮 일정 */}
               <div>
@@ -2954,8 +3064,8 @@ export default function TodayPageContent() {
                 )}
               </div>
             </div>
-          ) : (
-            /* 기존 지역 기반 당일 소셜/클래스 목록 (하위 분리 컴포넌트 탑재) */
+        ) : selectedGroupId === "All" && selectedDjName === "All" ? (
+          /* 기존 지역 기반 당일 소셜/클래스 목록 (하위 분리 컴포넌트 탑재) */
             <div className="space-y-7 animate-in fade-in duration-300">
               {/* 소셜 및 쁘락띠까 목록 */}
               {(todayTypeFilter === "all" || todayTypeFilter === "social" || todayTypeFilter === "practice") && (
@@ -2972,7 +3082,6 @@ export default function TodayPageContent() {
                 />
               )}
             </div>
-          )
         ) : (
           /* 그룹 모드 (오늘 상세 카드 + 이번 주 요일별 세로 목록) */
           <div className="space-y-6 animate-in fade-in duration-300">

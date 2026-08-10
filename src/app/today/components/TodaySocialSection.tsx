@@ -71,7 +71,7 @@ function getRecurrenceDisplay(
   }
 }
 
-function SocialCard({ social, date, venuesMap, onPress }: {
+export function SocialCard({ social, date, venuesMap, onPress }: {
   social: Social; date: Date; venuesMap: Record<string, any>; onPress: () => void;
 }) {
   const { t, language } = useLanguage();
