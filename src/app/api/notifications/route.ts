@@ -1,31 +1,10 @@
 import { NextResponse } from 'next/server';
-import admin from 'firebase-admin';
-
-// Firebase Admin SDK 초기화 (중복 초기화 방지)
-if (!admin.apps.length) {
-  const privateKey = process.env.FIREBASE_PRIVATE_KEY;
-  const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
-  const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
-
-  if (privateKey && clientEmail && projectId) {
-    try {
-      admin.initializeApp({
-        credential: admin.credential.cert({
-          projectId: projectId.trim(),
-          clientEmail: clientEmail.trim(),
-          privateKey: privateKey.replace(/\\n/g, '\n').trim(),
-        }),
-      });
-    } catch (error: any) {
-      console.error('Firebase Admin 초기화 오류:', error.stack);
-    }
-  } else {
-    console.warn('Firebase Admin 환경 변수가 누락되어 초기화를 건너뜁니다.');
-  }
-}
+import admin from '@/lib/server/firebaseAdmin';
+import { requireUser, AuthError } from '@/lib/server/userAuth';
 
 export async function POST(request: Request) {
   try {
+    await requireUser(request);
     const body = await request.json();
     const { targets, tokens, title, message, data, unreadCount } = body;
 
@@ -71,6 +50,8 @@ export async function POST(request: Request) {
           data: data || {},
           android: {
             notification: {
+              icon: 'ic_notification_tango',
+              channelId: 'default',
               notificationCount: badgeVal
             }
           },
@@ -143,6 +124,9 @@ export async function POST(request: Request) {
       failedTokens 
     });
   } catch (error: any) {
+    if (error instanceof AuthError) {
+      return NextResponse.json({ error: error.message }, { status: error.status });
+    }
     console.error('Push notification error:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

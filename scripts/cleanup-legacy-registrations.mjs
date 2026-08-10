@@ -41,12 +41,17 @@ const LEGACY_GROUP_ID = 'rglqeyjDHzzhbUwuim5O';
 const REAL_GROUP_ID = 'freestyle-tango';
 const BOUNDARY_DATE = new Date('2026-05-15T00:00:00+09:00'); // KST 기준 5월 15일 00:00:00
 
+const CONFIRMED = process.argv.includes('--confirm');
+
 async function runCleanup() {
   console.log('--------------------------------------------------');
   console.log('Starting Firestore Class Registrations Cleanup & Correction...');
   console.log(`Target Boundary Date (KST): ${BOUNDARY_DATE.toLocaleString('ko-KR')}`);
   console.log(`Legacy Group ID: ${LEGACY_GROUP_ID}`);
   console.log(`Real Group ID: ${REAL_GROUP_ID}`);
+  if (!CONFIRMED) {
+    console.log('[DRY RUN] No documents will be deleted or updated. Re-run with --confirm to apply changes.');
+  }
   console.log('--------------------------------------------------');
 
   const registrationsRef = db.collection('class_registrations');
@@ -85,6 +90,11 @@ async function runCleanup() {
 
     // 5월 15일 이전 신청 내역은 전부 삭제
     if (appliedDate < BOUNDARY_DATE) {
+      if (!CONFIRMED) {
+        console.log(`[DRY RUN] Would delete - ID: ${docId} | Applicant: ${applicantName} | Date: ${appliedDate.toISOString()} | Class: ${classTitle}`);
+        deleteCount++;
+        continue;
+      }
       try {
         await registrationsRef.doc(docId).delete();
         console.log(`[DELETE] Success - ID: ${docId} | Applicant: ${applicantName} | Date: ${appliedDate.toISOString()} | Class: ${classTitle}`);
@@ -93,10 +103,15 @@ async function runCleanup() {
         console.error(`[DELETE ERROR] ID: ${docId} | Applicant: ${applicantName} |`, err);
         errorCount++;
       }
-    } 
+    }
     // 5월 15일 이후 신청 내역은 남겨두되, 레거시 ID인 경우 보정
     else {
       if (currentGroupId === LEGACY_GROUP_ID) {
+        if (!CONFIRMED) {
+          console.log(`[DRY RUN] Would update - ID: ${docId} | Applicant: ${applicantName} | Date: ${appliedDate.toISOString()} | GroupId would correct: ${currentGroupId} -> ${REAL_GROUP_ID}`);
+          updateCount++;
+          continue;
+        }
         try {
           await registrationsRef.doc(docId).update({
             groupId: REAL_GROUP_ID,
@@ -119,12 +134,15 @@ async function runCleanup() {
   }
 
   console.log('--------------------------------------------------');
-  console.log('Cleanup & Migration process completed successfully.');
+  console.log(CONFIRMED ? 'Cleanup & Migration process completed successfully.' : 'Dry run complete. No data was changed.');
   console.log(`Summary:`);
   console.log(`  - Deleted documents (before May 15): ${deleteCount}`);
   console.log(`  - Updated documents (corrected legacy ID): ${updateCount}`);
   console.log(`  - Kept documents (valid May 15+): ${keepCount}`);
   console.log(`  - Process errors encountered: ${errorCount}`);
+  if (!CONFIRMED) {
+    console.log('Run again with --confirm to actually apply these deletes/updates.');
+  }
   console.log('--------------------------------------------------');
   process.exit(0);
 }

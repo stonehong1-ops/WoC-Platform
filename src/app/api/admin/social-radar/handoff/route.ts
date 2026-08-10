@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import admin from 'firebase-admin';
 import fs from 'fs';
 import path from 'path';
+import { requireAdmin, AdminAuthError } from '@/lib/server/adminAuth';
 
 // Firebase Admin SDK 초기화 (환경변수 우선, 로컬 JSON 파일 폴백)
 if (admin.apps.length === 0) {
@@ -43,6 +44,7 @@ const getDb = () => admin.firestore();
 
 export async function POST(req: Request) {
   try {
+    await requireAdmin(req);
     const { candidateId } = await req.json();
     if (!candidateId) {
       return NextResponse.json({ error: 'Candidate ID가 없습니다.' }, { status: 400 });
@@ -159,6 +161,9 @@ Do not directly write from Social Radar into socials unless this task is explici
       warning: fileWarning
     });
   } catch (err: any) {
+    if (err instanceof AdminAuthError) {
+      return NextResponse.json({ error: err.message }, { status: err.status });
+    }
     console.error('Handoff route error:', err);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }

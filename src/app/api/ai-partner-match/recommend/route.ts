@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import admin from 'firebase-admin';
+import { requireUser, AuthError } from '@/lib/server/userAuth';
 
 function getAdminDb() {
   if (!admin.apps.length) {
@@ -42,13 +43,10 @@ interface PartnerMatchData {
 
 export async function POST(req: NextRequest) {
   try {
+    const userId = await requireUser(req);
     const adminDb = getAdminDb();
     const body = await req.json();
-    const { userId, cursor, limit = 10 } = body;
-
-    if (!userId) {
-      return NextResponse.json({ error: 'Missing userId' }, { status: 400 });
-    }
+    const { cursor, limit = 10 } = body;
 
     // 1. Fetch current user document
     const userDocRef = adminDb.collection('users').doc(userId);
@@ -165,6 +163,9 @@ export async function POST(req: NextRequest) {
       hasMore
     });
   } catch (error) {
+    if (error instanceof AuthError) {
+      return NextResponse.json({ error: error.message }, { status: error.status });
+    }
     console.error('Error in recommend API:', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }

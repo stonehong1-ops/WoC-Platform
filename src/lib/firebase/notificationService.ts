@@ -1,4 +1,4 @@
-import { db } from './clientApp';
+import { auth, db } from './clientApp';
 import { 
   collection, 
   addDoc, 
@@ -396,9 +396,13 @@ export const notificationService = {
       const tokens = userData?.fcmTokens;
 
       if (tokens && Array.isArray(tokens) && tokens.length > 0) {
+        const idToken = await auth.currentUser?.getIdToken();
         await fetch('/api/notifications', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            ...(idToken ? { Authorization: `Bearer ${idToken}` } : {})
+          },
           body: JSON.stringify({
             tokens: tokens,
             title: title,

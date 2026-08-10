@@ -50,14 +50,14 @@ service cloud.firestore {
     }
     match /venues/{venueId} {
       allow read: if true;
-      allow write: if true;
+      allow write: if isUserActive(request.auth.uid);
     }
     match /plaza/{postId} {
       allow read: if true;
-      allow write: if true;
+      allow write: if isUserActive(request.auth.uid);
       match /comments/{commentId} {
         allow read: if true;
-        allow write: if true;
+        allow write: if isUserActive(request.auth.uid);
       }
     }
     match /chat_rooms/{roomId} {
@@ -70,7 +70,7 @@ service cloud.firestore {
     }
     match /events/{eventId} {
       allow read: if true;
-      allow write: if true;
+      allow write: if isUserActive(request.auth.uid);
       match /registrations/{regId} {
         allow read: if true;
         allow write: if isUserActive(request.auth.uid);
@@ -248,10 +248,10 @@ service cloud.firestore {
     }
     match /cartoons/{cartoonId} {
       allow read: if true;
-      allow write: if true;
+      allow write: if isUserActive(request.auth.uid);
       match /reviews/{reviewId} {
         allow read: if true;
-        allow write: if true;
+        allow write: if isUserActive(request.auth.uid);
       }
     }
     match /lost_found_items/{itemId} {
@@ -285,7 +285,7 @@ service cloud.firestore {
     }
     match /people/{personId} {
       allow read: if true;
-      allow write: if true;
+      allow write: if isUserActive(request.auth.uid);
     }
     match /settings/{docId} {
       allow read: if true;
@@ -326,20 +326,22 @@ service cloud.firestore {
     }
 
     match /culture_contents/{docId} {
-      allow read, write: if true;
+      allow read: if true;
+      allow write: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
     }
 
     match /groupScheduleImages/{docId} {
       allow read: if true;
-      allow write: if true;
+      allow write: if isUserActive(request.auth.uid);
     }
 
     // WocClass: 최상위 독립 클래스 객체
     match /classes/{classId} {
       allow read: if true;
-      allow write: if true;
+      allow write: if isUserActive(request.auth.uid);
       match /registrations/{regId} {
-        allow read, write: if true;
+        allow read: if true;
+        allow write: if isUserActive(request.auth.uid);
       }
     }
 

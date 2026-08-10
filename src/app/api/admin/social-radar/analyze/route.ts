@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import admin from 'firebase-admin';
 import fs from 'fs';
 import { matchSocialCandidate, MiniSocial } from '@/app/admin/social-radar/lib/socialMatchService';
+import { requireAdmin, AdminAuthError } from '@/lib/server/adminAuth';
 
 // Firebase Admin SDK 초기화 (환경변수 우선, 로컬 JSON 파일 폴백)
 if (admin.apps.length === 0) {
@@ -43,6 +44,7 @@ const getDb = () => admin.firestore();
 
 export async function POST(req: Request) {
   try {
+    await requireAdmin(req);
     const { text, url } = await req.json();
     if (!text) {
       return NextResponse.json({ error: '분석할 텍스트가 없습니다.' }, { status: 400 });
@@ -201,6 +203,9 @@ export async function POST(req: Request) {
 
     return NextResponse.json(finalResponse);
   } catch (err: any) {
+    if (err instanceof AdminAuthError) {
+      return NextResponse.json({ error: err.message }, { status: err.status });
+    }
     console.error('Analyze route error:', err);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }

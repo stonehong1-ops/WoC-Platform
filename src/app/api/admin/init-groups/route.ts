@@ -1,6 +1,7 @@
 import { db } from '@/lib/firebase/clientApp';
 import { collection, getDocs, doc, updateDoc, Timestamp } from 'firebase/firestore';
 import { NextResponse } from 'next/server';
+import { requireAdmin, AdminAuthError } from '@/lib/server/adminAuth';
 
 const MANDATORY_FUNCTIONS = [
   'dashboard',
@@ -14,8 +15,9 @@ const MANDATORY_FUNCTIONS = [
   'roles-permissions'
 ];
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    await requireAdmin(request);
     const groupsRef = collection(db, 'groups');
     const snapshot = await getDocs(groupsRef);
     
@@ -46,10 +48,13 @@ export async function GET() {
       results 
     });
   } catch (error: any) {
+    if (error instanceof AdminAuthError) {
+      return NextResponse.json({ success: false, error: error.message }, { status: error.status });
+    }
     console.error('Migration Error:', error);
-    return NextResponse.json({ 
+    return NextResponse.json({
       success: false,
-      error: error.message 
+      error: error.message
     }, { status: 500 });
   }
 }

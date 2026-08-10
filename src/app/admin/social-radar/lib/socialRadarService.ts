@@ -1,8 +1,19 @@
-import { db } from '@/lib/firebase/clientApp';
+import { auth, db } from '@/lib/firebase/clientApp';
 import { collection, doc, updateDoc, getDocs, query, orderBy, getDoc, addDoc } from 'firebase/firestore';
 import { SocialRadarCandidate } from '../types';
 
 const COLLECTION_NAME = 'socialRadarCandidates';
+
+async function authHeaders(): Promise<Record<string, string>> {
+  const idToken = await auth.currentUser?.getIdToken();
+  if (!idToken) {
+    throw new Error('로그인이 필요합니다.');
+  }
+  return {
+    'Content-Type': 'application/json',
+    Authorization: `Bearer ${idToken}`
+  };
+}
 
 export const socialRadarService = {
   /**
@@ -35,7 +46,7 @@ export const socialRadarService = {
     try {
       const response = await fetch('/api/admin/social-radar/handoff', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: await authHeaders(),
         body: JSON.stringify({ candidateId })
       });
       const data = await response.json();
@@ -56,7 +67,7 @@ export const socialRadarService = {
   async analyzeText(payload: { text: string; url?: string }): Promise<SocialRadarCandidate> {
     const response = await fetch('/api/admin/social-radar/analyze', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: await authHeaders(),
       body: JSON.stringify(payload)
     });
     

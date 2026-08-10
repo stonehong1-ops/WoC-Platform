@@ -15,7 +15,7 @@ import {
   writeBatch,
   runTransaction
 } from 'firebase/firestore';
-import { db } from '../clientApp';
+import { auth, db } from '../clientApp';
 import { ChatMessage } from '@/types/chat';
 import { ROOMS_COLLECTION, MESSAGES_COLLECTION, USERS_COLLECTION } from './chatRoomService';
 
@@ -149,9 +149,13 @@ export const chatMessageService = {
         }
 
         if (targets.length > 0) {
+          const idToken = await auth.currentUser?.getIdToken();
           await fetch('/api/notifications', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+              'Content-Type': 'application/json',
+              ...(idToken ? { Authorization: `Bearer ${idToken}` } : {})
+            },
             body: JSON.stringify({
               targets: targets,
               title: roomData.type === 'private' ? senderName : (roomData.name || senderName),

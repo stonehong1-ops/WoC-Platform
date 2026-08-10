@@ -1,9 +1,11 @@
 import { NextResponse } from 'next/server';
 import { collection, getDocs, addDoc, serverTimestamp, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase/clientApp';
+import { requireAdmin, AdminAuthError } from '@/lib/server/adminAuth';
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    await requireAdmin(request);
     const groupsQuery = query(collection(db, 'groups'), where('tags', 'array-contains', 'Studio'));
     const groupDocs = await getDocs(groupsQuery);
     
@@ -41,6 +43,9 @@ export async function GET() {
     
     return NextResponse.json({ success: true, count: addedCount, message: `Seeded ${addedCount} rentals.` });
   } catch (err: any) {
+    if (err instanceof AdminAuthError) {
+      return NextResponse.json({ success: false, error: err.message }, { status: err.status });
+    }
     console.error(err);
     return NextResponse.json({ success: false, error: err.message }, { status: 500 });
   }

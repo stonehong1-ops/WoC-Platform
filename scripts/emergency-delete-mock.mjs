@@ -41,8 +41,13 @@ const tempClassIds = [
   '70abe9f2-6a45-4739-97c2-3f75e718b046'
 ];
 
+const CONFIRMED = process.argv.includes('--confirm');
+
 async function emergencyDelete() {
   console.log('=================== EMERGENCY CLEANUP START ===================');
+  if (!CONFIRMED) {
+    console.log('[DRY RUN] No documents will be deleted. Re-run with --confirm to actually delete.');
+  }
   const registrationsRef = db.collection('class_registrations');
 
   let deletedCount = 0;
@@ -54,8 +59,12 @@ async function emergencyDelete() {
     if (docSnap.exists) {
       const data = docSnap.data();
       console.log(`[DELETE TARGET] Found by ID: ${docId} | Applicant: ${data.applicantName}`);
-      await docRef.delete();
-      console.log(`[DELETE SUCCESS] Deleted doc: ${docId}`);
+      if (CONFIRMED) {
+        await docRef.delete();
+        console.log(`[DELETE SUCCESS] Deleted doc: ${docId}`);
+      } else {
+        console.log(`[DRY RUN] Would delete doc: ${docId}`);
+      }
       deletedCount++;
     } else {
       console.log(`[NOT FOUND] Doc ID ${docId} already deleted or not found.`);
@@ -69,14 +78,21 @@ async function emergencyDelete() {
     const data = doc.data();
     if (tempClassIds.includes(data.classId)) {
       console.log(`[EXTRA DELETE TARGET] Found by Temp Class ID: ${doc.id} | Applicant: ${data.applicantName}`);
-      await registrationsRef.doc(doc.id).delete();
-      console.log(`[DELETE SUCCESS] Deleted extra doc: ${doc.id}`);
+      if (CONFIRMED) {
+        await registrationsRef.doc(doc.id).delete();
+        console.log(`[DELETE SUCCESS] Deleted extra doc: ${doc.id}`);
+      } else {
+        console.log(`[DRY RUN] Would delete extra doc: ${doc.id}`);
+      }
       deletedCount++;
     }
   }
 
   console.log('\n=================== EMERGENCY CLEANUP COMPLETE ===================');
-  console.log(`Total mock registrations deleted: ${deletedCount}`);
+  console.log(`Total mock registrations ${CONFIRMED ? 'deleted' : 'matched (dry run, none deleted)'}: ${deletedCount}`);
+  if (!CONFIRMED && deletedCount > 0) {
+    console.log('Run again with --confirm to actually delete these documents.');
+  }
   console.log('==================================================================');
   process.exit(0);
 }

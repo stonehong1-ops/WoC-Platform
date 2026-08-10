@@ -1,5 +1,6 @@
 import { GoogleGenAI } from '@google/genai';
 import { NextRequest } from 'next/server';
+import { requireUser, AuthError } from '@/lib/server/userAuth';
 
 // ---------------------------------------------------------------------------
 // 비용 추산 기준 (1장당)
@@ -14,6 +15,8 @@ const COST_TABLE: Record<string, { usd: number; krw: number }> = {
 // ---------------------------------------------------------------------------
 export async function POST(request: NextRequest) {
   try {
+    await requireUser(request);
+
     // 0. 환경변수 로드
     const apiKey = process.env.GOOGLE_AI_IMAGE_KEY;
     const primaryModel = process.env.GOOGLE_AI_IMAGE_MODEL || 'gemini-3-pro-image';
@@ -28,24 +31,12 @@ export async function POST(request: NextRequest) {
 
     // 1. 요청 바디 파싱
     const body = await request.json();
-    const { productImageUrl, userPhotoUrl, faceReferenceUrls, options } = body;
+    const { productImageUrl, userPhotoUrl, faceReferenceUrls, options = {} } = body;
 
     // 2. 필수 필드 검증
-    if (!productImageUrl || typeof productImageUrl !== 'string') {
-      return Response.json(
-        { success: false, message: 'productImageUrl is required.', code: 'MISSING_PRODUCT_IMAGE' },
-        { status: 400 }
-      );
-    }
     if (!userPhotoUrl || typeof userPhotoUrl !== 'string') {
       return Response.json(
         { success: false, message: 'userPhotoUrl is required.', code: 'MISSING_USER_PHOTO' },
-        { status: 400 }
-      );
-    }
-    if (!options || typeof options !== 'object') {
-      return Response.json(
-        { success: false, message: 'options is required.', code: 'MISSING_OPTIONS' },
         { status: 400 }
       );
     }
@@ -62,9 +53,9 @@ export async function POST(request: NextRequest) {
     const hasFaceRefs = validFaceRefs.length > 0;
 
     // 4. 이미지 로드
-    // 순서: [상품 이미지] [유저 원본 사진] [얼굴 참조 사진들...]
     const imageParts: Array<{ inlineData: { mimeType: string; data: string } }> = [];
-    const allUrls = [productImageUrl, userPhotoUrl, ...validFaceRefs];
+    // 헤어 모드일 때는 productImageUrl이 없을 수 있으므로 유효 URL만 포함
+    const allUrls = [userPhotoUrl, productImageUrl, ...validFaceRefs].filter((u): u is string => typeof u === 'string' && u.length > 0);
 
     for (const url of allUrls) {
       if (!url.startsWith('http://') && !url.startsWith('https://')) {
@@ -101,21 +92,48 @@ export async function POST(request: NextRequest) {
     const generatedImages: Array<{ base64: string; mimeType: string }> = [];
 
     try {
-      console.log(`[AI TryOn] Primary model: ${primaryModel}, faceRefs: ${validFaceRefs.length}`);
-      const response = await ai.models.generateContent({
-        model: formatModelName(primaryModel),
-        contents: [
-          ...imageParts,
-          { text: prompt },
-        ],
-        config: { responseModalities: ['IMAGE', 'TEXT'] },
-      });
+      console.log(`[AI TryOn] Primary model: ${primaryModel}, mode: ${options.mode || 'dress'}`);
+      
+      if (options.mode === 'shoe' || options.mode === 'shoes') {
+        // 캐주얼 신발 렌더링 1차
+        const promptCasual = buildTryOnPrompt({ ...options, shoeType: 'casual' }, hasFaceRefs, validFaceRefs.length);
+        const resCasual = await ai.models.generateContent({
+          model: formatModelName(primaryModel),
+          contents: [...imageParts, { text: promptCasual }],
+          config: { responseModalities: ['IMAGE', 'TEXT'] },
+        });
+        const extCasual = extractImageFromResponse(resCasual);
+        if (extCasual) generatedImages.push(extCasual);
 
-      const extracted = extractImageFromResponse(response);
-      if (extracted) {
-        generatedImages.push(extracted);
+        // 비즈니스 신발 렌더링 2차
+        const promptBusiness = buildTryOnPrompt({ ...options, shoeType: 'business' }, hasFaceRefs, validFaceRefs.length);
+        const resBusiness = await ai.models.generateContent({
+          model: formatModelName(primaryModel),
+          contents: [...imageParts, { text: promptBusiness }],
+          config: { responseModalities: ['IMAGE', 'TEXT'] },
+        });
+        const extBusiness = extractImageFromResponse(resBusiness);
+        if (extBusiness) generatedImages.push(extBusiness);
+
+        if (generatedImages.length === 0) {
+          throw new Error('No image generated for shoe mode.');
+        }
       } else {
-        throw new Error('No image data in AI response.');
+        const response = await ai.models.generateContent({
+          model: formatModelName(primaryModel),
+          contents: [
+            ...imageParts,
+            { text: prompt },
+          ],
+          config: { responseModalities: ['IMAGE', 'TEXT'] },
+        });
+
+        const extracted = extractImageFromResponse(response);
+        if (extracted) {
+          generatedImages.push(extracted);
+        } else {
+          throw new Error('No image data in AI response.');
+        }
       }
     } catch (primaryError: unknown) {
       const primaryMsg = primaryError instanceof Error ? primaryError.message : 'Primary model failed';
@@ -170,6 +188,12 @@ export async function POST(request: NextRequest) {
       faceRefsUsed: validFaceRefs.length,
     });
   } catch (error: unknown) {
+    if (error instanceof AuthError) {
+      return Response.json(
+        { success: false, message: error.message, code: 'UNAUTHORIZED' },
+        { status: error.status }
+      );
+    }
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     console.error('[AI TryOn] Unexpected error:', errorMessage);
     return Response.json(
@@ -197,9 +221,69 @@ function extractImageFromResponse(response: any): { base64: string; mimeType: st
 }
 
 // ---------------------------------------------------------------------------
-// Virtual Try-On 프롬프트 빌더 (역할 분리)
+// Virtual Try-On 및 Hair 스타일링 프롬프트 빌더
 // ---------------------------------------------------------------------------
 function buildTryOnPrompt(options: Record<string, string>, hasFaceRefs: boolean, faceRefCount: number): string {
+  // 헤어 전용 프롬프트 분기 (핀포인트 영역 변환 지침)
+  if (options.mode === 'hair') {
+    const hairStyle = options.hairStyle || 'maintain current hair style';
+    const hairColor = options.hairColor || 'maintain current hair color';
+
+    return [
+      'You are performing a precision AI hair segmentation and hair color transformation.',
+      '',
+      'Inputs:',
+      '1. Image 1: Target person\'s face, head, and body photo.',
+      '',
+      '--- ABSOLUTE ZERO-DEVIATION PRESERVATION ---',
+      '- Keep the person\'s face, eyes, nose, lips, skin tone, facial features, body shape, clothes, and background 100% EXACTLY IDENTICAL to Image 1.',
+      '- DO NOT apply color filters or tinting to skin, face, clothing, or background.',
+      '- ONLY target the scalp and hair strands on top of the head.',
+      '',
+      '--- PRECISION HAIR & COLOR APPLICATION ---',
+      `- Change ONLY the hairstyle to: '${hairStyle}'.`,
+      `- Change ONLY the hair color to: '${hairColor}'.`,
+      '- Ensure seamless hair strand integration, natural hairline blending, realistic lighting, and photorealistic hair texture.',
+      '',
+      'Produce a clean, realistic, high-resolution beauty salon photograph.',
+      'No text, no logos, no watermarks.'
+    ].join('\n');
+  }
+
+  // 신발 전용 프롬프트 분기 (WoC AI Shoe Studio 핀포인트 전신 착장: 캐주얼 1장 / 비즈니스 1장)
+  if (options.mode === 'shoe' || options.mode === 'shoes') {
+    const hasProductImage = !!options.hasProductImage;
+    const shoeType = options.shoeType || 'casual';
+    const isBusiness = shoeType === 'business';
+
+    return [
+      `You are performing a precision AI full-body fashion try-on image generation for ${isBusiness ? 'BUSINESS FORMAL' : 'CASUAL ELEGANT'} style.`,
+      '',
+      'Inputs:',
+      '1. Image 1: Target person photo for body shape, height, face, and skin tone reference.',
+      hasProductImage ? '2. Image 2: Target shoe product photo to be fitted onto the person\'s feet.' : '2. Target shoe style specification.',
+      '',
+      '--- FULL-BODY OUTFIT & STYLING SPECIFICATION ---',
+      `- Generate a HIGH-RESOLUTION FULL-BODY photograph showing the person from head to toe wearing the target shoes.`,
+      isBusiness
+        ? '- OUTFIT STYLE: Premium Classic Business Formal Outfit (tailored navy/charcoal suit, dress shirt, formal pants, professional office look).'
+        : '- OUTFIT STYLE: Chic Casual Fashion Outfit (stylish blazer/jacket, modern denim/slacks, elegant daily lifestyle outfit).',
+      '',
+      '--- PERSON & FACE IDENTITY PRESERVATION ---',
+      '- Preserve the target person\'s face, hair, facial features, skin tone, and body proportions from Image 1.',
+      '',
+      '--- TARGETED SHOE FITTING & PINPOINT BLENDING ---',
+      hasProductImage 
+        ? '- Seamlessly fit and render the EXACT target shoe product shown in Image 2 onto the person\'s feet.' 
+        : '- Render clean premium dress shoes matching the outfit onto the person\'s feet.',
+      '- Ensure 100% photorealistic leather/fabric texture, soles, and natural ground contact shadow.',
+      '',
+      'Produce a clean, realistic, high-resolution fashion lookbook photograph.',
+      'No text, no logos, no watermarks.'
+    ].join('\n');
+  }
+
+  // 드레스/의상 가상 착장 프롬프트
   const locationMap: Record<string, string> = {
     studio: 'clean minimal white studio with soft diffused lighting',
     showroom: 'elegant indoor fashion showroom with warm ambient lighting',
@@ -241,56 +325,36 @@ function buildTryOnPrompt(options: Record<string, string>, hasFaceRefs: boolean,
   const pose = poseMap[options.posePreset] || 'natural front-facing standing pose';
 
   const lines: string[] = [
-    'You are generating a virtual try-on image.',
+    'You are performing a virtual garment try-on.',
     '',
     'Inputs:',
-    '1. First image: Product / garment / clothing / shoes reference.',
-    '2. Second image: User original body photo — the person and body to preserve.',
+    '1. First image (PRIMARY PERSON BASE): User original body and face photo — THIS IS THE TARGET PERSON WHO MUST APPEAR IN THE FINAL IMAGE.',
+    '2. Second image (TARGET CLOTHING ONLY): The dress/garment photo — THIS IS THE CLOTHING TO BE FITTED ONTO THE PERSON FROM IMAGE 1.',
   ];
 
   if (hasFaceRefs) {
-    lines.push(`3. Images 3 through ${2 + faceRefCount}: Face identity reference photos (${faceRefCount} photos). Use ONLY for identity preservation.`);
+    lines.push(`3. Images 3 through ${2 + faceRefCount}: Additional face identity reference photos of the person in Image 1 (${faceRefCount} photos).`);
   }
 
   lines.push(
     '',
-    '--- PERSON PRESERVATION (CRITICAL) ---',
-    'Preserve the user\'s facial identity exactly.',
-    'Do not alter the face, age, skin tone, facial structure, hairstyle, or expression.',
-    'The person in the output MUST look identical to the person in the second image.',
-    'Preserve their body proportions and overall appearance.',
-  );
-
-  if (hasFaceRefs) {
-    lines.push(
-      '',
-      '--- FACE REFERENCE USAGE ---',
-      'Use the face reference photos ONLY to maintain facial identity consistency.',
-      'Do NOT copy clothing, background, pose, or any other element from the face reference photos.',
-      'The face reference photos are identity anchors only.',
-    );
-  }
-
-  lines.push(
+    '--- STRICT PERSON PRESERVATION (MUST COMPLY) ---',
+    'The person in the final output MUST BE THE EXACT SAME PERSON from Image 1.',
+    'Keep their facial features, face shape, eyes, nose, mouth, hair style/color, skin tone, age, and body proportions unchanged.',
+    'Do NOT generate a model or face from Image 2. Image 2 is CLOTHING ONLY.',
     '',
-    '--- GARMENT PRESERVATION (CRITICAL) ---',
-    'The garment MUST match the first image exactly.',
-    'Preserve the garment\'s design details: buttons, zippers, pockets, collar, sleeves, hem length, silhouette.',
-    'Maintain the exact color hue, saturation, brightness of the original garment.',
-    'Do NOT redesign, recolor, or add new patterns/logos to the garment.',
-    '',
-    '--- RULES ---',
-    'Only change clothing, shoes, styling, background, pose, and lighting as specified.',
-    'Do NOT change the user\'s body shape unless required by pose.',
-    'Keep the output realistic and suitable for fashion try-on.',
+    '--- CLOTHING FIT MANDATE ---',
+    'Dress the person from Image 1 in the exact garment/dress shown in Image 2.',
+    'Maintain the original color hue, pattern, neckline, sleeves, silhouette, and design of the garment from Image 2.',
+    'Fit the garment naturally and realistically onto the body of the person from Image 1.',
     '',
     `Scene: ${location}.`,
     `Mood: ${mood}.`,
     `Frame: ${frame}.`,
     `Pose: ${pose}.`,
     '',
-    'Produce a high-resolution, realistic photograph.',
-    'No text, logos, or watermarks.',
+    'Produce a clean, high-resolution fashion photograph.',
+    'No text, no logos, no watermarks.'
   );
 
   return lines.join('\n');
@@ -299,8 +363,7 @@ function buildTryOnPrompt(options: Record<string, string>, hasFaceRefs: boolean,
 function buildNegativePrompt(): string {
   return [
     'Do not change the person\'s identity or facial features.',
-    'Do not alter garment design, color, or details.',
-    'Do not add new patterns, logos, or decorations.',
+    'Do not alter face shape, age, or expression.',
     'overexposed, washed-out colors, blurry, low quality, distorted face.',
   ].join('\n');
 }

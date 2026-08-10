@@ -242,9 +242,10 @@ export default function AiTryOnStudio({ initialProductId }: AiTryOnStudioProps) 
       const productImage = selectedProduct.images?.[0] || selectedProduct.imageUrl || '';
       const selectedFaceRefs = faceRefs.filter(r => r.selected).map(r => r.url);
 
+      const idToken = await user.getIdToken();
       const response = await fetch('/api/ai-tryon/generate', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${idToken}` },
         body: JSON.stringify({
           productImageUrl: productImage,
           userPhotoUrl: selectedPhoto.url,

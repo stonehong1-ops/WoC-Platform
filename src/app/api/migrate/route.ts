@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import admin from 'firebase-admin';
+import { isGooglePlacesPhotoUrl } from '@/lib/utils/imageUtils';
+import { requireAdmin, AdminAuthError } from '@/lib/server/adminAuth';
 
 if (!admin.apps.length) {
   const privateKey = process.env.FIREBASE_PRIVATE_KEY;
@@ -25,6 +27,7 @@ if (!admin.apps.length) {
 
 export async function GET(request: Request) {
   try {
+    await requireAdmin(request);
     const db = admin.firestore();
     
     // Fetch all venues
@@ -55,7 +58,7 @@ export async function GET(request: Request) {
         const updateData: any = {};
         let needsUpdate = false;
         
-        if (venue.imageUrl && data.coverImage !== venue.imageUrl) {
+        if (venue.imageUrl && data.coverImage !== venue.imageUrl && !isGooglePlacesPhotoUrl(venue.imageUrl)) {
           updateData.coverImage = venue.imageUrl;
           needsUpdate = true;
         }
@@ -82,6 +85,9 @@ export async function GET(request: Request) {
       updates
     });
   } catch (error: any) {
+    if (error instanceof AdminAuthError) {
+      return NextResponse.json({ error: error.message }, { status: error.status });
+    }
     console.error('Migration error:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

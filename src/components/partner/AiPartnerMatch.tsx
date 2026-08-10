@@ -148,11 +148,11 @@ export default function AiPartnerMatch() {
     try {
       setIsSearching(true);
       const currentCursor = initial ? undefined : cursor;
+      const idToken = await user.getIdToken();
       const res = await fetch('/api/ai-partner-match/recommend', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${idToken}` },
         body: JSON.stringify({
-          userId: user.uid,
           cursor: currentCursor,
           limit: 10,
         }),
@@ -246,7 +246,8 @@ export default function AiPartnerMatch() {
             <select
               value={experienceYears}
               onChange={(e) => setExperienceYears(parseFloat(e.target.value))}
-              className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-[14px] font-medium text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#007AFF]/20 appearance-none"
+              className="w-full bg-slate-50 bg-none border border-slate-100 rounded-xl px-4 py-3 text-[14px] font-medium text-slate-700 focus:outline-none focus:ring-1 focus:ring-[#007AFF]/20 appearance-none"
+              style={{ backgroundImage: 'none' }}
             >
               <option value={0.5}>0.5{t('myinfo.career_year') || '년'}</option>
               <option value={1}>1{t('myinfo.career_year') || '년'}</option>
