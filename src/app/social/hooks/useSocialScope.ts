@@ -3,7 +3,7 @@
 import { useCallback, useMemo } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 
-export type SocialScope = 'local' | 'global';
+export type SocialScope = 'city' | 'local' | 'global';
 
 function pad(n: number): string {
   return n.toString().padStart(2, '0');
@@ -34,7 +34,8 @@ export function useSocialScope() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  const scope: SocialScope = searchParams.get('scope') === 'global' ? 'global' : 'local';
+  const scopeParam = searchParams.get('scope');
+  const scope: SocialScope = scopeParam === 'global' ? 'global' : scopeParam === 'local' ? 'local' : 'city';
   const country = searchParams.get('country') || '';
   const city = searchParams.get('city') || '';
   const dateParam = searchParams.get('date');
@@ -55,11 +56,13 @@ export function useSocialScope() {
   }, [router, pathname, searchParams]);
 
   const setScope = useCallback((next: SocialScope) => {
-    if (next === 'local') {
-      // Local 복귀 시 Global 전용 파라미터는 정리
-      updateParams({ scope: null, country: null, city: null });
-    } else {
+    if (next === 'global') {
       updateParams({ scope: 'global' });
+    } else if (next === 'local') {
+      // CITY/LOCAL 전환 시 Global 전용 파라미터는 정리
+      updateParams({ scope: 'local', country: null, city: null });
+    } else {
+      updateParams({ scope: null, country: null, city: null });
     }
   }, [updateParams]);
 

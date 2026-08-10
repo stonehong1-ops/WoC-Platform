@@ -1,0 +1,1098 @@
+{
+  "generatedAt": "2026-08-10T10:38:02.682Z",
+  "totalVenues": 51,
+  "venues": [
+    {
+      "venueId": "0Mu2QImunkJ6D5IL5xEJ",
+      "origin": "china_global_20260810",
+      "name": "Shanghai Tango Palace",
+      "address": "2F, No. 3175 North Zhongshan Road, Putuo District, Shanghai (上海市普陀区中山北路3175号2楼)",
+      "city": "SHANGHAI",
+      "country": "CHINA",
+      "coordinates": {
+        "latitude": 31.238,
+        "longitude": 121.412
+      },
+      "coordinatesVerified": false,
+      "currentImageUrl": "",
+      "socialIds": [
+        "jqPLtsATkiSm0oDPlneZ"
+      ],
+      "socialTitles": [
+        "Milonga Mi"
+      ]
+    },
+    {
+      "venueId": "55DyiU3Capuj1M2JYvGR",
+      "origin": "china_global_20260810",
+      "name": "Rocket 303 Party Bar (Weijiasi Plaza)",
+      "address": "广州市天河区维家思广场三楼火箭303派对酒吧 (3F, Rocket 303 Party Bar, Weijiasi Plaza, Tianhe District, Guangzhou)",
+      "city": "GUANGZHOU",
+      "country": "CHINA",
+      "coordinates": {
+        "latitude": 23.125,
+        "longitude": 113.325
+      },
+      "coordinatesVerified": false,
+      "currentImageUrl": "",
+      "socialIds": [
+        "Do1bJRlGfbnbVx3KzsOf"
+      ],
+      "socialTitles": [
+        "Milonga Cadencia (Tango Story)"
+      ]
+    },
+    {
+      "venueId": "5F7UJHviZ6hv9X9lOOCP",
+      "origin": "china_global_20260810",
+      "name": "Kunsha Center Tower 3 Room 803",
+      "address": "Room 803, Tower 3, Kunsha Center, No.16 Xindong Road, Chaoyang District, Beijing (北京市朝阳区新东路琨莎中心3座803室)",
+      "city": "BEIJING",
+      "country": "CHINA",
+      "coordinates": {
+        "latitude": 39.945,
+        "longitude": 116.446
+      },
+      "coordinatesVerified": true,
+      "currentImageUrl": "",
+      "socialIds": [
+        "HReCgtNDuCgVQOebBgvX"
+      ],
+      "socialTitles": [
+        "Bando Milonga (班多舞会)"
+      ]
+    },
+    {
+      "venueId": "6W6Eo3ty2GhkFbY41LrX",
+      "origin": "china_global_20260810",
+      "name": "TangoBang Studio",
+      "address": "Jing'an District, Shanghai",
+      "city": "SHANGHAI",
+      "country": "CHINA",
+      "coordinates": {
+        "latitude": 31.228,
+        "longitude": 121.455
+      },
+      "coordinatesVerified": false,
+      "currentImageUrl": "",
+      "socialIds": [
+        "1B5Wtt3rgPfx9qCyOXK8"
+      ],
+      "socialTitles": [
+        "TangoBang Milonga"
+      ]
+    },
+    {
+      "venueId": "7RDawmt7MziCkm2M3gdP",
+      "origin": "china_global_20260810",
+      "name": "Tango by Ala House",
+      "address": "2F, Liangmahe Wine House, No.18 Liangmahe Nanlu, Dongzhimenwai, Chaoyang District, Beijing",
+      "city": "BEIJING",
+      "country": "CHINA",
+      "coordinates": {
+        "latitude": 39.946,
+        "longitude": 116.456
+      },
+      "coordinatesVerified": false,
+      "currentImageUrl": "",
+      "socialIds": [
+        "rDriVyIj104eYQl5YuSz"
+      ],
+      "socialTitles": [
+        "Milonga Los Vinos (北京红酒屋·周日舞会)"
+      ]
+    },
+    {
+      "venueId": "As7g62YnAV17NJnR6xuh",
+      "origin": "china_global_20260810",
+      "name": "Eden Bar, Hilton Shenzhen Nanhai Hotel",
+      "address": "深圳市南山区蛇口希尔顿南海酒店伊甸园酒吧 (Eden Bar, Hilton Shenzhen Nanhai Hotel, Shekou, Nanshan District, Shenzhen)",
+      "city": "SHENZHEN",
+      "country": "CHINA",
+      "coordinates": {
+        "latitude": 22.472,
+        "longitude": 113.913
+      },
+      "coordinatesVerified": false,
+      "currentImageUrl": "",
+      "socialIds": [
+        "7MWfpukHsFKaM2nnOMMF"
+      ],
+      "socialTitles": [
+        "深圳阿根廷探戈学院 (Shenzhen Argentine Tango Academy)"
+      ]
+    },
+    {
+      "venueId": "BpgYZk9dpFmmwtiOs0Gj",
+      "origin": "china_global_20260810",
+      "name": "Nanshan Cultural Center Studio",
+      "address": "Nanshan District, Shenzhen",
+      "city": "SHENZHEN",
+      "country": "CHINA",
+      "coordinates": {
+        "latitude": 22.532,
+        "longitude": 113.935
+      },
+      "coordinatesVerified": false,
+      "currentImageUrl": "",
+      "socialIds": [
+        "2FonQlHL8zV4d4NY6Loo"
+      ],
+      "socialTitles": [
+        "Milonga Musea & Besos Tango"
+      ]
+    },
+    {
+      "venueId": "IMVQrClBF1GKKzlqSWhx",
+      "origin": "china_global_20260810",
+      "name": "Hi Bar (Holiday Inn Focus Square)",
+      "address": "Holiday Inn Hotel Beijing Focus Square, Building 3, No.6 Yard, Futong East Avenue, Chaoyang District, Beijing",
+      "city": "BEIJING",
+      "country": "CHINA",
+      "coordinates": {
+        "latitude": 39.992,
+        "longitude": 116.474
+      },
+      "coordinatesVerified": false,
+      "currentImageUrl": "",
+      "socialIds": [
+        "QvJIHNvsU4QO2CWERcHG"
+      ],
+      "socialTitles": [
+        "Milonga Taifengo (Friday)"
+      ]
+    },
+    {
+      "venueId": "K5V4lFhMnz4iNA1TP6hO",
+      "origin": "china_global_20260810",
+      "name": "永新汇喷泉广场 (Yongxinhui Fountain Plaza)",
+      "address": "深圳市南山区南油西站，永新汇B1喷泉广场 (Yongxinhui B1 Fountain Plaza, near Nanyou West Station, Nanshan District, Shenzhen)",
+      "city": "SHENZHEN",
+      "country": "CHINA",
+      "coordinates": {
+        "latitude": 22.518,
+        "longitude": 113.928
+      },
+      "coordinatesVerified": false,
+      "currentImageUrl": "",
+      "socialIds": [
+        "KM99A6KKVOSfA0KdaNnE"
+      ],
+      "socialTitles": [
+        "拥抱探戈俱乐部 (Abrazo Tango Club)"
+      ]
+    },
+    {
+      "venueId": "Kb9QwaAvmhjxyqkmSGIs",
+      "origin": "china_global_20260810",
+      "name": "Xizi International Room 904",
+      "address": "上城区西子国际B座904, 杭州 (Room 904, Block B, Xizi International, Shangcheng District, Hangzhou)",
+      "city": "HANGZHOU",
+      "country": "CHINA",
+      "coordinates": {
+        "latitude": 30.25,
+        "longitude": 120.2
+      },
+      "coordinatesVerified": false,
+      "currentImageUrl": "",
+      "socialIds": [
+        "Xk5l5Tc0DJFBoxZ9oqFP"
+      ],
+      "socialTitles": [
+        "Vamos Milonga (Vamos Tango)"
+      ]
+    },
+    {
+      "venueId": "KzayNgTioKxxL4OvuEF5",
+      "origin": "china_global_20260810",
+      "name": "First World Plaza Block B 18F",
+      "address": "深圳市福田区红荔西路7002号第一世界广场B座18F (First World Plaza, Block B, 18F, No.7002 Hongli West Road, Futian District, Shenzhen)",
+      "city": "SHENZHEN",
+      "country": "CHINA",
+      "coordinates": {
+        "latitude": 22.548,
+        "longitude": 114.048
+      },
+      "coordinatesVerified": false,
+      "currentImageUrl": "",
+      "socialIds": [
+        "ZaMMEHFlG8ZjdRPPd4dW"
+      ],
+      "socialTitles": [
+        "Luna Tango (Milongueando en el Luna)"
+      ]
+    },
+    {
+      "venueId": "TKQcm02c3Oi1ZF3YxOwF",
+      "origin": "china_global_20260810",
+      "name": "厦门沐秋探戈",
+      "address": "厦门市思明区南岳山庄20号楼 (Building 20, Nanyue Villa, Siming District, Xiamen)",
+      "city": "XIAMEN",
+      "country": "CHINA",
+      "coordinates": {
+        "latitude": 24.46,
+        "longitude": 118.095
+      },
+      "coordinatesVerified": false,
+      "currentImageUrl": "",
+      "socialIds": [
+        "uaxuxz5KRWm5aB1Of0OL"
+      ],
+      "socialTitles": [
+        "厦门沐秋探戈 (Xiamen Mucho Tango)"
+      ]
+    },
+    {
+      "venueId": "a3wipLaoyuQA8f7H4Obc",
+      "origin": "china_global_20260810",
+      "name": "叹探戈工作坊",
+      "address": "广州市越秀区环市东路488号东兴大厦1707 (Room 1707, Dongxing Building, No.488 Huanshi East Road, Yuexiu District, Guangzhou)",
+      "city": "GUANGZHOU",
+      "country": "CHINA",
+      "coordinates": {
+        "latitude": 23.136,
+        "longitude": 113.3
+      },
+      "coordinatesVerified": false,
+      "currentImageUrl": "",
+      "socialIds": [
+        "0hOmk1a8wOOAdoYLYSqM",
+        "ONd9uOe4HkfNtmcBLTUA"
+      ],
+      "socialTitles": [
+        "叹探戈工作坊 (Tan Tango Workshop) - Wednesday",
+        "叹探戈工作坊 (Tan Tango Workshop) - Saturday"
+      ]
+    },
+    {
+      "venueId": "bDzRfLeSrO43DKFwjeQb",
+      "origin": "china_global_20260810",
+      "name": "Te Amo Lounge",
+      "address": "Jing'an / Huangpu District, Shanghai",
+      "city": "SHANGHAI",
+      "country": "CHINA",
+      "coordinates": {
+        "latitude": 31.222,
+        "longitude": 121.465
+      },
+      "coordinatesVerified": false,
+      "currentImageUrl": "",
+      "socialIds": [
+        "mwrqth0I45YHotbFVDX4"
+      ],
+      "socialTitles": [
+        "Te Amo Tango Lounge"
+      ]
+    },
+    {
+      "venueId": "jAiFxAYURPc1Rt8XofU4",
+      "origin": "china_global_20260810",
+      "name": "广州红房子探戈俱乐部",
+      "address": "广东省广州市天河区花城大道6号名门大厦北塔502室 (Room 502, North Tower, Mingmen Building, No.6 Huacheng Avenue, Tianhe District, Guangzhou)",
+      "city": "GUANGZHOU",
+      "country": "CHINA",
+      "coordinates": {
+        "latitude": 23.118,
+        "longitude": 113.322
+      },
+      "coordinatesVerified": false,
+      "currentImageUrl": "",
+      "socialIds": [
+        "W78VWyA1XXFXy4ruTGgP"
+      ],
+      "socialTitles": [
+        "广州红房子探戈俱乐部 (Guangzhou Red House Tango Club)"
+      ]
+    },
+    {
+      "venueId": "jYQxTJY8HZntPCGw1SSC",
+      "origin": "china_global_20260810",
+      "name": "Peanut Cafe / TangoChino Studio",
+      "address": "Dongcheng District, Beijing",
+      "city": "BEIJING",
+      "country": "CHINA",
+      "coordinates": {
+        "latitude": 39.932,
+        "longitude": 116.415
+      },
+      "coordinatesVerified": false,
+      "currentImageUrl": "",
+      "socialIds": [
+        "1sdF4FWRddKBaxh3SaFc"
+      ],
+      "socialTitles": [
+        "Milonga El Chino (TangoChino)"
+      ]
+    },
+    {
+      "venueId": "lH2BzOI4oAwQJi34P7uI",
+      "origin": "china_global_20260810",
+      "name": "ATer Tango Studio",
+      "address": "Haidian / Chaoyang District, Beijing",
+      "city": "BEIJING",
+      "country": "CHINA",
+      "coordinates": {
+        "latitude": 39.965,
+        "longitude": 116.388
+      },
+      "coordinatesVerified": false,
+      "currentImageUrl": "",
+      "socialIds": [
+        "cabv2Fn2BULxdrJ6xfXd"
+      ],
+      "socialTitles": [
+        "ATer Milonga (ATer Tango Club)"
+      ]
+    },
+    {
+      "venueId": "r82ppnRmosC1cpidKfc7",
+      "origin": "china_global_20260810",
+      "name": "AS Tango Club (SOHO Shangdu)",
+      "address": "Room 2320, 3F, North Tower, SOHO Shangdu, No.8 Dongdaqiao Road, Chaoyang District, Beijing (北京市朝阳区东大桥路SOHO尚都北塔B座3层2320室)",
+      "city": "BEIJING",
+      "country": "CHINA",
+      "coordinates": {
+        "latitude": 39.919,
+        "longitude": 116.452
+      },
+      "coordinatesVerified": false,
+      "currentImageUrl": "",
+      "socialIds": [
+        "f0jcijMYFpYvGwqLUU7i"
+      ],
+      "socialTitles": [
+        "AS Tango Milonga & Practica"
+      ]
+    },
+    {
+      "venueId": "rjoh0WCg4UKNvQpzp7RB",
+      "origin": "china_global_20260810",
+      "name": "JinShang Wellness Studio",
+      "address": "B1 Floor, JinShang Studio, Chaoyang District, Beijing",
+      "city": "BEIJING",
+      "country": "CHINA",
+      "coordinates": {
+        "latitude": 39.948,
+        "longitude": 116.462
+      },
+      "coordinatesVerified": false,
+      "currentImageUrl": "",
+      "socialIds": [
+        "Ai3xskYWz5Do1faFRlP4"
+      ],
+      "socialTitles": [
+        "TAIFENGO (Wednesday)"
+      ]
+    },
+    {
+      "venueId": "w0g1K6xJGc1lV63XZhnm",
+      "origin": "china_global_20260810",
+      "name": "Pullman Shanghai Zhongganghui / Yonghui Building",
+      "address": "No.15 Dapu Road, Huangpu District, Shanghai (上海市黄浦区打浦路15号)",
+      "city": "SHANGHAI",
+      "country": "CHINA",
+      "coordinates": {
+        "latitude": 31.205,
+        "longitude": 121.468
+      },
+      "coordinatesVerified": false,
+      "currentImageUrl": "",
+      "socialIds": [
+        "iW7IwU8ZUHOFjCSB5Abn"
+      ],
+      "socialTitles": [
+        "Milonga Mafia"
+      ]
+    },
+    {
+      "venueId": "xCrO2r4wfcZKzR7qT4us",
+      "origin": "china_global_20260810",
+      "name": "InTango Studio",
+      "address": "Shangcheng District, Hangzhou",
+      "city": "HANGZHOU",
+      "country": "CHINA",
+      "coordinates": {
+        "latitude": 30.242,
+        "longitude": 120.188
+      },
+      "coordinatesVerified": false,
+      "currentImageUrl": "",
+      "socialIds": [
+        "LYFac40IWXotGf9rRybR"
+      ],
+      "socialTitles": [
+        "InTango Hangzhou"
+      ]
+    },
+    {
+      "venueId": "ygzBg7hJ2rc3BtrtD3Z0",
+      "origin": "china_global_20260810",
+      "name": "Vida Mia Tango Club",
+      "address": "No.58 DongZhongJie, Meihui Building, Unit 1, App. 203, Dongcheng District, Beijing",
+      "city": "BEIJING",
+      "country": "CHINA",
+      "coordinates": {
+        "latitude": 39.938,
+        "longitude": 116.438
+      },
+      "coordinatesVerified": false,
+      "currentImageUrl": "",
+      "socialIds": [
+        "x7ZdSa7ii6gv6xBd4rmF"
+      ],
+      "socialTitles": [
+        "Red Box Milonga"
+      ]
+    },
+    {
+      "venueId": "2yCwUzjC7lYmwNOOMHQg",
+      "origin": "argentina_ba_20260810",
+      "name": "El Beso",
+      "address": "Riobamba 416, Balvanera, Buenos Aires, Argentina",
+      "city": "BUENOS AIRES",
+      "country": "ARGENTINA",
+      "coordinates": {
+        "latitude": -34.6041407,
+        "longitude": -58.39399
+      },
+      "coordinatesVerified": true,
+      "currentImageUrl": "",
+      "socialIds": [
+        "1mEOXybpN8CLhZunKzi9",
+        "22TanQL9SxMRUOF3VmpL",
+        "EwahmIS5qrp8Uq1Feqkv",
+        "Ib0CLtPwyG5VxVMWA1NG",
+        "LcisFvysd8aTcjMTiXy0",
+        "N0sZui3wgvgIGVClGWOP",
+        "fBaS8a0fch6bOFvYJ0r4",
+        "qHvb6KyDr0ZhaU73IuSz",
+        "ramoeLdczNvCRJnIL6Qe",
+        "yH42G1lkZsvADy1OHL50"
+      ],
+      "socialTitles": [
+        "Esencia Tanguera",
+        "Cachirulo",
+        "El Abrazo Tango Club",
+        "Bravita Milonga",
+        "Lujos",
+        "Perfume de Mujer",
+        "Tango Camargo",
+        "Cachirulo",
+        "Tango Camargo",
+        "Tango Camargo"
+      ]
+    },
+    {
+      "venueId": "2ycHfJRVZnMUDUSV6L19",
+      "origin": "argentina_ba_20260810",
+      "name": "Tuy Salceda",
+      "address": "Maza 457, Almagro, Buenos Aires, Argentina",
+      "city": "BUENOS AIRES",
+      "country": "ARGENTINA",
+      "coordinates": {
+        "latitude": -34.6165613,
+        "longitude": -58.4157315
+      },
+      "coordinatesVerified": true,
+      "currentImageUrl": "",
+      "socialIds": [
+        "FTUgewPo6W8cblhrlfJn"
+      ],
+      "socialTitles": [
+        "Espacio UNI"
+      ]
+    },
+    {
+      "venueId": "4JQuxxOGVsnXOghPi2gJ",
+      "origin": "argentina_ba_20260810",
+      "name": "Complejo Belgrano",
+      "address": "Av. Belgrano 2608, Balvanera, Buenos Aires, Argentina",
+      "city": "BUENOS AIRES",
+      "country": "ARGENTINA",
+      "coordinates": {
+        "latitude": -34.6146558,
+        "longitude": -58.4032419
+      },
+      "coordinatesVerified": true,
+      "currentImageUrl": "",
+      "socialIds": [
+        "qSI3ticorsqzfvGaaGll"
+      ],
+      "socialTitles": [
+        "La Previa de los Jueves"
+      ]
+    },
+    {
+      "venueId": "4dwdIvm9xJ1FlPiBppK9",
+      "origin": "argentina_ba_20260810",
+      "name": "Salón Marabú",
+      "address": "Maipú 365, San Nicolás, Buenos Aires, Argentina",
+      "city": "BUENOS AIRES",
+      "country": "ARGENTINA",
+      "coordinates": {
+        "latitude": -34.6038945,
+        "longitude": -58.3765795
+      },
+      "coordinatesVerified": true,
+      "currentImageUrl": "",
+      "socialIds": [
+        "YPFNETjoieEAKUgLIGHE",
+        "de13SfUyBAkxUQulfKJG",
+        "koOkdTRYbDCSNVXEbi7d",
+        "ojJwzqAAxKPAfJqPetAb"
+      ],
+      "socialTitles": [
+        "Parakultural",
+        "PIPí CUCú Dance Club",
+        "Milonga Malena",
+        "Parakultural"
+      ]
+    },
+    {
+      "venueId": "5LQpLcS1d01opzO0eYPR",
+      "origin": "argentina_ba_20260810",
+      "name": "La Glorieta de Versailles",
+      "address": "Versalles, Buenos Aires, Argentina",
+      "city": "BUENOS AIRES",
+      "country": "ARGENTINA",
+      "coordinates": {
+        "latitude": -34.628928,
+        "longitude": -58.5232987
+      },
+      "coordinatesVerified": true,
+      "currentImageUrl": "",
+      "socialIds": [
+        "THNMmWoA6IZsMlk2D12z"
+      ],
+      "socialTitles": [
+        "Bien Milonga en Glorieta de Versalles"
+      ]
+    },
+    {
+      "venueId": "DbpjoeYnwJIhJxKa5D3h",
+      "origin": "argentina_ba_20260810",
+      "name": "La Viruta",
+      "address": "Armenia 1366, Palermo, Buenos Aires, Argentina",
+      "city": "BUENOS AIRES",
+      "country": "ARGENTINA",
+      "coordinates": {
+        "latitude": -34.591632,
+        "longitude": -58.430866
+      },
+      "coordinatesVerified": true,
+      "currentImageUrl": "",
+      "socialIds": [
+        "GWEdNExp3idZwMVODqh5",
+        "XQ6Bh64QMmsvkyR4sw4N",
+        "Ydg2HzX0nq6eaTfXXoGz"
+      ],
+      "socialTitles": [
+        "La Viruta Tango Club",
+        "La Viruta Tango Club",
+        "La Viruta Tango Ar"
+      ]
+    },
+    {
+      "venueId": "HDTnBzAEWclsA7EBgojY",
+      "origin": "argentina_ba_20260810",
+      "name": "ATRODEN Club",
+      "address": "Perú 571, Monserrat, Buenos Aires, Argentina",
+      "city": "BUENOS AIRES",
+      "country": "ARGENTINA",
+      "coordinates": {
+        "latitude": -34.6147015,
+        "longitude": -58.3746945
+      },
+      "coordinatesVerified": true,
+      "currentImageUrl": "",
+      "socialIds": [
+        "Gzbph2A98RViCf3ryduv",
+        "shNCWuW7gO2zmUc4WrlU",
+        "z7JO7nf1HURTtU3uKQy3"
+      ],
+      "socialTitles": [
+        "Maldita Milonga",
+        "A las Brasas",
+        "La Milonga de las Orquestas"
+      ]
+    },
+    {
+      "venueId": "Is3pPSuKXFuUOX3n4y9c",
+      "origin": "argentina_ba_20260810",
+      "name": "El Pasaje de la Luna",
+      "address": "Pje. San Lorenzo 365, San Telmo, Buenos Aires, Argentina",
+      "city": "BUENOS AIRES",
+      "country": "ARGENTINA",
+      "coordinates": {
+        "latitude": -34.616585,
+        "longitude": -58.3710948
+      },
+      "coordinatesVerified": true,
+      "currentImageUrl": "",
+      "socialIds": [
+        "dGyig3tZ3hGOMKmsRxLl"
+      ],
+      "socialTitles": [
+        "Maniática Milonga y Variedades"
+      ]
+    },
+    {
+      "venueId": "LD2UZotO63FvavdAkeeO",
+      "origin": "argentina_ba_20260810",
+      "name": "Centro Cultural Macedonia",
+      "address": "Sarmiento 3632, Almagro, Buenos Aires, Argentina",
+      "city": "BUENOS AIRES",
+      "country": "ARGENTINA",
+      "coordinates": {
+        "latitude": -34.6057821,
+        "longitude": -58.4165505
+      },
+      "coordinatesVerified": true,
+      "currentImageUrl": "",
+      "socialIds": [
+        "PDPjxQrRGyBUpuaWY8iU",
+        "hssq5O2A4cEA6wcyctd4"
+      ],
+      "socialTitles": [
+        "Tangotica",
+        "La Queer de Queers"
+      ]
+    },
+    {
+      "venueId": "M94lvCJmAmlYwhcqJKRR",
+      "origin": "argentina_ba_20260810",
+      "name": "La Paz Arriba",
+      "address": "Av. Callao 1082, Recoleta, Buenos Aires, Argentina",
+      "city": "BUENOS AIRES",
+      "country": "ARGENTINA",
+      "coordinates": {
+        "latitude": -34.5991843,
+        "longitude": -58.3929962
+      },
+      "coordinatesVerified": true,
+      "currentImageUrl": "",
+      "socialIds": [
+        "q8wP3Crt6iugVX44406N"
+      ],
+      "socialTitles": [
+        "Muy Martes"
+      ]
+    },
+    {
+      "venueId": "PLkOchu4QIOHtLCfbfTs",
+      "origin": "argentina_ba_20260810",
+      "name": "El Zorzal Esquina Cultural",
+      "address": "Zelaya 3002, Balvanera, Buenos Aires, Argentina",
+      "city": "BUENOS AIRES",
+      "country": "ARGENTINA",
+      "coordinates": {
+        "latitude": -34.6020396,
+        "longitude": -58.4083312
+      },
+      "coordinatesVerified": true,
+      "currentImageUrl": "",
+      "socialIds": [
+        "82SuFGHONjxYYE19iS40",
+        "BVarXUMyuSR7qAx6Q9ac",
+        "vbG6cpnfBG3ODv1dtCRi"
+      ],
+      "socialTitles": [
+        "La Mordidita",
+        "EL VERMÚ!",
+        "Tango Bar"
+      ]
+    },
+    {
+      "venueId": "UGQiPOvk40KET9eB4Vgj",
+      "origin": "argentina_ba_20260810",
+      "name": "La Nacional",
+      "address": "Adolfo Alsina 1465, Monserrat, Buenos Aires, Argentina",
+      "city": "BUENOS AIRES",
+      "country": "ARGENTINA",
+      "coordinates": {
+        "latitude": -34.6110985,
+        "longitude": -58.3870164
+      },
+      "coordinatesVerified": true,
+      "currentImageUrl": "",
+      "socialIds": [
+        "GAVJGxUD5oKsXoBFlYUd"
+      ],
+      "socialTitles": [
+        "Milonga en lo de Balmaceda"
+      ]
+    },
+    {
+      "venueId": "WTJqDM2q5AuViHB3o54w",
+      "origin": "argentina_ba_20260810",
+      "name": "La Tierra Invisible",
+      "address": "Del Barco Centenera 1099, Parque Chacabuco, Buenos Aires, Argentina",
+      "city": "BUENOS AIRES",
+      "country": "ARGENTINA",
+      "coordinates": {
+        "latitude": -34.632073,
+        "longitude": -58.437553
+      },
+      "coordinatesVerified": true,
+      "currentImageUrl": "",
+      "socialIds": [
+        "Dueua5XTA658y6aGOu3V"
+      ],
+      "socialTitles": [
+        "Milonga Cañón"
+      ]
+    },
+    {
+      "venueId": "WYHB9QSFEQ0ZM8LZalNO",
+      "origin": "argentina_ba_20260810",
+      "name": "Asociación Vecinal Saavedra",
+      "address": "Av. Balbín 4221, Saavedra, Buenos Aires, Argentina",
+      "city": "BUENOS AIRES",
+      "country": "ARGENTINA",
+      "coordinates": {
+        "latitude": -34.5549532,
+        "longitude": -58.4908801
+      },
+      "coordinatesVerified": true,
+      "currentImageUrl": "",
+      "socialIds": [
+        "eXtEJipayCapH2SsZFkz"
+      ],
+      "socialTitles": [
+        "Floreal Milonga"
+      ]
+    },
+    {
+      "venueId": "X1FEokkmAIbMJcnP3SPS",
+      "origin": "argentina_ba_20260810",
+      "name": "Venezuela 2941",
+      "address": "Balvanera, Buenos Aires, Argentina",
+      "city": "BUENOS AIRES",
+      "country": "ARGENTINA",
+      "coordinates": {
+        "latitude": -34.6163551,
+        "longitude": -58.4074744
+      },
+      "coordinatesVerified": true,
+      "currentImageUrl": "",
+      "socialIds": [
+        "xvW9EK6dT6F1Bhqvgpop"
+      ],
+      "socialTitles": [
+        "Zonatango"
+      ]
+    },
+    {
+      "venueId": "aASNhfholI4fqX3xyh8h",
+      "origin": "argentina_ba_20260810",
+      "name": "Club Malcolm",
+      "address": "Av. Córdoba 5064, Villa Crespo, Buenos Aires, Argentina",
+      "city": "BUENOS AIRES",
+      "country": "ARGENTINA",
+      "coordinates": {
+        "latitude": -34.5911109,
+        "longitude": -58.4350889
+      },
+      "coordinatesVerified": true,
+      "currentImageUrl": "",
+      "socialIds": [
+        "Apqsv5FNocsojeLAPMhB"
+      ],
+      "socialTitles": [
+        "Fervor Tango"
+      ]
+    },
+    {
+      "venueId": "aaKBV8pW6TP6lxXxqcPn",
+      "origin": "argentina_ba_20260810",
+      "name": "Lo de Celia",
+      "address": "Humberto 1° 1783, San Cristóbal, Buenos Aires, Argentina",
+      "city": "BUENOS AIRES",
+      "country": "ARGENTINA",
+      "coordinates": {
+        "latitude": -34.6238365,
+        "longitude": -58.4113743
+      },
+      "coordinatesVerified": true,
+      "currentImageUrl": "",
+      "socialIds": [
+        "ZrOQFpsUau71VXlVEpq2",
+        "oCwvUvHDSYqB7FU5QW69"
+      ],
+      "socialTitles": [
+        "Remembranzas",
+        "Barajando"
+      ]
+    },
+    {
+      "venueId": "cPep5nTlFL0sWaV4FZNA",
+      "origin": "argentina_ba_20260810",
+      "name": "Centro Cultural Waki Toki",
+      "address": "Tacuarí 905, San Telmo, Buenos Aires, Argentina",
+      "city": "BUENOS AIRES",
+      "country": "ARGENTINA",
+      "coordinates": {
+        "latitude": -34.6253454,
+        "longitude": -58.3775214
+      },
+      "coordinatesVerified": true,
+      "currentImageUrl": "",
+      "socialIds": [
+        "bBN8xdUD55FS9umHvM1w"
+      ],
+      "socialTitles": [
+        "Bilongón"
+      ]
+    },
+    {
+      "venueId": "cdrXtIWJDzOr9NFH1BCb",
+      "origin": "argentina_ba_20260810",
+      "name": "Casa de Galicia",
+      "address": "San José 224, Monserrat, Buenos Aires, Argentina",
+      "city": "BUENOS AIRES",
+      "country": "ARGENTINA",
+      "coordinates": {
+        "latitude": -34.6113737,
+        "longitude": -58.3861035
+      },
+      "coordinatesVerified": true,
+      "currentImageUrl": "",
+      "socialIds": [
+        "0DsUsbC0U5hb9RDMywpe",
+        "f6b1tuEKcIMVTOUoq8Gg",
+        "yZ1SprEOp97iJoQ0p2aU"
+      ],
+      "socialTitles": [
+        "Nuevo Chiqué",
+        "Nuevo Chiqué",
+        "Che Che Tango"
+      ]
+    },
+    {
+      "venueId": "d5aTXIlW2JOfREL5HeCb",
+      "origin": "argentina_ba_20260810",
+      "name": "CC El Pasaje de la Luna",
+      "address": "Pje. San Lorenzo 365, San Telmo, Buenos Aires, Argentina",
+      "city": "BUENOS AIRES",
+      "country": "ARGENTINA",
+      "coordinates": {
+        "latitude": -34.616585,
+        "longitude": -58.3710948
+      },
+      "coordinatesVerified": true,
+      "currentImageUrl": "",
+      "socialIds": [
+        "GkiotttBgB29Qbwk71pX"
+      ],
+      "socialTitles": [
+        "La Yuyú Milonga Informal"
+      ]
+    },
+    {
+      "venueId": "eKxam3GRUC3o1AhZIT4q",
+      "origin": "argentina_ba_20260810",
+      "name": "Club Fulgor",
+      "address": "Loyola 828, Villa Crespo, Buenos Aires, Argentina",
+      "city": "BUENOS AIRES",
+      "country": "ARGENTINA",
+      "coordinates": {
+        "latitude": -34.5933957,
+        "longitude": -58.4380657
+      },
+      "coordinatesVerified": true,
+      "currentImageUrl": "",
+      "socialIds": [
+        "3DOdg1N4AQvzdFLUOiAV"
+      ],
+      "socialTitles": [
+        "Si Sos Brujo Milonga"
+      ]
+    },
+    {
+      "venueId": "g0oeYirNpojJgYZTEhv9",
+      "origin": "argentina_ba_20260810",
+      "name": "Salón El Pial",
+      "address": "Cnel. Ramón L. Falcón 2750, Flores, Buenos Aires, Argentina",
+      "city": "BUENOS AIRES",
+      "country": "ARGENTINA",
+      "coordinates": {
+        "latitude": -34.6316033,
+        "longitude": -58.4670466
+      },
+      "coordinatesVerified": true,
+      "currentImageUrl": "",
+      "socialIds": [
+        "hJvdBopAkIjZjrh5bgCr",
+        "w9cc36JA2x1g2ILIM2ra"
+      ],
+      "socialTitles": [
+        "Milonga de Flores del Pial",
+        "La Baldosa"
+      ]
+    },
+    {
+      "venueId": "lchNszzUXV8sp0IYJs1k",
+      "origin": "argentina_ba_20260810",
+      "name": "Salón Canning",
+      "address": "Av. Scalabrini Ortiz 1331, Palermo, Buenos Aires, Argentina",
+      "city": "BUENOS AIRES",
+      "country": "ARGENTINA",
+      "coordinates": {
+        "latitude": -34.5928942,
+        "longitude": -58.4274896
+      },
+      "coordinatesVerified": true,
+      "currentImageUrl": "",
+      "socialIds": [
+        "jDKPZ75BWOXYvtQG7BD5",
+        "nuTPP7ftdz3LgrGH08Cf"
+      ],
+      "socialTitles": [
+        "Gente Amiga",
+        "Canning y Punto"
+      ]
+    },
+    {
+      "venueId": "ofyOcGg5JKU5TJ5fWjAq",
+      "origin": "argentina_ba_20260810",
+      "name": "La Polilla",
+      "address": "Castro Barros 74, Almagro, Buenos Aires, Argentina",
+      "city": "BUENOS AIRES",
+      "country": "ARGENTINA",
+      "coordinates": {
+        "latitude": -34.6126715,
+        "longitude": -58.4206365
+      },
+      "coordinatesVerified": true,
+      "currentImageUrl": "",
+      "socialIds": [
+        "iM9mxzBvXEeEnQrV3iJk"
+      ],
+      "socialTitles": [
+        "Río de Tango"
+      ]
+    },
+    {
+      "venueId": "qJzwyZd2eZCdeHelHNik",
+      "origin": "argentina_ba_20260810",
+      "name": "La Comedia Tango",
+      "address": "Rodríguez Peña 1074, Recoleta, Buenos Aires, Argentina",
+      "city": "BUENOS AIRES",
+      "country": "ARGENTINA",
+      "coordinates": {
+        "latitude": -34.5976712,
+        "longitude": -58.3917691
+      },
+      "coordinatesVerified": true,
+      "currentImageUrl": "",
+      "socialIds": [
+        "8x0wblDic0WJikSiAmcr",
+        "KRFGPCS3TxPUFwjVHHgu",
+        "O07dec63bNUKrlgf3mOa",
+        "mHqAecT4ExH1NRcMHMac",
+        "oR2QaFwMRMse0h7fmA54",
+        "qOlUMOIizcN8RFLlWgXu"
+      ],
+      "socialTitles": [
+        "A Media Luz",
+        "Muy Lunes Tango",
+        "La Comedia Tango",
+        "A Los Amigos",
+        "Milonga de Los Domingos",
+        "El Chamuyo de Buenos Aires"
+      ]
+    },
+    {
+      "venueId": "ud4J7xgR1Lga4apnvrwn",
+      "origin": "argentina_ba_20260810",
+      "name": "Club Gricel",
+      "address": "La Rioja 1180, San Cristóbal, Buenos Aires, Argentina",
+      "city": "BUENOS AIRES",
+      "country": "ARGENTINA",
+      "coordinates": {
+        "latitude": -34.6202889,
+        "longitude": -58.407692
+      },
+      "coordinatesVerified": true,
+      "currentImageUrl": "",
+      "socialIds": [
+        "ATc5tuTdXSltKtgXG5O7",
+        "BPBCQcIC7FBfZNiGRi5j",
+        "SBF0kLU9VaCVXfFXQtuG",
+        "T9FePX32h3oO1hagYf7v"
+      ],
+      "socialTitles": [
+        "La Porteña Milonga",
+        "La Milonga de Lucy",
+        "La Matineta",
+        "Yira Yira"
+      ]
+    },
+    {
+      "venueId": "vScvBAy82GRNutKS9HEY",
+      "origin": "argentina_ba_20260810",
+      "name": "Libario Espacio Cultural",
+      "address": "Julián Álvarez 1315, Palermo, Buenos Aires, Argentina",
+      "city": "BUENOS AIRES",
+      "country": "ARGENTINA",
+      "coordinates": {
+        "latitude": -34.5941567,
+        "longitude": -58.425944
+      },
+      "coordinatesVerified": true,
+      "currentImageUrl": "",
+      "socialIds": [
+        "hbPWKjcwHo2ggnLeYpjq"
+      ],
+      "socialTitles": [
+        "La Cachivachería"
+      ]
+    },
+    {
+      "venueId": "wHCcyRuK5ATRn8g3i6lU",
+      "origin": "argentina_ba_20260810",
+      "name": "La Glorieta de Belgrano",
+      "address": "Echeverría 1782, Belgrano, Buenos Aires, Argentina",
+      "city": "BUENOS AIRES",
+      "country": "ARGENTINA",
+      "coordinates": {
+        "latitude": -34.5595573,
+        "longitude": -58.4498864
+      },
+      "coordinatesVerified": true,
+      "currentImageUrl": "",
+      "socialIds": [
+        "TjtbNt0TnveBFZxndcHF"
+      ],
+      "socialTitles": [
+        "Milonga Abierta (La Glorieta)"
+      ]
+    },
+    {
+      "venueId": "ysz7wkw79UmDDqccXOQI",
+      "origin": "argentina_ba_20260810",
+      "name": "Espacio Riobamba",
+      "address": "Riobamba 345, Balvanera, Buenos Aires, Argentina",
+      "city": "BUENOS AIRES",
+      "country": "ARGENTINA",
+      "coordinates": {
+        "latitude": -34.6052002,
+        "longitude": -58.3936968
+      },
+      "coordinatesVerified": true,
+      "currentImageUrl": "",
+      "socialIds": [
+        "BBgNSJCrEFdjEzjZKT7C",
+        "Z58OepLnUQjtOhE0SiC0",
+        "dMyduUpx1zqVHhWoj15x",
+        "y9LHsFy2pK1cYBQRCNrI"
+      ],
+      "socialTitles": [
+        "45 y 15",
+        "Champagne Tango Club",
+        "Porteño y Bailarín",
+        "La Tandería"
+      ]
+    }
+  ]
+}
