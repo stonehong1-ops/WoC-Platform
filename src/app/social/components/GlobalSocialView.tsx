@@ -155,7 +155,7 @@ export default function GlobalSocialView({
   return (
     <div className="min-h-screen bg-[#f5f7fa]">
       {/* 라인1: Scope 탭 + 국가/도시 + 보기 전환 (모바일 한 줄) */}
-      <div className="relative z-30 px-2 py-2.5 flex items-center justify-between gap-1 bg-white border-b border-slate-100/80 overflow-x-auto no-scrollbar">
+      <div className="relative z-30 px-2 py-2.5 flex items-center justify-between gap-1 bg-white border-b border-slate-100/80">
         <div className="flex items-center gap-1 min-w-0">
           <SocialScopeTabs scope={scope} onChange={onScopeChange} language={language} />
           <DropdownSelector
