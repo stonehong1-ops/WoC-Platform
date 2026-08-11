@@ -2,7 +2,7 @@ import React from "react";
 import { Social } from "@/types/social";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { detectSeoulDistrict, getVenueDisplay, formatInstructorNames, formatCommunityName } from "@/app/social/constants/seoulRegions";
-import { getDjDisplay, getEventMessage } from "@/lib/utils/socialUtils";
+import { getDjDisplay, getEventMessage, resolveSocialDisplayImage } from "@/lib/utils/socialUtils";
 import { SocialCardImage } from "@/components/social/SocialHeroCard";
 
 interface TodaySocialSectionProps {
@@ -106,10 +106,8 @@ export function SocialCard({ social, date, venuesMap, onPress }: {
   const shortVenue = venue.length > 8 ? venue.slice(0, 8) + "…" : venue;
   const recurrenceText = social.type === "regular" ? getRecurrenceDisplay(social.recurrence, social.dayOfWeek, t, language) : "";
 
-  const hasPoster = social.posterLayoutId && social.posterLayoutId !== "none";
-  const venueImageUrl = social.venueId ? venuesMap[social.venueId]?.imageUrl : undefined;
   // 우선순위: Social 자체 이미지 → Venue 등록 이미지 → 중립 placeholder(SocialCardImage 자체 처리)
-  const displayImageUrl = hasPoster ? social.imageUrl : (social.posterExportUrl || social.imageUrl || venueImageUrl);
+  const displayImageUrl = resolveSocialDisplayImage(social, social.venueId ? venuesMap[social.venueId] : null);
 
   return (
     <button 

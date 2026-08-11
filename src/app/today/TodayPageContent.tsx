@@ -20,7 +20,7 @@ import { Event } from "@/types/event";
 import { GroupClass, Group } from "@/types/group";
 import { detectSeoulDistrict, getVenueDisplay, formatInstructorNames, formatCommunityName, getWeekOrdinal, isLastWeekOfMonth } from "@/app/social/constants/seoulRegions";
 import { getCityGroup, getCityCategoryLabel, matchLocationGroup } from "@/app/social/constants/regionMapping";
-import { getDjDisplay, getEventMessage } from "@/lib/utils/socialUtils";
+import { getDjDisplay, getEventMessage, resolveSocialDisplayImage } from "@/lib/utils/socialUtils";
 import SocialViewer from "@/components/social/SocialViewer";
 import ClassDetail from "@/components/class/ClassDetail";
 import EventViewer from "@/components/events/EventViewer";
@@ -1446,8 +1446,7 @@ export default function TodayPageContent() {
 
             const eventType = s.subCategory === "practica" ? "practice" : (s.subCategory || "social");
             const isRealDj = currentDj && currentDj.toUpperCase() !== "TBD" && currentDj.toUpperCase() !== "TBA" && currentDj.trim() !== "";
-            const hasPoster = s.posterLayoutId && s.posterLayoutId !== "none";
-            const displayImageUrl = hasPoster ? s.imageUrl : (s.posterExportUrl || s.imageUrl || "");
+            const displayImageUrl = resolveSocialDisplayImage(s, s.venueId ? venuesMap[s.venueId] : null) || "";
             events.push({
               id: `social-week-${s.id}-${d.toDateString()}`,
               itemId: s.id,
@@ -1483,8 +1482,7 @@ export default function TodayPageContent() {
 
           const eventType = s.subCategory === "practica" ? "practice" : (s.subCategory || "social");
           const isRealDj = currentDj && currentDj.toUpperCase() !== "TBD" && currentDj.toUpperCase() !== "TBA" && currentDj.trim() !== "";
-          const hasPoster = s.posterLayoutId && s.posterLayoutId !== "none";
-          const displayImageUrl = hasPoster ? s.imageUrl : (s.posterExportUrl || s.imageUrl || "");
+          const displayImageUrl = resolveSocialDisplayImage(s, s.venueId ? venuesMap[s.venueId] : null) || "";
           events.push({
             id: `social-week-${s.id}`,
             itemId: s.id,
@@ -1669,8 +1667,7 @@ export default function TodayPageContent() {
 
             const eventType = s.subCategory === "practica" ? "practice" : (s.subCategory || "social");
             const isRealDj = currentDj && currentDj.toUpperCase() !== "TBD" && currentDj.toUpperCase() !== "TBA" && currentDj.trim() !== "";
-            const hasPoster = s.posterLayoutId && s.posterLayoutId !== "none";
-            const displayImageUrl = hasPoster ? s.imageUrl : (s.posterExportUrl || s.imageUrl || "");
+            const displayImageUrl = resolveSocialDisplayImage(s, s.venueId ? venuesMap[s.venueId] : null) || "";
             events.push({
               id: `social-month-${s.id}-${d.toDateString()}`,
               itemId: s.id,
@@ -1705,8 +1702,7 @@ export default function TodayPageContent() {
 
           const eventType = s.subCategory === "practica" ? "practice" : (s.subCategory || "social");
           const isRealDj = currentDj && currentDj.toUpperCase() !== "TBD" && currentDj.toUpperCase() !== "TBA" && currentDj.trim() !== "";
-          const hasPoster = s.posterLayoutId && s.posterLayoutId !== "none";
-          const displayImageUrl = hasPoster ? s.imageUrl : (s.posterExportUrl || s.imageUrl || "");
+          const displayImageUrl = resolveSocialDisplayImage(s, s.venueId ? venuesMap[s.venueId] : null) || "";
           events.push({
             id: `social-month-${s.id}`,
             itemId: s.id,
@@ -2534,6 +2530,7 @@ export default function TodayPageContent() {
           <SocialViewer
             social={selectedSocial}
             targetDate={socialTargetDate}
+            venueImageUrl={selectedSocial.venueId ? venuesMap[selectedSocial.venueId]?.imageUrl : undefined}
             onClose={closeSocialModal}
           />
         )}
@@ -3573,6 +3570,7 @@ export default function TodayPageContent() {
         <SocialViewer
           social={selectedSocial}
           targetDate={socialTargetDate}
+          venueImageUrl={selectedSocial.venueId ? venuesMap[selectedSocial.venueId]?.imageUrl : undefined}
           onClose={closeSocialModal}
         />
       )}

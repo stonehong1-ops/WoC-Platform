@@ -5,28 +5,6 @@
  * Legacy API(maps.googleapis.com)와 New API(places.googleapis.com) 모두 차단.
  */
 
-// ── 카테고리별 Fallback 이미지 경로 ──
-const VENUE_FALLBACK_IMAGES: Record<string, string> = {
-  // 댄스/탱고/살사 관련
-  'Studio': '/images/fallback/venue-studio.jpg',
-  'Academy': '/images/fallback/venue-studio.jpg',
-  'Club': '/images/fallback/venue-studio.jpg',
-
-  // 요가 관련
-  'Yoga': '/images/fallback/venue-yoga.jpg',
-
-  // 쇼핑/뷰티 관련
-  'Shop': '/images/fallback/venue-shop.jpg',
-  'Beauty': '/images/fallback/venue-shop.jpg',
-
-  // 기타
-  'Stay': '/images/fallback/venue-default.jpg',
-  'Cafe': '/images/fallback/venue-default.jpg',
-  'Eats': '/images/fallback/venue-default.jpg',
-};
-
-const DEFAULT_FALLBACK = '/images/fallback/venue-default.jpg';
-
 /**
  * Google Places Photo URL인지 판별
  * Legacy API와 New API 모두 감지
@@ -67,45 +45,12 @@ export function isGooglePlacesPhotoUrl(url: string | undefined | null): boolean 
   }
 }
 
-/**
- * Venue/Group 이미지 URL을 안전하게 반환
- * 
- * - 정상 자체 이미지 → 원본 URL
- * - Google Places Photo → 카테고리 기본 실사진
- * - 빈 URL → 카테고리 기본 실사진
- * - 잘못된 URL → 카테고리 기본 실사진
- * 
- * @param url 원본 이미지 URL
- * @param category Venue 카테고리 (Studio, Club, Yoga 등)
- * @returns 안전한 이미지 URL (항상 실제 사진 경로 반환, 빈 문자열 반환 금지)
+/*
+ * 여기 있던 `getSafeImageUrl` 은 사진이 없거나 막힌 URL 일 때 카테고리별 스톡 사진
+ * (`/images/fallback/venue-studio.jpg` 등)을 돌려줬다. 그러면 사진을 올린 적 없는
+ * 장소가 남의 스튜디오 사진을 자기 사진처럼 달고 나온다. 사진이 없는 자리는
+ * 중립 placeholder 로 비워 두는 게 맞다.
+ *
+ * 아무도 쓰지 않는 함수였고, 대신 쓸 것은 표시 우선순위를 한 곳에서 정하는
+ * `resolveSocialDisplayImage`(src/lib/utils/socialUtils.ts) 다.
  */
-export function getSafeImageUrl(
-  url: string | undefined | null,
-  category?: string
-): string {
-  // 빈 URL이면 fallback
-  if (!url || typeof url !== 'string' || url.trim() === '') {
-    return getFallbackImage(category);
-  }
-
-  // Google Places Photo URL이면 fallback
-  if (isGooglePlacesPhotoUrl(url)) {
-    return getFallbackImage(category);
-  }
-
-  return url;
-}
-
-/**
- * 카테고리에 맞는 fallback 이미지 경로 반환
- */
-function getFallbackImage(category?: string): string {
-  if (!category) return DEFAULT_FALLBACK;
-  return VENUE_FALLBACK_IMAGES[category] || DEFAULT_FALLBACK;
-}
-
-/**
- * Google Places Photo URL 저장 차단 validation 메시지
- */
-export const GOOGLE_PHOTO_BLOCK_MESSAGE = 
-  'Google Places Photo URL은 대표 이미지로 사용할 수 없습니다. 직접 이미지를 업로드해주세요.';

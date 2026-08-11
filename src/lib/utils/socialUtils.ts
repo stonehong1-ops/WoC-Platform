@@ -48,6 +48,33 @@ export function getDjDisplay(social: Social, targetDate?: Date, locale: string =
   return "";
 }
 
+/**
+ * 목록·상세에서 보여줄 Social 대표 이미지를 고른다.
+ *
+ * 같은 우선순위 식이 화면마다 복사돼 있었고 서로 달랐다. 어떤 곳은 Venue 사진까지
+ * 내려갔고 어떤 곳은 거기서 멈춰서, 같은 Social 이 목록에선 사진이 보이고 상세에선
+ * 빈 자리로 보였다. 판단은 여기 한 곳에서만 한다.
+ *
+ * 고를 게 없으면 `undefined` 를 돌려준다. **대신 채울 스톡 사진은 없다.** 사진이 없는
+ * 곳에 그럴듯한 남의 사진을 넣으면 사용자가 그 장소의 사진으로 오해한다. 빈 자리는
+ * 화면 쪽에서 중립 placeholder 로 처리한다.
+ *
+ * @param venue 이 Social 이 열리는 장소. 넘기지 않으면 Venue 폴백을 쓰지 않는다.
+ *              작성·수정 화면처럼 "실제로 저장된 Social 이미지"만 보여야 하는 곳은
+ *              일부러 넘기지 않는다.
+ */
+export function resolveSocialDisplayImage(
+  social: Pick<Social, 'imageUrl' | 'posterExportUrl' | 'posterLayoutId'>,
+  venue?: { imageUrl?: string } | null
+): string | undefined {
+  // 포스터 레이아웃이 걸려 있으면 그 위에 DJ·일정이 겹쳐 그려진다.
+  // 원본으로 지정한 이미지가 아닌 걸 깔면 포스터 디자인이 어긋나므로 폴백하지 않는다.
+  const hasPoster = social.posterLayoutId && social.posterLayoutId !== 'none';
+  if (hasPoster) return social.imageUrl || undefined;
+
+  return social.posterExportUrl || social.imageUrl || venue?.imageUrl || undefined;
+}
+
 export function isVideoUrl(url?: string, fileType?: string): boolean {
   if (!url) return false;
   if (url.startsWith('blob:')) {

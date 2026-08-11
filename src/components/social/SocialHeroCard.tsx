@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { Social } from '@/types/social';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { formatCommunityName } from '@/app/social/constants/seoulRegions';
-import { isVideoUrl } from '@/lib/utils/socialUtils';
+import { isVideoUrl, resolveSocialDisplayImage } from '@/lib/utils/socialUtils';
 import { getSafeStorageUrl } from '@/lib/utils/storageUtils';
 
 export function DualText({ text, subText, primaryClassName, secondaryClassName, containerClassName }: { text: string; subText?: string; primaryClassName?: string; secondaryClassName?: string; containerClassName?: string }) {
@@ -186,7 +186,8 @@ export default function SocialHeroCard({ social, date }: { social: Social, date?
 
   return (
     <>
-      <SocialCardImage imageUrl={hasPoster ? social.imageUrl : (social.posterExportUrl || social.imageUrl)} title={social.title} />
+      {/* Venue 는 이 컴포넌트로 내려오지 않으므로 Social 자체 이미지까지만 본다. */}
+      <SocialCardImage imageUrl={resolveSocialDisplayImage(social)} title={social.title} />
       
       {hasPoster ? (
         /* Live poster layout overlay — DJ changes auto-reflected */

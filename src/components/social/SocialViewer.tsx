@@ -27,13 +27,19 @@ interface SocialViewerProps {
   social: Social;
   onClose: () => void;
   targetDate?: Date;
+  /**
+   * 이 Social 이 열리는 장소의 등록 사진. Social 에 사진이 하나도 없을 때만 쓴다.
+   * 목록에서는 이미 이렇게 보여주고 있어서, 없으면 같은 Social 이 목록에선 사진이
+   * 있고 상세로 들어가면 빈 자리가 된다.
+   */
+  venueImageUrl?: string;
 }
 
 type TabId = "home" | "live" | "feed" | "reservation";
 
 const ADMIN_UIDS = ["7iaZAmaYY9dNNEShmJmROI8XrtH2"];
 
-export default function SocialViewer({ social: initialSocial, onClose, targetDate }: SocialViewerProps) {
+export default function SocialViewer({ social: initialSocial, onClose, targetDate, venueImageUrl }: SocialViewerProps) {
   const { user, profile } = useAuth();
   const { t } = useLanguage();
   const [social, setSocial] = useState<Social>(initialSocial);
@@ -70,10 +76,14 @@ export default function SocialViewer({ social: initialSocial, onClose, targetDat
       setImages([social.posterExportUrl]);
     } else if (social.imageUrl) {
       setImages([social.imageUrl]);
+    } else if (venueImageUrl) {
+      // Social 자체 사진이 하나도 없을 때만 장소 사진으로 내려간다.
+      // 목록과 같은 기준이라 상세로 들어와도 보이던 사진이 사라지지 않는다.
+      setImages([venueImageUrl]);
     } else {
       setImages([]);
     }
-  }, [social.imageUrl, social.posterExportUrl, social.posterLayoutId, social.imageUrls]);
+  }, [social.imageUrl, social.posterExportUrl, social.posterLayoutId, social.imageUrls, venueImageUrl]);
 
   // UI state
   const [isScrolled, setIsScrolled] = useState(false);
