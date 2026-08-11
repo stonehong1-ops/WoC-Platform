@@ -8,9 +8,8 @@ import { useLocation } from '@/components/providers/LocationProvider';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { peopleService } from '@/lib/firebase/peopleService';
 import { Person, PersonRole } from '@/types/people';
-import { collection, onSnapshot, query } from 'firebase/firestore';
-import { db } from '@/lib/firebase/clientApp';
-import { PlatformUser } from '@/types/user';
+import { userService } from '@/lib/firebase/userService';
+import { PublicProfile } from '@/types/user';
 import { useBackButtonClose } from '@/hooks/useBackButtonClose';
 import { useBlockedUsers } from '@/hooks/useBlockedUsers';
 
@@ -40,7 +39,7 @@ export default function PeoplePage() {
 
   // 상태 관리
   const [rawPeople, setRawPeople] = useState<Person[]>([]);
-  const [rawUsers, setRawUsers] = useState<PlatformUser[]>([]);
+  const [rawUsers, setRawUsers] = useState<PublicProfile[]>([]);
 
   const [isGlobal, setIsGlobal] = useState(false); // false: 로컬, true: 글로벌
   const [likedIds, setLikedIds] = useState<string[]>([]);
@@ -60,17 +59,15 @@ export default function PeoplePage() {
     return () => unsub();
   }, []);
 
-  // Subscribe Users
+  // 공개 프로필 목록.
+  // 이전에는 users 컬렉션 전체를 실시간 구독하며 email/phoneNumber 까지 함께 받아왔다.
+  // 이 화면에 필요한 건 닉네임·사진·역할 뱃지뿐이라 publicProfiles 만 읽는다.
   useEffect(() => {
-    const q = query(collection(db, 'users'));
-    const unsub = onSnapshot(q, (snap) => {
-      const items = snap.docs.map(d => ({
-        id: d.id,
-        ...d.data()
-      }) as PlatformUser);
-      setRawUsers(items);
-    });
-    return () => unsub();
+    let alive = true;
+    userService.getAllPublicProfiles()
+      .then(profiles => { if (alive) setRawUsers(profiles); })
+      .catch(console.error);
+    return () => { alive = false; };
   }, []);
 
   // SubHeader Injection 제거 (메인 홈일 때 탭바 제거)
@@ -489,7 +486,8 @@ export default function PeoplePage() {
                     <div className="flex-1 min-w-0 text-left flex flex-col justify-between py-0.5">
                       <div>
                         <h3 className="text-[14.5px] font-black text-slate-850 truncate leading-tight">{member.nickname || member.nativeNickname || '이름 없음'}</h3>
-                        <p className="text-[11px] font-bold text-slate-450 mt-1 truncate">{member.career || member.email || ''}</p>
+                        {/* 이전에는 career 가 없으면 타인의 email 을 그대로 노출했다. 공개 화면이라 제거한다. */}
+                        <p className="text-[11px] font-bold text-slate-450 mt-1 truncate">{member.career || ''}</p>
                       </div>
                       <div className="flex items-center justify-between text-[11px] font-bold text-slate-500">
                         <span>{roleParam}</span>

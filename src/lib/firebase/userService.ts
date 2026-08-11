@@ -12,11 +12,30 @@ import {
   arrayUnion,
   arrayRemove
 } from 'firebase/firestore';
-import { PlatformUser } from '@/types/user';
+import { PlatformUser, PublicProfile } from '@/types/user';
 
 const USERS_COLLECTION = 'users';
+const PUBLIC_PROFILES_COLLECTION = 'publicProfiles';
 
 export const userService = {
+  /**
+   * 공개 프로필 단건 조회.
+   * 타인의 프로필을 표시할 때는 원본 users 대신 이 메서드를 쓴다.
+   * (users 문서에는 email/phoneNumber/fcmTokens 가 함께 들어있어 통째로 내려보내면 안 된다.)
+   */
+  getPublicProfile: async (uid: string): Promise<PublicProfile | null> => {
+    if (!uid) return null;
+    const snapshot = await getDoc(doc(db, PUBLIC_PROFILES_COLLECTION, uid));
+    if (!snapshot.exists()) return null;
+    return { id: snapshot.id, ...snapshot.data() } as PublicProfile;
+  },
+
+  /** 공개 프로필 전체 조회. 목록/필터 화면에서 users 전체 fetch 를 대체한다. */
+  getAllPublicProfiles: async (): Promise<PublicProfile[]> => {
+    const snapshot = await getDocs(collection(db, PUBLIC_PROFILES_COLLECTION));
+    return snapshot.docs.map(d => ({ id: d.id, ...d.data() })) as PublicProfile[];
+  },
+
   // Search users by displayName or email
   searchUsers: async (keyword: string, pageSize = 20): Promise<PlatformUser[]> => {
     if (!keyword || keyword.trim().length < 2) return [];
