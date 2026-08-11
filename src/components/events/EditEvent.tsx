@@ -8,7 +8,7 @@ import { userService } from '@/lib/firebase/userService';
 import { storageService } from '@/lib/firebase/storageService';
 import { Event, EventCategory, EventProgram, EventPricing, EventArtist, EventVenueItem, EventPackage, EventScheduleDay } from '@/types/event';
 import { Venue } from '@/types/venue';
-import { PlatformUser } from '@/types/user';
+import { PublicProfile } from '@/types/user';
 import { Timestamp } from 'firebase/firestore';
 import ProgramEditor from './ProgramEditor';
 import { syncMilongasToSocial, deleteLinkedSocials } from '@/lib/firebase/syncMilongaToSocial';
@@ -75,7 +75,7 @@ export default function EditEvent({ onClose, onSuccess, eventData }: Props) {
   const [showVenueResults, setShowVenueResults] = useState(false);
 
   // Host / Organizer
-  const [allUsers, setAllUsers] = useState<PlatformUser[]>([]);
+  const [allUsers, setAllUsers] = useState<PublicProfile[]>([]);
   const [organizerList, setOrganizerList] = useState<{ id: string; name: string; nativeName?: string }[]>(() => {
     if (eventData?.organizerNames && eventData.organizerNames.length > 0) {
       return eventData.organizerNames.map((n: string, i: number) => ({ id: `org_${i}_${Date.now()}`, name: n }));
@@ -86,7 +86,7 @@ export default function EditEvent({ onClose, onSuccess, eventData }: Props) {
     return user?.displayName ? [{ id: user.uid, name: user.displayName }] : [];
   });
   const [organizerSearch, setOrganizerSearch] = useState('');
-  const [organizerResults, setOrganizerResults] = useState<PlatformUser[]>([]);
+  const [organizerResults, setOrganizerResults] = useState<PublicProfile[]>([]);
   const [showOrganizerResults, setShowOrganizerResults] = useState(false);
 
   // Staff
@@ -94,7 +94,7 @@ export default function EditEvent({ onClose, onSuccess, eventData }: Props) {
     eventData?.staffIds?.map((id, i) => ({ id, name: eventData?.staffNames?.[i] || '' })) || []
   );
   const [staffSearch, setStaffSearch] = useState('');
-  const [staffResults, setStaffResults] = useState<PlatformUser[]>([]);
+  const [staffResults, setStaffResults] = useState<PublicProfile[]>([]);
   const [showStaffResults, setShowStaffResults] = useState(false);
 
   const handleOrganizerSearch = (val: string) => {
@@ -114,7 +114,7 @@ export default function EditEvent({ onClose, onSuccess, eventData }: Props) {
     }
   };
 
-  const handleSelectOrganizer = (u: PlatformUser) => {
+  const handleSelectOrganizer = (u: PublicProfile) => {
     setOrganizerList([...organizerList, { id: u.id, name: u.nickname || t('social.anonymous') || 'Anonymous', nativeName: u.nativeNickname || '' }]);
     setOrganizerSearch('');
     setShowOrganizerResults(false);
@@ -146,7 +146,7 @@ export default function EditEvent({ onClose, onSuccess, eventData }: Props) {
     }
   };
 
-  const handleSelectStaff = (u: PlatformUser) => {
+  const handleSelectStaff = (u: PublicProfile) => {
     setStaffList([...staffList, { id: u.id, name: u.nickname || u.nativeNickname || u.id }]);
     setStaffSearch('');
     setShowStaffResults(false);
@@ -196,7 +196,7 @@ export default function EditEvent({ onClose, onSuccess, eventData }: Props) {
 
   useEffect(() => {
     venueService.getVenues().then(setAllVenues).catch(console.error);
-    userService.getAllUsers().then(setAllUsers).catch(console.error);
+    userService.getAllPublicProfiles().then(setAllUsers).catch(console.error);
   }, []);
 
   const handleVenueSearch = (val: string) => {

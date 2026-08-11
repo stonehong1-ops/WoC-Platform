@@ -10,7 +10,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { format, isToday, isYesterday, addDays, startOfDay, addMonths, subMonths, parseISO } from "date-fns";
 import { groupService } from "@/lib/firebase/groupService";
 import { userService } from "@/lib/firebase/userService";
-import { PlatformUser } from "@/types/user";
+import { PublicProfile } from "@/types/user";
 import { notificationService } from "@/lib/firebase/notificationService";
 import { Notification } from "@/types/notification";
 import { galleryService, GalleryPost } from "@/lib/firebase/galleryService";
@@ -55,7 +55,7 @@ export function useGroupData({ initialGroup }: UseGroupDataProps) {
   const [upcomingClassEvents, setUpcomingClassEvents] = useState<any[]>([]);
   const [adminTodos, setAdminTodos] = useState<Notification[]>([]);
   const [recentFeedPosts, setRecentFeedPosts] = useState<any[]>([]);
-  const [allUsers, setAllUsers] = useState<PlatformUser[]>([]);
+  const [allUsers, setAllUsers] = useState<PublicProfile[]>([]);
   const [isMembersLoading, setIsMembersLoading] = useState(true);
   
   const [isJoining, setIsJoining] = useState(false);
@@ -313,7 +313,7 @@ export function useGroupData({ initialGroup }: UseGroupDataProps) {
   // 클레임 소유권 대기 사용자 로드
   useEffect(() => {
     if (!currentGroup.ownerId || currentGroup.ownerId === 'system1') {
-      userService.getAllUsers().then(setAllUsers).catch(console.error);
+      userService.getAllPublicProfiles().then(setAllUsers).catch(console.error);
     }
   }, [currentGroup.ownerId]);
 

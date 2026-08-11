@@ -114,7 +114,7 @@ export function useChatActions({
   // Invite user effect
   useEffect(() => {
     if (inviteSearchQuery && room) {
-      userService.getAllUsers().then(users => {
+      userService.getAllPublicProfiles().then(users => {
         const activeParticipants = new Set(room.participants || []);
         const filtered = users.filter(u => 
           !activeParticipants.has(u.id) &&

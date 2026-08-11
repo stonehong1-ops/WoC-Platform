@@ -49,7 +49,7 @@ function RegisterPageContent() {
 
   useEffect(() => {
     import('@/lib/firebase/userService').then(({ userService }) => {
-      userService.getAllUsers().then(setAllUsers).catch(console.error);
+      userService.getAllPublicProfiles().then(setAllUsers).catch(console.error);
     });
   }, []);
 

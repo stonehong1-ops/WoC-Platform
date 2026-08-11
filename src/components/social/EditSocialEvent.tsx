@@ -10,7 +10,7 @@ import { userService } from '@/lib/firebase/userService';
 import { storageService } from '@/lib/firebase/storageService';
 import { Social, SocialType } from '@/types/social';
 import { Venue } from '@/types/venue';
-import { PlatformUser } from '@/types/user';
+import { PublicProfile } from '@/types/user';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { isVideoUrl } from '@/lib/utils/socialUtils';
 import { Capacitor } from '@capacitor/core';
@@ -113,7 +113,7 @@ export default function EditSocialEvent({ onClose, onSuccess, socialData }: Edit
   const [showVenueResults, setShowVenueResults] = useState(false);
 
   // Users Data
-  const [allUsers, setAllUsers] = useState<PlatformUser[]>([]);
+  const [allUsers, setAllUsers] = useState<PublicProfile[]>([]);
 
   // Organizer State (복수 선택)
   const getInitialOrganizers = () => {
@@ -131,7 +131,7 @@ export default function EditSocialEvent({ onClose, onSuccess, socialData }: Edit
   };
   const [organizerList, setOrganizerList] = useState<{ id: string; name: string; nativeName: string }[]>(getInitialOrganizers());
   const [organizerSearch, setOrganizerSearch] = useState('');
-  const [organizerResults, setOrganizerResults] = useState<PlatformUser[]>([]);
+  const [organizerResults, setOrganizerResults] = useState<PublicProfile[]>([]);
   const [showOrganizerResults, setShowOrganizerResults] = useState(false);
 
   // DJ State
@@ -155,7 +155,7 @@ export default function EditSocialEvent({ onClose, onSuccess, socialData }: Edit
   };
 
   const [djName, setDjName] = useState(getInitialDjName());
-  const [djResults, setDjResults] = useState<PlatformUser[]>([]);
+  const [djResults, setDjResults] = useState<PublicProfile[]>([]);
   const [showDjResults, setShowDjResults] = useState(false);
 
   // Staff State
@@ -163,7 +163,7 @@ export default function EditSocialEvent({ onClose, onSuccess, socialData }: Edit
     socialData?.staffIds?.map((id, i) => ({ id, name: socialData?.staffNames?.[i] || '' })) || []
   );
   const [staffSearch, setStaffSearch] = useState('');
-  const [staffResults, setStaffResults] = useState<PlatformUser[]>([]);
+  const [staffResults, setStaffResults] = useState<PublicProfile[]>([]);
   const [showStaffResults, setShowStaffResults] = useState(false);
 
   // Table Capacity & Dress Code
@@ -201,7 +201,7 @@ export default function EditSocialEvent({ onClose, onSuccess, socialData }: Edit
 
   useEffect(() => {
     venueService.getVenues().then(setAllVenues).catch(console.error);
-    userService.getAllUsers().then(setAllUsers).catch(console.error);
+    userService.getAllPublicProfiles().then(setAllUsers).catch(console.error);
   }, []);
 
   // allUsers 로드 후 anonymous 주최자 보정 (manual_ prefix는 비회원이므로 제외)
@@ -272,7 +272,7 @@ export default function EditSocialEvent({ onClose, onSuccess, socialData }: Edit
     }
   };
 
-  const handleSelectOrganizer = (u: PlatformUser) => {
+  const handleSelectOrganizer = (u: PublicProfile) => {
     setOrganizerList([...organizerList, { id: u.id, name: u.nickname || t('social.anonymous'), nativeName: u.nativeNickname || '' }]);
     setOrganizerSearch('');
     setShowOrganizerResults(false);
@@ -304,7 +304,7 @@ export default function EditSocialEvent({ onClose, onSuccess, socialData }: Edit
     }
   };
 
-  const handleSelectDj = (u: PlatformUser) => {
+  const handleSelectDj = (u: PublicProfile) => {
     setDjName(u.nickname || '');
     setShowDjResults(false);
   };

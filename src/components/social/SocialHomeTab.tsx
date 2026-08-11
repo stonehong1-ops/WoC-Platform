@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import { Social, SocialSubEvent, SocialDj } from "@/types/social";
 import { socialService } from "@/lib/firebase/socialService";
 import { userService } from "@/lib/firebase/userService";
-import { PlatformUser } from "@/types/user";
+import { PublicProfile } from "@/types/user";
 import { v4 as uuidv4 } from "uuid";
 import { useLanguage } from '@/contexts/LanguageContext';
 import { toast } from "sonner";
@@ -59,8 +59,8 @@ export default function SocialHomeTab({ social, targetDate, onChatWithOrganizer,
   const [selectedDate, setSelectedDate] = useState("");
   const [djNameInput, setDjNameInput] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [allUsers, setAllUsers] = useState<PlatformUser[]>([]);
-  const [djResults, setDjResults] = useState<PlatformUser[]>([]);
+  const [allUsers, setAllUsers] = useState<PublicProfile[]>([]);
+  const [djResults, setDjResults] = useState<PublicProfile[]>([]);
   const [showDjResults, setShowDjResults] = useState(false);
   const [selectedDjId, setSelectedDjId] = useState<string>("");
   const [showPastDjs, setShowPastDjs] = useState(false);
@@ -69,7 +69,7 @@ export default function SocialHomeTab({ social, targetDate, onChatWithOrganizer,
   // 어드민용 검색 리스트 fetch
   useEffect(() => {
     if (canEdit) {
-      userService.getAllUsers().then(setAllUsers).catch(console.error);
+      userService.getAllPublicProfiles().then(setAllUsers).catch(console.error);
     }
   }, [canEdit]);
 
@@ -147,7 +147,7 @@ export default function SocialHomeTab({ social, targetDate, onChatWithOrganizer,
     }
   };
 
-  const handleSelectDj = (u: PlatformUser) => {
+  const handleSelectDj = (u: PublicProfile) => {
     setDjNameInput(u.nickname || "");
     setSelectedDjId(u.id);
     setShowDjResults(false);

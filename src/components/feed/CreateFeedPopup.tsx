@@ -223,7 +223,7 @@ export default function CreateFeedPopup({ isOpen, onClose, context, editingPost 
   useEffect(() => {
     if (!isOpen || tagCacheLoaded.current) return;
     Promise.allSettled([
-      userService.getAllUsers(),
+      userService.getAllPublicProfiles(),
       venueService.getVenues(),
       socialService.searchSocials(''),
       groupService.getGroups(),

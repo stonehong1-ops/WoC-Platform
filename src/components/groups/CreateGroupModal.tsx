@@ -6,7 +6,8 @@ import { db } from '@/lib/firebase/clientApp';
 import { groupService } from '@/lib/firebase/groupService';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { PlatformUser } from '@/types/user';
+import { PublicProfile } from '@/types/user';
+import { userService } from '@/lib/firebase/userService';
 import { Capacitor } from '@capacitor/core';
 import { useBackButtonClose } from '@/hooks/useBackButtonClose';
 import Portal from '@/components/common/Portal';
@@ -54,8 +55,8 @@ export default function CreateGroupModal({ isOpen, onClose, onSuccess }: CreateG
   const [joinPolicy, setJoinPolicy] = useState<'open' | 'approval' | 'invite'>('open');
   const [owners, setOwners] = useState<OwnerEntry[]>([]);
   const [userSearchTerm, setUserSearchTerm] = useState('');
-  const [userResults, setUserResults] = useState<PlatformUser[]>([]);
-  const [allUsers, setAllUsers] = useState<PlatformUser[]>([]);
+  const [userResults, setUserResults] = useState<PublicProfile[]>([]);
+  const [allUsers, setAllUsers] = useState<PublicProfile[]>([]);
   const [showUserResults, setShowUserResults] = useState(false);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -95,9 +96,8 @@ export default function CreateGroupModal({ isOpen, onClose, onSuccess }: CreateG
     if (!isOpen) return;
     const loadUsers = async () => {
       try {
-        const snap = await getDocs(query(collection(db, 'users'), limit(100)));
-        const list: PlatformUser[] = snap.docs.map(d => ({ id: d.id, ...d.data() } as PlatformUser));
-        setAllUsers(list);
+        // users 원본 대신 공개 프로필만 읽는다 (users 문서에는 email/phoneNumber 가 함께 들어있다).
+        setAllUsers(await userService.getAllPublicProfiles());
       } catch (err) {
         console.error('Failed to load users for group owner search:', err);
       }
@@ -149,7 +149,7 @@ export default function CreateGroupModal({ isOpen, onClose, onSuccess }: CreateG
     }
   };
 
-  const handleAddOwner = (u: PlatformUser) => {
+  const handleAddOwner = (u: PublicProfile) => {
     if (owners.some(o => o.userId === u.id)) return;
     setOwners(prev => [...prev, {
       userId: u.id,

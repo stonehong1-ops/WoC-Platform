@@ -77,7 +77,7 @@ export default function SocialPosterEditor({ social, onClose }: Props) {
     }
     const delayDebounce = setTimeout(async () => {
       try {
-        const users = await userService.getAllUsers();
+        const users = await userService.getAllPublicProfiles();
         const matched = users.find(u => 
           (u.nickname && u.nickname.toLowerCase() === djName.trim().toLowerCase()) ||
           (u.nativeNickname && u.nativeNickname.toLowerCase() === djName.trim().toLowerCase())

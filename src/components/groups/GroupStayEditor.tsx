@@ -8,7 +8,7 @@ import { stayService } from "@/lib/firebase/stayService";
 import { storageService } from "@/lib/firebase/storageService";
 import { userService } from "@/lib/firebase/userService";
 import { Stay, StayType, StayHost } from "@/types/stay";
-import { PlatformUser } from "@/types/user";
+import { PublicProfile } from "@/types/user";
 import { Group } from "@/types/group";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -73,8 +73,8 @@ export default function GroupStayEditor({ group, onClose, isInline }: GroupStayE
   const [hostName, setHostName] = useState("Me");
   const [hostPhoto, setHostPhoto] = useState("");
   const [isEditingHost, setIsEditingHost] = useState(false);
-  const [allUsers, setAllUsers] = useState<PlatformUser[]>([]);
-  const [hostResults, setHostResults] = useState<PlatformUser[]>([]);
+  const [allUsers, setAllUsers] = useState<PublicProfile[]>([]);
+  const [hostResults, setHostResults] = useState<PublicProfile[]>([]);
   const [showHostResults, setShowHostResults] = useState(false);
 
   // ── AUTOMATION SETTINGS ──
@@ -152,7 +152,7 @@ export default function GroupStayEditor({ group, onClose, isInline }: GroupStayE
 
   // -- Fetch All Platform Users for Host Searching --
   useEffect(() => {
-    userService.getAllUsers().then(setAllUsers).catch(console.error);
+    userService.getAllPublicProfiles().then(setAllUsers).catch(console.error);
   }, []);
 
   // -- Real-time Firestore Subscription --
@@ -397,7 +397,7 @@ export default function GroupStayEditor({ group, onClose, isInline }: GroupStayE
     }
   };
 
-  const handleSelectHost = (u: PlatformUser) => {
+  const handleSelectHost = (u: PublicProfile) => {
     setHostName(u.nickname || t("group.stay.anonymous"));
     setHostPhoto(u.photoURL || "");
     setHostUserId(u.id);

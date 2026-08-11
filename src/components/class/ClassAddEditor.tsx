@@ -16,7 +16,7 @@ import { storageService } from "@/lib/firebase/storageService";
 import { userService } from "@/lib/firebase/userService";
 import { venueService } from "@/lib/firebase/venueService";
 import { getManageableGroups } from "@/lib/utils/groupPermissions";
-import { PlatformUser } from "@/types/user";
+import { PublicProfile } from "@/types/user";
 import { Venue } from "@/types/venue";
 import { Capacitor } from "@capacitor/core";
 import { safeDate } from "@/lib/utils/safeDate";
@@ -67,7 +67,7 @@ const ClassAddEditor: React.FC<ClassAddEditorProps> = ({
   const [instructors, setInstructors] = useState<
     { name: string; role: string; userId: string; avatar?: string }[]
   >(initialData?.instructors || []);
-  const [allUsers, setAllUsers] = useState<PlatformUser[]>([]);
+  const [allUsers, setAllUsers] = useState<PublicProfile[]>([]);
 
   const [venueName, setVenueName] = useState(initialData?.location || "");
   const [locationMemo, setLocationMemo] = useState(initialData?.locationMemo || "");
@@ -120,7 +120,7 @@ const ClassAddEditor: React.FC<ClassAddEditorProps> = ({
 
   useEffect(() => {
     venueService.getVenues().then(setAllVenues).catch(console.error);
-    userService.getAllUsers().then(setAllUsers).catch(console.error);
+    userService.getAllPublicProfiles().then(setAllUsers).catch(console.error);
     groupService
       .getGroups()
       .then((groups: Group[]) => {
@@ -165,7 +165,7 @@ const ClassAddEditor: React.FC<ClassAddEditorProps> = ({
     }
   };
 
-  const handleAddInstructor = (u: PlatformUser) => {
+  const handleAddInstructor = (u: PublicProfile) => {
     setInstructors(prev => [
       ...prev,
       {
