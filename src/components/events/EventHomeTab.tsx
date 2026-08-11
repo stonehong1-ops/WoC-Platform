@@ -1,4 +1,5 @@
 "use client";
+import { PublicProfile } from '@/types/user';
 
 import React, { useState, useEffect, useCallback } from "react";
 import { Event, EventArtist, EventVenueItem, EventPackage } from "@/types/event";
@@ -8,6 +9,8 @@ import { db } from "@/lib/firebase/clientApp";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { toast } from "sonner";
 import { useBackButtonClose } from '@/hooks/useBackButtonClose';
+import ImageWithFallback from "@/components/common/ImageWithFallback";
+import { revealAndCall } from "@/lib/utils/contactReveal";
 
 interface Props {
   event: Event;
@@ -68,7 +71,7 @@ export default function EventHomeTab({ event, onChatWithHost, canEdit }: Props) 
         return;
       }
 
-      userService.getUserById(event.hostId).then(setHostProfile).catch(console.error);
+      userService.getPublicProfile(event.hostId).then(setHostProfile).catch(console.error);
     }
   }, [event.hostId, event.hostName, event.hostNameNative]);
 
@@ -79,15 +82,17 @@ export default function EventHomeTab({ event, onChatWithHost, canEdit }: Props) 
     ? `${formatDate(startDate, "shortMonthDay")} – ${formatDate(endDate, "dateOnly")}`
     : `${formatDate(startDate, "dateOnly")} (${formatDate(startDate, "shortWeekday")})`;
 
-  const hostPhone = hostProfile?.phone || event.organizerPhone;
+  // 주최자 개인 번호는 미리 들고 있지 않는다. 이벤트 문서에 직접 적힌 대표번호만 여기 남는다.
   const hostPhoto = hostProfile?.photoURL || event.hostPhoto;
+  const canCallHost = Boolean(event.hostId || event.organizerPhone);
 
+  // 버튼을 누른 순간 서버가 주최자의 수신 동의를 확인하고 번호를 돌려준다.
   const handleCallHost = () => {
-    if (hostProfile?.allowPhoneCalls === false) {
-      toast.error(t('myinfo.phone_private_toast'));
-      return;
-    }
-    window.location.href = `tel:${hostPhone}`;
+    revealAndCall(event.hostId, {
+      fallbackNumber: event.organizerPhone,
+      onDeclined: () => toast.error(t('myinfo.phone_private_toast')),
+      onUnavailable: () => toast.error(t('myinfo.phone_private_toast')),
+    });
   };
 
   // Map URLs
@@ -451,9 +456,14 @@ export default function EventHomeTab({ event, onChatWithHost, canEdit }: Props) 
         <div className="px-4 py-4 space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden">
-                {hostPhoto ? <img src={hostPhoto} className="w-full h-full object-cover" alt="" /> :
-                  <span className="material-symbols-rounded text-lg text-primary">person</span>}
+              <div className="w-10 h-10 rounded-full overflow-hidden shrink-0 border border-[#e0e4e5]">
+                <ImageWithFallback 
+                  src={hostPhoto} 
+                  alt={event.hostNameNative || event.hostName || 'Organizer'} 
+                  fallbackType="avatar"
+                  nameForAvatar={event.hostNameNative || event.hostName || 'Organizer'}
+                  className="w-full h-full object-cover"
+                />
               </div>
               <div>
                 <p className="text-sm font-bold text-[#2d3435]">{event.hostNameNative || event.hostName}</p>
@@ -461,7 +471,7 @@ export default function EventHomeTab({ event, onChatWithHost, canEdit }: Props) 
               </div>
             </div>
             <div className="flex items-center gap-2">
-              {hostPhone && (
+              {canCallHost && (
                 <button onClick={handleCallHost} className="w-9 h-9 rounded-full bg-[#f2f4f4] flex items-center justify-center">
                   <span className="material-symbols-rounded text-lg text-[#596061]">call</span>
                 </button>

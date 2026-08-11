@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase/clientApp';
+import { userService } from '@/lib/firebase/userService';
 import { chatService } from '@/lib/firebase/chatService';
 import { ChatMessage } from '@/types/chat';
 import { useAuth } from '@/components/providers/AuthProvider';
@@ -21,9 +22,10 @@ function PayerAvatar({ uid, isPaid }: { uid: string; isPaid: boolean }) {
     let active = true;
     const fetchProfile = async () => {
       try {
-        const uDoc = await getDoc(doc(db, 'users', uid));
-        if (uDoc.exists() && active) {
-          setProfile(uDoc.data());
+        // 표시용이라 공개 프로필만 읽는다.
+        const p = await userService.getPublicProfile(uid);
+        if (p && active) {
+          setProfile(p);
         }
       } catch (e) {
         console.error("Error loading payer profile:", e);

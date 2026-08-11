@@ -74,7 +74,7 @@ export default function GroupMembers({ groupId, members, memberCount, onMemberCl
       const withProfiles = await Promise.all(members.map(async (member) => {
         try {
           const { userService } = await import('@/lib/firebase/userService');
-          const userProfile = await userService.getUserById(member.id);
+          const userProfile = await userService.getPublicProfile(member.id);
           return {
             ...member,
             profile: userProfile

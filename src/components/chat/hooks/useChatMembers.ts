@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { doc, onSnapshot, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase/clientApp';
+import { userService } from '@/lib/firebase/userService';
 import { chatService } from '@/lib/firebase/chatService';
 import type { ChatRoom, ChatMessage } from '@/types/chat';
 
@@ -84,9 +85,10 @@ export function useChatMembers({ roomId, user, messages, t }: UseChatMembersProp
       if (otherUserId) {
         const fetchUser = async () => {
           try {
-            const userDoc = await getDoc(doc(db, 'users', otherUserId));
-            if (userDoc.exists()) {
-              setOtherUser(userDoc.data());
+            // 상대 표시용이라 공개 프로필만 읽는다.
+            const p = await userService.getPublicProfile(otherUserId);
+            if (p) {
+              setOtherUser(p);
             }
           } catch (err) {
             console.error("Failed to fetch other user", err);

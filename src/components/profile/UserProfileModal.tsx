@@ -1,6 +1,6 @@
 // 사용자 프로필 정보를 불러와 프리미엄 NamecardModal로 렌더링하는 모달 래퍼 컴포넌트
 import React, { useEffect, useState } from 'react';
-import { PlatformUser } from '@/types/user';
+import { PublicProfile } from '@/types/user';
 import { userService } from '@/lib/firebase/userService';
 import NamecardModal, { NamecardUser } from './NamecardModal';
 
@@ -10,7 +10,7 @@ interface UserProfileModalProps {
 }
 
 export default function UserProfileModal({ userId, onClose }: UserProfileModalProps) {
-  const [user, setUser] = useState<PlatformUser | null>(null);
+  const [user, setUser] = useState<PublicProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -19,7 +19,7 @@ export default function UserProfileModal({ userId, onClose }: UserProfileModalPr
     const fetchUser = async () => {
       try {
         setLoading(true);
-        const userData = await userService.getUserById(userId);
+        const userData = await userService.getPublicProfile(userId);
         setUser(userData);
       } catch (error) {
         console.error("Failed to fetch user profile:", error);
@@ -42,7 +42,7 @@ export default function UserProfileModal({ userId, onClose }: UserProfileModalPr
 
   if (!user) return null;
 
-  // PlatformUser를 NamecardUser 형식으로 전환하는 트랜스포머
+  // PublicProfile를 NamecardUser 형식으로 전환하는 트랜스포머
   const roles: string[] = [];
   if ((user as any).isInstructor) roles.push('Instructor');
   if ((user as any).isOrganizer) roles.push('Organizer');
@@ -53,22 +53,20 @@ export default function UserProfileModal({ userId, onClose }: UserProfileModalPr
     roles.push(...((user as any).roles));
   }
 
+  // 남의 명함에 이메일·전화번호를 실어 보내지 않는다.
+  // 공개 프로필에는 애초에 그 값들이 없고, 전화는 명함의 전화 버튼이
+  // 눌린 순간 서버가 수신 동의를 확인해 처리한다.
   const namecardUser: NamecardUser = {
     uid: userId,
-    name: user.nickname || (user as any).displayName || 'User',
-    nativeName: (user as any).realName || (user as any).displayName || undefined,
-    email: user.email,
+    name: user.nickname || 'User',
+    nativeName: user.nativeNickname || undefined,
     photoURL: user.photoURL || undefined,
     roles: roles.length > 0 ? roles : ['Member'],
-    career: (user as any).career,
-    partnerStatus: (user as any).partnerStatus,
-    bio: (user as any).bio || '',
-    socialLinks: (user as any).socialLinks || {
-      whatsapp: user.phoneNumber ? `https://wa.me/${user.phoneNumber.replace(/[^0-9]/g, '')}` : undefined
-    },
-    phone: user.phoneNumber,
-    role: (user as any).role,
-    allowPhoneCalls: (user as any).allowPhoneCalls
+    career: user.career,
+    partnerStatus: user.partnerStatus,
+    bio: '',
+    socialLinks: user.socialLinks || {},
+    role: user.role,
   };
 
   return (

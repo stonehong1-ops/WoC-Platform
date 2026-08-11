@@ -54,7 +54,7 @@ export default function UserProfilePopup({ isOpen, onClose, uid, initialData }: 
     const fetchProfile = async () => {
       try {
         setLoading(true);
-        const userData = await userService.getUserById(uid);
+        const userData = await userService.getPublicProfile(uid);
         if (userData) {
           setProfile(userData as FullProfile);
         }

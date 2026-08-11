@@ -21,10 +21,19 @@ service cloud.firestore {
     }
 
 
+    // users 문서에는 email / phoneNumber / fcmTokens / 권한 플래그가 함께 들어있다.
+    // Firestore 는 문서 단위로 읽히므로 규칙으로 일부 필드만 가릴 수 없다.
+    // 따라서 원본은 본인과 관리자에게만 열고, 공개 정보는 별도 컬렉션으로 제공한다.
+    //   - 프로필 표시: publicProfiles/{uid}
+    //   - 이름 검색:   searchIndex/person_{uid}
+    //   - 전화 연결:   /api/contact/reveal (수신 동의 확인 후 서버가 반환)
     match /users/{userId} {
-      allow read: if true;
+      allow read: if request.auth != null && (
+        request.auth.uid == userId ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true
+      );
       allow write: if request.auth != null && (
-        request.auth.uid == userId || 
+        request.auth.uid == userId ||
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true
       );
       match /aiTryonPhotos/{photoId} {

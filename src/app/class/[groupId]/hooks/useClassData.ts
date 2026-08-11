@@ -9,6 +9,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useBookingEngine } from '@/hooks/useBookingEngine';
 import { toast } from 'sonner';
 import { useModalNavigation } from "@/hooks/useModalNavigation";
+import { userService } from '@/lib/firebase/userService';
 import { 
   DAY_ORDER, 
   getDayOfWeek 
@@ -163,14 +164,15 @@ export function useClassData(
         }
 
         if (groupData?.ownerId) {
-          const userDoc = await getDoc(doc(db, 'users', groupData.ownerId));
-          if (userDoc.exists()) {
-            const uData = userDoc.data();
+          // 표시에 필요한 건 이름과 사진뿐이라 공개 프로필만 읽는다.
+          // users 원본에는 전화번호·이메일이 함께 들어있어 화면용으로 통째로 받지 않는다.
+          const ownerProfile = await userService.getPublicProfile(groupData.ownerId);
+          if (ownerProfile) {
             setOwnerInfo({
-              name: uData.nickname || uData.name || null,
-              localName: uData.localName || null,
-              avatar: uData.photoURL || uData.avatar || null,
-              phone: uData.phone || null
+              name: ownerProfile.nickname || null,
+              localName: ownerProfile.nativeNickname || null,
+              avatar: ownerProfile.photoURL || null,
+              phone: null
             });
           }
         }

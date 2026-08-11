@@ -8,6 +8,7 @@ import { db } from '@/lib/firebase/clientApp';
 import { groupService } from '@/lib/firebase/groupService';
 import { chatService } from '@/lib/firebase/chatService';
 import { toast } from 'sonner';
+import { downloadMediaFile } from '@/lib/utils/downloadHelper';
 import { UserProfile } from '@/types/user';
 import UserProfileClickable from '../common/UserProfileClickable';
 import UserAvatar from '../common/UserAvatar';
@@ -19,6 +20,7 @@ import { useBlockedUsers } from '@/hooks/useBlockedUsers';
 import ReportModal from '../common/ReportModal';
 import SettlementCard from './SettlementCard';
 import PollCard from './PollCard';
+import ConfirmModal from '../common/ConfirmModal';
 
 const getGroupedReactions = (reactions: Record<string, string> = {}) => {
   const counts: Record<string, { count: number; users: string[] }> = {};
@@ -53,7 +55,7 @@ function GroupJoinActionCard({ message, user, t }: { message: ChatMessage; user:
       } else if (actionType === 'group_invite') {
         if (decision === 'approved') {
           const { userService } = await import('@/lib/firebase/userService');
-          const userProfile = await userService.getUserById(userId);
+          const userProfile = await userService.getPublicProfile(userId);
           const memberData = {
             name: userProfile?.nickname || 'Anonymous',
             avatar: userProfile?.photoURL || '',
@@ -632,16 +634,12 @@ export default function ChatMessageList({
     }
   };
 
-  const handleMessageDelete = async (msgId: string) => {
-    if (!confirm(t('chat.delete_confirm', '메시지를 삭제하시겠습니까?'))) return;
-    try {
-      await chatService.deleteMessage(msgId);
-      setMenuMsgId(null);
-      toast.success(t('chat.deleted_toast', '메시지가 삭제되었습니다.'));
-    } catch (e) {
-      console.error(e);
-      toast.error(t('common.error', '삭제에 실패했습니다.'));
-    }
+  const [deleteTargetMsgId, setDeleteTargetMsgId] = useState<string | null>(null);
+  const [isDeletingMsg, setIsDeletingMsg] = useState(false);
+
+  const handleMessageDelete = (msgId: string) => {
+    setDeleteTargetMsgId(msgId);
+    setMenuMsgId(null);
   };
 
   const notices: string[] = (room as any)?.notices || (room?.notice ? [room.notice] : []);
@@ -803,8 +801,20 @@ export default function ChatMessageList({
                   >
                     {/* Image Message */}
                     {msg.type === 'image' && msg.mediaUrl && (
-                      <div className="relative max-w-[260px] aspect-[4/3] rounded-[24px] overflow-hidden bg-gray-50 flex items-center justify-center">
+                      <div className="relative max-w-[260px] aspect-[4/3] rounded-[24px] overflow-hidden bg-gray-50 flex items-center justify-center group/img">
                         <img src={msg.mediaUrl} className="w-full h-full object-cover" alt="" loading="lazy" />
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (msg.mediaUrl) {
+                              downloadMediaFile(msg.mediaUrl);
+                            }
+                          }}
+                          title={t('chat.download_btn', '이미지 저장')}
+                          className="absolute top-2 right-2 w-8 h-8 rounded-full bg-black/50 hover:bg-black/80 backdrop-blur-xs text-white flex items-center justify-center transition-all opacity-80 hover:opacity-100 active:scale-90 z-10"
+                        >
+                          <span className="material-symbols-outlined text-[18px]">download</span>
+                        </button>
                       </div>
                     )}
 
@@ -989,6 +999,29 @@ export default function ChatMessageList({
           targetTitle="Chat Message"
         />
       )}
+
+      {/* 100% 공통 ConfirmModal */}
+      <ConfirmModal
+        isOpen={!!deleteTargetMsgId}
+        onClose={() => setDeleteTargetMsgId(null)}
+        onConfirm={async () => {
+          if (!deleteTargetMsgId) return;
+          setIsDeletingMsg(true);
+          try {
+            await chatService.deleteMessage(deleteTargetMsgId);
+            setDeleteTargetMsgId(null);
+            toast.success(t('chat.deleted_toast', '메시지가 삭제되었습니다.'));
+          } catch (e) {
+            console.error(e);
+            toast.error(t('common.error', '삭제에 실패했습니다.'));
+          } finally {
+            setIsDeletingMsg(false);
+          }
+        }}
+        title={t('chat.delete_confirm_title') || '메시지를 삭제하시겠습니까?'}
+        description={t('chat.delete_confirm_desc') || '삭제된 메시지는 복구할 수 없습니다.'}
+        isLoading={isDeletingMsg}
+      />
     </div>
   );
 }

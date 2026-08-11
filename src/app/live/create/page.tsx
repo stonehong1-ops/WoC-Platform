@@ -16,6 +16,7 @@ import {
 import { useAuth } from '@/components/providers/AuthProvider';
 import { galleryService, GalleryTag, GalleryPost } from '@/lib/firebase/galleryService';
 import { tagSearchService, TagSearchResult } from '@/lib/firebase/tagSearchService';
+import { userService } from '@/lib/firebase/userService';
 import { classRegistrationService } from '@/lib/firebase/classRegistrationService';
 import { db } from '@/lib/firebase/clientApp';
 import { doc, getDoc, getDocs, collection, query, where, collectionGroup } from 'firebase/firestore';
@@ -521,9 +522,8 @@ const GalleryCreateContent = () => {
 
             await Promise.all(Array.from(userIds).map(async (uid) => {
               try {
-                const uSnap = await getDoc(doc(db, 'users', uid));
-                if (uSnap.exists()) {
-                  const uData = uSnap.data();
+                const uData = await userService.getPublicProfile(uid);
+                if (uData) {
                   const name = uData.nativeNickname ? `${uData.nickname || ''} ${uData.nativeNickname}` : (uData.nickname || 'User');
                   
                   let role = 'people';
@@ -559,9 +559,8 @@ const GalleryCreateContent = () => {
             await Promise.all(insts.map(async (inst: any) => {
               if (inst.userId) {
                 try {
-                  const uSnap = await getDoc(doc(db, 'users', inst.userId));
-                  if (uSnap.exists()) {
-                    const uData = uSnap.data();
+                  const uData = await userService.getPublicProfile(inst.userId);
+                  if (uData) {
                     results.push({
                       type: 'people' as const,
                       id: inst.userId,
@@ -618,9 +617,8 @@ const GalleryCreateContent = () => {
 
             await Promise.all(Array.from(hostIds).map(async (hId) => {
               try {
-                const uSnap = await getDoc(doc(db, 'users', hId));
-                if (uSnap.exists()) {
-                  const uData = uSnap.data();
+                const uData = await userService.getPublicProfile(hId);
+                if (uData) {
                   results.push({
                     type: 'people' as const,
                     id: hId,

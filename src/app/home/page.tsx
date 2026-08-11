@@ -778,35 +778,20 @@ We review Simon Collier, Artemis Cooper, María Susana Azzi, and Richard Martin'
         }
         
         // Background scan & update cache if expired or missing
-        const [groupsSnap, users, venues] = await Promise.all([
+        //
+        // 회원 수는 서버 집계로 받는다. 예전에는 users 컬렉션 전체를 내려받아
+        // 클라이언트에서 length 를 세고 createdAt 을 비교했는데, 숫자 두 개 때문에
+        // 전 회원의 email·phoneNumber 까지 브라우저로 오는 구조였다.
+        const [groupsSnap, memberStats, venues] = await Promise.all([
           getDocs(collection(db, 'groups')),
-          userService.getAllUsers(),
+          fetch('/api/stats/members').then(r => r.ok ? r.json() : null).catch(() => null),
           venueService.getVenues()
         ]);
-        
+
         const gCount = groupsSnap.size;
-        const mCount = users.length + 50;
-        
-        const sevenDaysAgo = now - 7 * 24 * 60 * 60 * 1000;
-        let newCount = 0;
-        users.forEach((u) => {
-          let userTime = null;
-          if (u.createdAt) {
-            if (u.createdAt.seconds !== undefined) {
-              userTime = u.createdAt.seconds * 1000;
-            } else if (typeof u.createdAt === 'number') {
-              userTime = u.createdAt;
-            } else if (typeof u.createdAt.toDate === 'function') {
-              userTime = u.createdAt.toDate().getTime();
-            } else if (typeof u.createdAt === 'string') {
-              userTime = new Date(u.createdAt).getTime();
-            }
-          }
-          if (userTime && userTime >= sevenDaysAgo) {
-            newCount++;
-          }
-        });
-        
+        const mCount = (memberStats?.totalMembers ?? 0) + 50;
+        const newCount = memberStats?.weeklyNewMembers ?? 0;
+
         const citiesSet = new Set<string>();
         const countriesSet = new Set<string>();
         const activeVenues = venues.filter(v => v.status === 'active');
@@ -830,25 +815,9 @@ We review Simon Collier, Artemis Cooper, María Susana Azzi, and Richard Martin'
           }
         });
         
-        // 가입 회원들의 국가코드 추가 합산
-        users.forEach((u) => {
-          if (u.countryCode) {
-            let countryNorm = u.countryCode.trim().toUpperCase();
-            if (countryNorm === 'KR' || countryNorm === 'KOREA' || countryNorm === 'SOUTH_KOREA') {
-              countryNorm = 'SOUTH KOREA';
-            } else if (countryNorm === 'SG' || countryNorm === 'SINGAPORE') {
-              countryNorm = 'SINGAPORE';
-            } else if (countryNorm === 'US' || countryNorm === 'USA' || countryNorm === 'UNITED STATES') {
-              countryNorm = 'UNITED STATES';
-            } else if (countryNorm === 'CN' || countryNorm === 'CHINA') {
-              countryNorm = 'CHINA';
-            } else if (countryNorm === 'AU' || countryNorm === 'AUSTRALIA') {
-              countryNorm = 'AUSTRALIA';
-            }
-            countriesSet.add(countryNorm);
-          }
-        });
-        
+        // 회원 국가는 서버 집계에서 받는다 (users 문서를 클라이언트로 내리지 않는다).
+        (memberStats?.memberCountries || []).forEach((c: string) => countriesSet.add(c));
+
         const cCount = citiesSet.size || 27;
         const coCount = countriesSet.size || 3;
         

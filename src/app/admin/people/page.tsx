@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
-import { db } from '@/lib/firebase/clientApp';
+import { db, auth } from '@/lib/firebase/clientApp';
 import { collection, query, onSnapshot, orderBy, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { format } from 'date-fns';
 import { UserProfile } from '@/types/user';
@@ -27,14 +27,27 @@ export default function AdminPeoplePage() {
   const [stats2Filter, setStats2Filter] = useState<'all' | 'android' | 'ios' | 'pwa' | 'web'>('all');
   const [stats2Search, setStats2Search] = useState('');
 
+  // 관리자 화면이라도 브라우저가 users 컬렉션을 직접 구독하지는 않는다.
+  // Admin SDK 로 서버에서 읽고, 화면에 필요한 필드만 받는다.
+  // fcmTokens 원문은 내려오지 않고 hasPushToken/deviceCount 파생값만 온다.
   useEffect(() => {
-    const q = query(collection(db, 'users'), orderBy('createdAt', 'desc'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const userList = snapshot.docs.map(d => ({ id: d.id, ...d.data() })) as UserProfile[];
-      setUsers(userList);
-      setLoading(false);
-    }, () => setLoading(false));
-    return () => unsubscribe();
+    let alive = true;
+    (async () => {
+      try {
+        const idToken = await auth.currentUser?.getIdToken();
+        const res = await fetch('/api/admin/users', {
+          headers: idToken ? { Authorization: `Bearer ${idToken}` } : {},
+        });
+        if (!res.ok) throw new Error(`Failed to load users: ${res.status}`);
+        const { users: userList } = await res.json();
+        if (alive) setUsers(userList as UserProfile[]);
+      } catch (e) {
+        console.error(e);
+      } finally {
+        if (alive) setLoading(false);
+      }
+    })();
+    return () => { alive = false; };
   }, []);
 
   const toggleSort = (field: 'engagement' | 'joinDate' | 'lastVisit') => {
@@ -457,8 +470,8 @@ export default function AdminPeoplePage() {
           if (p === 'android') return 'android';
           if (p === 'ios' || !!u.iosFcmToken) return 'ios';
           
-          const fcmTokens = Array.isArray(u.fcmTokens) ? u.fcmTokens : [];
-          if (fcmTokens.length > 0) return 'pwa';
+          // fcmTokens 원문은 서버가 내려주지 않는다. 파생값으로 판별한다.
+          if (u.hasPushToken) return 'pwa';
           if (u.pushSubscription || u.webPushToken || u.webPushTokens || u.isPwa || u.pwaInstalled || u.pwaToken) return 'pwa';
           return 'web';
         };

@@ -1,4 +1,5 @@
 import { auth, db } from './clientApp';
+import { userService } from './userService';
 import { 
   collection, 
   addDoc, 
@@ -22,12 +23,11 @@ async function getTranslatedText(targetUserId: string, key: string, params?: any
   try {
     let language: 'KR' | 'EN' = 'KR'; // Default
     if (targetUserId) {
-      const userSnap = await getDoc(doc(db, 'users', targetUserId));
-      if (userSnap.exists()) {
-        const uLang = userSnap.data()?.language;
-        if (uLang === 'EN' || uLang === 'KR') {
-          language = uLang;
-        }
+      // 언어 설정만 필요하므로 공개 프로필로 충분하다.
+      const profile = await userService.getPublicProfile(targetUserId);
+      const uLang = profile?.language;
+      if (uLang === 'EN' || uLang === 'KR') {
+        language = uLang;
       }
     }
 

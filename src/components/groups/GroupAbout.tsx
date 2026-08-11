@@ -1,4 +1,5 @@
 "use client";
+import { PublicProfile } from '@/types/user';
 import { reportError } from '@/lib/utils/errorHandler';
 
 import React, { useState, useEffect, useCallback } from 'react';
@@ -13,6 +14,8 @@ import { chatService } from '@/lib/firebase/chatService';
 import { socialService } from '@/lib/firebase/socialService';
 import UserBadge from '@/components/common/UserBadge';
 import { useBackButtonClose } from '@/hooks/useBackButtonClose';
+import MediaViewerPopup from '@/components/feed/MediaViewerPopup';
+import { revealAndCall } from '@/lib/utils/contactReveal';
 
 
 interface GroupAboutProps {
@@ -22,6 +25,7 @@ interface GroupAboutProps {
   isClaiming?: boolean;
   handleClaimAdmin?: (targetUserId: string, targetUserName: string) => Promise<void>;
   isMembersLoading?: boolean;
+  onEditGroup?: () => void;
 }
 
 const swipeConfidenceThreshold = 10000;
@@ -35,7 +39,8 @@ const GroupAbout: React.FC<GroupAboutProps> = ({
   allUsers = [], 
   isClaiming = false, 
   handleClaimAdmin,
-  isMembersLoading = false
+  isMembersLoading = false,
+  onEditGroup
 }) => {
   const { t } = useLanguage();
   const { user, profile } = useAuth();
@@ -44,19 +49,7 @@ const GroupAbout: React.FC<GroupAboutProps> = ({
   const [isAboutExpanded, setIsAboutExpanded] = useState(false);
   const [isLeaving, setIsLeaving] = useState(false);
   const [isJoining, setIsJoining] = useState(false);
-  
-  const [claimOwnerName, setClaimOwnerName] = useState("");
-  const [claimOwnerId, setClaimOwnerId] = useState("");
-  const [claimResults, setClaimResults] = useState<any[]>([]);
-  const [showClaimResults, setShowClaimResults] = useState(false);
   const [showLiveMap, setShowLiveMap] = useState(false);
-
-  useEffect(() => {
-    if (user && !claimOwnerId) {
-      setClaimOwnerId(user.uid);
-      setClaimOwnerName(profile?.nickname || user.displayName || "");
-    }
-  }, [user, profile]);
 
   const handleLeaveGroup = async () => {
     if (!user || !group.id) return;
@@ -248,18 +241,21 @@ const GroupAbout: React.FC<GroupAboutProps> = ({
           }
 
           const { userService } = await import('@/lib/firebase/userService');
-          const userProfile = await userService.getUserById(member.id);
+          const userProfile = await userService.getPublicProfile(member.id);
           return {
             ...member,
             profile: userProfile,
             isInstructor: userProfile?.isInstructor || member.role === 'instructor',
-            isStaff: userProfile?.isStaff || userProfile?.systemRole === 'staff' || member.role === 'staff' || member.role === 'moderator',
+            // 플랫폼 전체 권한(isStaff/systemRole)은 공개 정보가 아니다. 그룹 내 역할만으로 판단한다.
+            isStaff: member.role === 'staff' || member.role === 'moderator',
             isDj: userProfile?.isDj,
             isServiceProvider: userProfile?.isServiceProvider,
             name: userProfile?.nickname || member.name || member.nickname || 'Unknown',
             avatar: userProfile?.photoURL || member.avatar || member.photoURL || null,
-            phone: userProfile?.phoneNumber || member.phone || null,
-            allowPhoneCalls: userProfile?.allowPhoneCalls !== false
+            // 개인 전화번호는 미리 받아두지 않는다. 전화 버튼을 누른 순간
+            // 서버가 상대의 수신 동의를 확인해 돌려준다 (revealAndCall).
+            // 여기 남는 값은 그룹 문서에 직접 적힌 대표번호뿐이다.
+            phone: member.phone || null
           };
         } catch (error) {
           reportError(error, 'groupAbout.fetchMemberProfile');
@@ -362,15 +358,15 @@ const GroupAbout: React.FC<GroupAboutProps> = ({
         >
           <span className="material-symbols-outlined">chat</span>
         </button>
-        {member.phone && (
-          <button 
+        {(member.id || member.phone) && (
+          <button
             className="p-2 text-primary hover:bg-primary-container rounded-full"
             onClick={() => {
-              if (member.allowPhoneCalls === false) {
-                toast.error(t('myinfo.phone_private_toast'));
-                return;
-              }
-              window.location.href = `tel:${member.phone}`;
+              revealAndCall(member.id, {
+                fallbackNumber: member.phone,
+                onDeclined: () => toast.error(t('myinfo.phone_private_toast')),
+                onUnavailable: () => toast.error(t('myinfo.phone_private_toast')),
+              });
             }}
           >
             <span className="material-symbols-outlined">call</span>
@@ -379,91 +375,6 @@ const GroupAbout: React.FC<GroupAboutProps> = ({
       </div>
     </div>
   );
-
-  const renderClaimInputForm = () => {
-    return (
-      <div className="space-y-3 mt-3 p-3 bg-slate-800/80 border border-slate-700/60 rounded-xl shadow-inner">
-        <div className="relative">
-          <div className="relative flex items-center px-3.5 py-2 border border-slate-600 rounded-xl bg-slate-900 focus-within:bg-slate-950 focus-within:ring-2 focus-within:ring-primary/20 transition-all">
-            <span className="material-symbols-outlined text-slate-400 mr-2 text-[18px]">person_filled</span>
-            <input
-              value={claimOwnerName}
-              onChange={(e) => {
-                const val = e.target.value;
-                setClaimOwnerName(val);
-                setClaimOwnerId('');
-                if (val.length >= 1) {
-                  const lower = val.toLowerCase();
-                  const filtered = allUsers.filter((u: any) =>
-                    (u.nickname && u.nickname.toLowerCase().includes(lower)) ||
-                    (u.nativeNickname && u.nativeNickname.toLowerCase().includes(lower))
-                  );
-                  setClaimResults(filtered.slice(0, 6));
-                  setShowClaimResults(filtered.length > 0);
-                } else {
-                  setShowClaimResults(false);
-                  setClaimResults([]);
-                }
-              }}
-              onFocus={() => claimOwnerName.length >= 1 && setShowClaimResults(claimResults.length > 0)}
-              onBlur={() => setTimeout(() => setShowClaimResults(false), 200)}
-              className="flex-1 bg-transparent border-none p-0 focus:ring-0 text-xs font-bold text-white placeholder:text-slate-500 outline-none font-body"
-              placeholder={t('group.claim.search_placeholder') || "Enter name or nickname"}
-              type="text"
-            />
-            {claimOwnerId && (
-              <span className="material-symbols-outlined text-emerald-500 text-[16px]">check_circle</span>
-            )}
-          </div>
-          {showClaimResults && (
-            <div className="absolute bottom-full left-0 w-full mb-1 bg-slate-900 border border-slate-700 rounded-xl shadow-lg z-50 overflow-hidden">
-              {claimResults.map((u: any) => (
-                <button
-                  key={u.id}
-                  onClick={() => {
-                    const displayName = u.nativeNickname ? `${u.nickname} (${u.nativeNickname})` : (u.nickname || '');
-                    setClaimOwnerName(displayName);
-                    setClaimOwnerId(u.id);
-                    setShowClaimResults(false);
-                  }}
-                  className="w-full text-left px-3 py-2.5 hover:bg-slate-800 flex items-center gap-2 group transition-colors border-b border-slate-800 last:border-0"
-                >
-                  <span className="material-symbols-outlined text-slate-400 text-[16px]">person</span>
-                  <div className="flex flex-col">
-                    <p className="font-bold text-white text-xs group-hover:text-primary leading-tight font-body">
-                      {u.nickname} {u.nativeNickname ? `(${u.nativeNickname})` : ''}
-                    </p>
-                  </div>
-                  {u.id === user?.uid && (
-                    <span className="ml-auto text-[9px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full font-body">{t('group.claim.me') || "Me"}</span>
-                  )}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {claimOwnerId && (
-          <button
-            onClick={async () => {
-              if (!handleClaimAdmin) return;
-              try {
-                await handleClaimAdmin(claimOwnerId, claimOwnerName);
-                setClaimOwnerName("");
-                setClaimOwnerId("");
-              } catch (e) {
-                toast.error(t('group.claim.error') || 'Failed to claim group admin');
-              }
-            }}
-            disabled={isClaiming}
-            className="w-full py-2.5 bg-[#0057bd] text-white font-bold rounded-xl active:scale-95 transition-all text-xs shadow-sm font-body"
-          >
-            {isClaiming ? (t('group.claim.saving') || "Saving...") : (t('group.claim.button') || "Claim Ownership (소유권 주장)")}
-          </button>
-        )}
-      </div>
-    );
-  };
 
   const isLocked = group.ownerId === 'system1' || !group.ownerId;
 
@@ -493,6 +404,7 @@ const GroupAbout: React.FC<GroupAboutProps> = ({
               </p>
             )}
             
+
             {!isOwner && (
               <div className="mt-4 pt-3 border-t border-[#f2f4f4]">
                 <button
@@ -573,17 +485,6 @@ const GroupAbout: React.FC<GroupAboutProps> = ({
                       {isJoining ? t('common.processing', '처리 중...') : t('group.about.join_button', '커뮤니티 가입하기')}
                     </button>
                   )}
-
-                  {isLocked && (
-                    <div id="claim-owner-input-section" className="mt-3 pt-3 border-t border-white/20 text-center space-y-2">
-                      <div className="text-left">
-                        <p className="text-[11px] font-bold text-white/90 mb-2 font-body">
-                          {t('group.about.is_representative_question', '혹시 이 커뮤니티의 대표자이신가요?')}
-                        </p>
-                        {renderClaimInputForm()}
-                      </div>
-                    </div>
-                  )}
                 </div>
               );
             } else if (strategy === 'approval') {
@@ -600,13 +501,6 @@ const GroupAbout: React.FC<GroupAboutProps> = ({
                       <p className="text-[12px] font-bold text-amber-400 font-body mb-2">
                         {t('group.about.no_owner_error', '현재 대표자가 없어서 가입을 요청하실 수 없습니다.')}
                       </p>
-                      
-                      <div className="mt-4 pt-3 border-t border-amber-500/20 text-left space-y-2">
-                        <p className="text-[11px] font-bold text-slate-300 font-body">
-                          {t('group.about.is_representative_question', '혹시 이 커뮤니티의 대표자이신가요?')}
-                        </p>
-                        {renderClaimInputForm()}
-                      </div>
                     </div>
                   ) : (
                     <button 
@@ -678,13 +572,6 @@ const GroupAbout: React.FC<GroupAboutProps> = ({
                       <p className="text-[12px] font-bold text-amber-400 font-body mb-2">
                         {t('group.about.no_owner_error', '현재 대표자가 없어서 가입을 요청하실 수 없습니다.')}
                       </p>
-                      
-                      <div className="mt-4 pt-3 border-t border-amber-500/20 text-left space-y-2">
-                        <p className="text-[11px] font-bold text-slate-300 font-body">
-                          {t('group.about.is_representative_question', '혹시 이 커뮤니티의 대표자이신가요?')}
-                        </p>
-                        {renderClaimInputForm()}
-                      </div>
                     </div>
                   ) : (
                     <button 
@@ -1112,6 +999,14 @@ const GroupAbout: React.FC<GroupAboutProps> = ({
           <p className="pt-6 uppercase tracking-[0.2em] text-[10px] font-bold text-on-surface-variant/40">© {new Date().getFullYear()} {(group.name || 'COMMUNITY').toUpperCase()}</p>
         </div>
       </footer>
+
+      {/* 100% 표준 공통 미디어 풀스크린 뷰어 */}
+      <MediaViewerPopup
+        isOpen={isViewerOpen}
+        onClose={closeViewer}
+        media={displayImages.map(url => ({ url, type: 'image' }))}
+        initialIndex={viewerIndex}
+      />
     </div>
   );
 };

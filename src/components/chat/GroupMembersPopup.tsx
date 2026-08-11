@@ -59,7 +59,7 @@ export default function GroupMembersPopup({ roomId, onClose }: GroupMembersPopup
 
       // Build members list from room participants
       const memberPromises = (roomData.participants || []).map(async (uid: string) => {
-        const userData = await userService.getUserById(uid);
+        const userData = await userService.getPublicProfile(uid);
         const userDetails = (userData || {}) as any;
         
         let role: 'owner' | 'admin' | 'staff' | 'member' = 'member';

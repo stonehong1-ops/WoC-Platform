@@ -143,7 +143,8 @@ export default function PeopleDetailPage() {
     if (!id) return;
     if (isPreview) {
       // users 컬렉션에서 기본정보 조회
-      const unsub = onSnapshot(doc(db, 'users', id), (snap) => {
+      // 남의 프로필 미리보기라 공개 프로필만 구독한다.
+      const unsub = onSnapshot(doc(db, 'publicProfiles', id), (snap) => {
         if (snap.exists()) {
           setPreviewUser({ id: snap.id, ...snap.data() } as PlatformUser);
         }

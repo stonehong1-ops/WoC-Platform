@@ -6,10 +6,11 @@ import { db } from '@/lib/firebase/clientApp';
 import { chatService } from '@/lib/firebase/chatService';
 import { userService } from '@/lib/firebase/userService';
 import { ChatRoom } from '@/types/chat';
-import { PlatformUser } from '@/types/user';
+import { PublicProfile } from '@/types/user';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { safeDate } from '@/lib/utils/safeDate';
 import { useLanguage } from '@/contexts/LanguageContext';
+import EmptyState from '@/components/common/EmptyState';
 
 interface ChatListProps {
   onSelectRoom: (roomId: string) => void;
@@ -56,13 +57,16 @@ export function renderLastMessage(msg: string | null | undefined, t: (key: strin
 
 function RoomAvatar({ room, currentUserId }: { room: ChatRoom; currentUserId?: string }) {
   const { t } = useLanguage();
-  const [otherUser, setOtherUser] = useState<PlatformUser | null>(null);
-  const [otherUsers, setOtherUsers] = useState<PlatformUser[]>([]);
+  const [otherUser, setOtherUser] = useState<PublicProfile | null>(null);
+  const [otherUsers, setOtherUsers] = useState<PublicProfile[]>([]);
   const [loading, setLoading] = useState(true);
+  const [imgHasError, setImgHasError] = useState(false);
 
   const isGroup = room.participants && room.participants.length > 2;
+  const isGroupRoom = room.type === 'groups' || room.type === 'group' || isGroup;
 
   useEffect(() => {
+    setImgHasError(false);
     if (isGroup) {
       if (room.imageUrl) {
         setLoading(false);
@@ -72,9 +76,9 @@ function RoomAvatar({ room, currentUserId }: { room: ChatRoom; currentUserId?: s
       const fetchGroupUsers = async () => {
         const otherIds = room.participants.filter(id => id !== currentUserId);
         try {
-          const promises = otherIds.map(id => userService.getUserById(id));
+          const promises = otherIds.map(id => userService.getPublicProfile(id));
           const users = await Promise.all(promises);
-          const activeUsers = users.filter(Boolean) as PlatformUser[];
+          const activeUsers = users.filter(Boolean) as PublicProfile[];
           
           const sorted = activeUsers.sort((a, b) => {
             const aHasPhoto = !!a.photoURL;
@@ -103,7 +107,7 @@ function RoomAvatar({ room, currentUserId }: { room: ChatRoom; currentUserId?: s
       const otherId = room.participants.find(id => id !== currentUserId);
       if (otherId) {
         try {
-          const user = await userService.getUserById(otherId);
+          const user = await userService.getPublicProfile(otherId);
           setOtherUser(user);
         } catch (e) {
           console.error(e);
@@ -120,122 +124,43 @@ function RoomAvatar({ room, currentUserId }: { room: ChatRoom; currentUserId?: s
     );
   }
 
-  if (room.imageUrl) {
+  const displayImage = imgHasError ? null : (room.imageUrl || otherUser?.photoURL);
+  const initialText = (room.name || otherUser?.nickname || 'W').substring(0, 2).toUpperCase();
+
+  if (displayImage) {
     return (
-      <div className="w-14 h-14 rounded-full overflow-hidden bg-gray-100 ring-1 ring-gray-100 shadow-inner flex items-center justify-center shrink-0">
+      <div className="w-14 h-14 rounded-full overflow-hidden bg-slate-100 ring-1 ring-slate-100 shadow-inner flex items-center justify-center shrink-0">
         <img 
-          src={room.imageUrl} 
-          alt={room.name || 'Chat'} 
+          src={displayImage} 
+          alt="" 
+          onError={() => setImgHasError(true)}
           className="w-full h-full object-cover" 
         />
       </div>
     );
   }
 
-  if ((room.type === 'groups' || room.type === 'group') && !room.imageUrl) {
+  if (isGroupRoom) {
     return (
-      <div className="w-14 h-14 rounded-full overflow-hidden bg-gradient-to-br from-indigo-500/10 to-purple-500/10 border border-purple-500/15 shadow-sm flex items-center justify-center shrink-0">
-        <span className="material-symbols-outlined text-purple-600/80 text-[24px]">
+      <div className="w-14 h-14 rounded-full overflow-hidden bg-gradient-to-br from-[#007AFF]/10 to-indigo-500/10 border border-[#007AFF]/15 shadow-sm flex items-center justify-center shrink-0">
+        <span className="material-symbols-outlined text-[#007AFF] text-[24px]">
           diversity_3
         </span>
       </div>
     );
   }
 
-  if (isGroup && !room.imageUrl) {
-    const list = otherUsers;
-    
-    if (list.length === 2) {
-      return (
-        <div className="w-14 h-14 rounded-full overflow-hidden bg-gray-50/50 ring-1 ring-gray-100 flex shrink-0">
-          <div className="w-1/2 h-full overflow-hidden border-r border-white flex-shrink-0">
-            {list[0].photoURL ? (
-              <img src={list[0].photoURL} alt="" className="w-full h-full object-cover" />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center bg-blue-50 text-blue-500 text-[10px] font-black uppercase">
-                {list[0].nickname.charAt(0)}
-              </div>
-            )}
-          </div>
-          <div className="w-1/2 h-full overflow-hidden flex-shrink-0">
-            {list[1].photoURL ? (
-              <img src={list[1].photoURL} alt="" className="w-full h-full object-cover" />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center bg-indigo-50 text-indigo-500 text-[10px] font-black uppercase">
-                {list[1].nickname.charAt(0)}
-              </div>
-            )}
-          </div>
-        </div>
-      );
-    }
-
-    if (list.length >= 3) {
-      return (
-        <div className="w-14 h-14 rounded-full overflow-hidden bg-gray-50/50 ring-1 ring-gray-100 flex shrink-0">
-          <div className="w-1/2 h-full overflow-hidden border-r border-white flex-shrink-0">
-            {list[0].photoURL ? (
-              <img src={list[0].photoURL} alt="" className="w-full h-full object-cover" />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center bg-blue-50 text-blue-500 text-[10px] font-black uppercase">
-                {list[0].nickname.charAt(0)}
-              </div>
-            )}
-          </div>
-          <div className="w-1/2 h-full flex flex-col shrink-0">
-            <div className="h-1/2 w-full overflow-hidden border-b border-white">
-              {list[1].photoURL ? (
-                <img src={list[1].photoURL} alt="" className="w-full h-full object-cover" />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center bg-indigo-50 text-indigo-500 text-[8px] font-black uppercase">
-                  {list[1].nickname.charAt(0)}
-                </div>
-              )}
-            </div>
-            <div className="h-1/2 w-full overflow-hidden">
-              {list[2].photoURL ? (
-                <img src={list[2].photoURL} alt="" className="w-full h-full object-cover" />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center bg-purple-50 text-purple-500 text-[8px] font-black uppercase">
-                  {list[2].nickname.charAt(0)}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    return (
-      <div className="w-14 h-14 rounded-full overflow-hidden bg-gradient-to-br from-blue-50 to-indigo-50 ring-1 ring-blue-100/50 shadow-inner flex items-center justify-center shrink-0">
-        <span className="material-symbols-outlined text-primary/70 text-[26px]">group</span>
-      </div>
-    );
-  }
-
-  const displayImage = room.imageUrl || otherUser?.photoURL;
-
   return (
-    <div className="w-14 h-14 rounded-full overflow-hidden bg-gray-100 ring-1 ring-gray-100 shadow-inner flex items-center justify-center shrink-0">
-      {displayImage ? (
-        <img 
-          src={displayImage} 
-          alt={room.name || otherUser?.nickname || 'Chat'} 
-          className="w-full h-full object-cover" 
-        />
-      ) : (
-        <span className="material-symbols-outlined text-gray-400 text-[28px]">
-          {room.type === 'notice' ? 'campaign' : 'person'}
-        </span>
-      )}
+    <div className="w-14 h-14 rounded-full overflow-hidden bg-gradient-to-br from-[#0057bd]/10 to-blue-500/10 border border-[#0057bd]/20 shadow-inner flex items-center justify-center shrink-0 font-bold text-[#0057bd] text-sm tracking-wider">
+      {initialText}
     </div>
   );
 }
 
 function RoomName({ room, currentUserId }: { room: ChatRoom; currentUserId?: string }) {
   const { t } = useLanguage();
-  const [otherUser, setOtherUser] = useState<PlatformUser | null>(null);
-  const [otherUsers, setOtherUsers] = useState<PlatformUser[]>([]);
+  const [otherUser, setOtherUser] = useState<PublicProfile | null>(null);
+  const [otherUsers, setOtherUsers] = useState<PublicProfile[]>([]);
   const [loading, setLoading] = useState(true);
 
   const isGroup = room.participants && room.participants.length > 2;
@@ -250,9 +175,9 @@ function RoomName({ room, currentUserId }: { room: ChatRoom; currentUserId?: str
       const fetchOtherUsers = async () => {
         const otherIds = room.participants.filter(id => id !== currentUserId);
         try {
-          const promises = otherIds.map(id => userService.getUserById(id));
+          const promises = otherIds.map(id => userService.getPublicProfile(id));
           const users = await Promise.all(promises);
-          setOtherUsers(users.filter(Boolean) as PlatformUser[]);
+          setOtherUsers(users.filter(Boolean) as PublicProfile[]);
         } catch (e) {
           console.error(e);
         }
@@ -271,7 +196,7 @@ function RoomName({ room, currentUserId }: { room: ChatRoom; currentUserId?: str
       const otherId = room.participants.find(id => id !== currentUserId);
       if (otherId) {
         try {
-          const user = await userService.getUserById(otherId);
+          const user = await userService.getPublicProfile(otherId);
           setOtherUser(user);
         } catch (e) {
           console.error(e);
@@ -397,7 +322,8 @@ function RoomItem({
     }
   };
 
-  const handleClick = () => {
+  const handleClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
     if (isLongPressActive.current) {
       isLongPressActive.current = false;
       return;
@@ -407,6 +333,7 @@ function RoomItem({
 
   return (
     <button
+      type="button"
       key={room.id}
       onClick={handleClick}
       onMouseDown={startLongPress}
@@ -478,20 +405,20 @@ export default function ChatList({ onSelectRoom, selectedRoomId, category = 'Per
   const [isGroupCreationModalOpen, setIsGroupCreationModalOpen] = useState(false);
   const [groupChatName, setGroupChatName] = useState('');
   const [groupSearchQuery, setGroupSearchQuery] = useState('');
-  const [allPlatformUsers, setAllPlatformUsers] = useState<PlatformUser[]>([]);
+  const [allPublicProfiles, setAllPublicProfiles] = useState<PublicProfile[]>([]);
   const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(new Set());
   const [isCreatingGroup, setIsCreatingGroup] = useState(false);
 
   useEffect(() => {
     if (isGroupCreationModalOpen) {
-      userService.getAllUsers().then(users => {
-        setAllPlatformUsers(users.filter(u => u.id !== user?.uid));
+      userService.getAllPublicProfiles().then(users => {
+        setAllPublicProfiles(users.filter(u => u.id !== user?.uid));
       }).catch(console.error);
     } else {
       setGroupChatName('');
       setGroupSearchQuery('');
       setSelectedUserIds(new Set());
-      setAllPlatformUsers([]);
+      setAllPublicProfiles([]);
     }
   }, [isGroupCreationModalOpen, user?.uid]);
 
@@ -546,7 +473,7 @@ export default function ChatList({ onSelectRoom, selectedRoomId, category = 'Per
   // Search state
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchFocused, setIsSearchFocused] = useState(false);
-  const [searchedUsers, setSearchedUsers] = useState<PlatformUser[]>([]);
+  const [searchedUsers, setSearchedUsers] = useState<PublicProfile[]>([]);
   const [searchingUsers, setSearchingUsers] = useState(false);
   const [creatingRoom, setCreatingRoom] = useState<string | null>(null);
   
@@ -575,7 +502,7 @@ export default function ChatList({ onSelectRoom, selectedRoomId, category = 'Per
           const otherId = room.participants.find(id => id !== user.uid);
           if (otherId) {
             try {
-              const u = await userService.getUserById(otherId);
+              const u = await userService.getPublicProfile(otherId);
               if (u) {
                 newCache[room.id] = { nickname: u.nickname, nativeNickname: u.nativeNickname };
                 changed = true;
@@ -750,7 +677,7 @@ export default function ChatList({ onSelectRoom, selectedRoomId, category = 'Per
   }, [category, user?.uid, rooms]);
 
   // Create or navigate to 1:1 room
-  const handleUserSelect = async (targetUser: PlatformUser) => {
+  const handleUserSelect = async (targetUser: PublicProfile) => {
     if (!user || creatingRoom) return;
     setCreatingRoom(targetUser.id);
     try {
@@ -840,8 +767,10 @@ export default function ChatList({ onSelectRoom, selectedRoomId, category = 'Per
     <div className="flex-1 overflow-y-auto no-scrollbar flex flex-col">
       {/* Search Bar */}
       <div ref={searchRef} className="relative px-6 pb-4">
-        <div className="relative">
-          <span className="absolute left-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-gray-300 text-[20px]">search</span>
+        <div className="relative flex items-center w-full h-11">
+          <span className="absolute left-3.5 inset-y-0 my-auto h-5 w-5 flex items-center justify-center material-symbols-outlined text-gray-400 text-[20px] leading-none select-none pointer-events-none">
+            search
+          </span>
           <input 
             ref={inputRef}
             type="text"
@@ -849,7 +778,7 @@ export default function ChatList({ onSelectRoom, selectedRoomId, category = 'Per
             onChange={(e) => handleSearchChange(e.target.value)}
             onFocus={() => setIsSearchFocused(true)}
             placeholder={getPlaceholder()}
-            className={`w-full pl-12 py-3 bg-white border border-slate-100 rounded-2xl text-sm font-medium placeholder:text-gray-300 focus:ring-1 focus:ring-primary/10 focus:border-primary/20 transition-all ${
+            className={`w-full h-11 pl-11 bg-white border border-slate-200/80 rounded-2xl text-sm font-medium placeholder:text-gray-400 focus:ring-2 focus:ring-primary/10 focus:border-primary/30 transition-all flex items-center ${
               category === 'Personal' 
                 ? (searchQuery ? 'pr-20' : 'pr-12') 
                 : 'pr-10'
@@ -858,20 +787,21 @@ export default function ChatList({ onSelectRoom, selectedRoomId, category = 'Per
           {searchQuery && (
             <button 
               onClick={() => { setSearchQuery(''); setSearchedUsers([]); setIsSearchFocused(false); }}
-              className={`absolute top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors ${
+              className={`absolute inset-y-0 my-auto w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors ${
                 category === 'Personal' ? 'right-12' : 'right-3'
               }`}
             >
-              <span className="material-symbols-outlined text-gray-400 text-[14px]">close</span>
+              <span className="material-symbols-outlined text-gray-400 text-[14px] leading-none">close</span>
             </button>
           )}
           {category === 'Personal' && (
             <button 
               onClick={() => setIsGroupCreationModalOpen(true)}
-              title={t('chatroom.create_group_button', '그룹 만들기')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-xl bg-gradient-to-br from-blue-500/10 to-indigo-500/10 hover:from-blue-500/20 hover:to-indigo-500/20 text-primary flex items-center justify-center transition-all active:scale-95 border border-primary/5"
+              title={t('chatroom.create_group_button', '새 그룹 채팅 시작')}
+              aria-label={t('chatroom.create_group_button', '새 그룹 채팅 시작')}
+              className="absolute right-2 inset-y-0 my-auto w-8 h-8 rounded-xl bg-blue-500/10 hover:bg-blue-500/20 text-primary flex items-center justify-center transition-all active:scale-95 border border-primary/10"
             >
-              <span className="material-symbols-outlined text-[18px]">group_add</span>
+              <span className="material-symbols-outlined text-[18px] leading-none flex items-center justify-center">group_add</span>
             </button>
           )}
         </div>
@@ -976,17 +906,11 @@ export default function ChatList({ onSelectRoom, selectedRoomId, category = 'Per
 
       {/* Room List */}
       {searchFilteredRooms.length === 0 && !showSearchOverlay ? (
-        <div className="flex flex-col items-center justify-center h-[60vh] text-center px-10">
-          <div className="w-20 h-20 rounded-full bg-gray-50 flex items-center justify-center mb-6">
-            <span className="material-symbols-outlined text-gray-200 text-4xl">chat_bubble</span>
-          </div>
-          <h3 className="text-lg font-black text-gray-900 mb-2 uppercase tracking-tighter">{t('chat.noConversations')}</h3>
-          <p className="text-xs text-gray-400 font-medium leading-relaxed">
-            {category === 'Personal' 
-              ? t('chat.searchToStart')
-              : t('chat.noConversationsCategory')}
-          </p>
-        </div>
+        <EmptyState
+          icon="forum"
+          title={t('chat.noConversations')}
+          description={category === 'Personal' ? t('chat.searchToStart') : t('chat.noConversationsCategory')}
+        />
       ) : category === 'Group' ? (
         /* === Group Tab: Sectioned Layout === */
         <div className="flex flex-col">
@@ -1166,13 +1090,14 @@ export default function ChatList({ onSelectRoom, selectedRoomId, category = 'Per
 
               {/* Users Multi-select List */}
               <div className="flex-1 overflow-y-auto no-scrollbar border border-slate-50 rounded-2xl p-2 bg-gray-50/30 space-y-1 mt-2">
-                {allPlatformUsers
+                {allPublicProfiles
                   .filter(u => {
                     const q = groupSearchQuery.trim().toLowerCase();
                     if (!q) return true;
-                    return (u.nickname || '').toLowerCase().includes(q) || 
-                           (u.nativeNickname || '').toLowerCase().includes(q) || 
-                           (u.email || '').toLowerCase().includes(q);
+                    // 이름으로만 찾는다. 예전에는 이메일로도 검색할 수 있었는데,
+                    // 그룹 채팅에 사람을 추가하려고 남의 이메일 주소를 알아야 할 이유가 없다.
+                    return (u.nickname || '').toLowerCase().includes(q) ||
+                           (u.nativeNickname || '').toLowerCase().includes(q);
                   })
                   .map(u => {
                     const isChecked = selectedUserIds.has(u.id);
@@ -1208,7 +1133,7 @@ export default function ChatList({ onSelectRoom, selectedRoomId, category = 'Per
                               <span className="text-[10px] text-gray-400 font-normal">{u.nativeNickname}</span>
                             )}
                           </div>
-                          <p className="text-[9px] text-gray-400 font-medium truncate">{u.email || 'No email'}</p>
+                          <p className="text-[9px] text-gray-400 font-medium truncate">{u.career || ''}</p>
                         </div>
                         <div className="shrink-0">
                           <input 

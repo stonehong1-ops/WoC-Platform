@@ -13,6 +13,7 @@ import {
   setDoc
 } from 'firebase/firestore';
 import { db } from '../clientApp';
+import { userService } from '@/lib/firebase/userService';
 import { ChatRoom } from '@/types/chat';
 import { ROOMS_COLLECTION, MESSAGES_COLLECTION, USERS_COLLECTION, GLOBAL_LOUNGE_ID, SYSTEM_NOTICE_ID } from './chatRoomService';
 
@@ -24,13 +25,17 @@ export const chatSyncService = {
       const noticeSnap = await getDoc(noticeRef);
       if (!noticeSnap.exists()) {
         await setDoc(noticeRef, {
-          name: 'WoC System Notice',
+          name: 'Public Notice',
           type: 'notice',
           createdBy: 'system',
           createdAt: serverTimestamp(),
           lastMessageTime: serverTimestamp(),
-          lastMessage: 'Welcome to World of Group!',
+          lastMessage: 'Welcome to World of Community Public Notice!',
           participants: []
+        });
+      } else if (noticeSnap.data().name !== 'Public Notice') {
+        await updateDoc(noticeRef, {
+          name: 'Public Notice'
         });
       }
 
@@ -243,9 +248,9 @@ export const chatSyncService = {
   // Send join/leave/kick system message to group chat
   sendGroupSystemMessage: async (chatRoomId: string, userId: string, action: 'join' | 'leave' | 'kick') => {
     try {
-      const userDoc = await getDoc(doc(db, USERS_COLLECTION, userId));
-      const userData = userDoc.exists() ? userDoc.data() : {};
-      const name = userData.nickname || userData.displayName || 'A member';
+      // 시스템 메시지에 이름만 쓰므로 공개 프로필이면 충분하다.
+      const p = await userService.getPublicProfile(userId);
+      const name = p?.nickname || 'A member';
 
       let text = '';
       if (action === 'join') {

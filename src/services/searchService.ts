@@ -50,7 +50,7 @@ export const searchService = {
         getDocs(query(collection(db, 'socials'), limit(100))),
         getDocs(query(collection(db, 'groups'), limit(100))),
         getDocs(query(collection(db, 'venues'), limit(100))),
-        getDocs(query(collection(db, 'users'), limit(500))),
+        getDocs(query(collection(db, 'publicProfiles'), limit(500))),
         getDocs(query(collection(db, 'people'), limit(50)))
       ]);
 
@@ -197,10 +197,14 @@ export const searchService = {
       }
 
       // Users (사용자)
+      //
+      // 공개 프로필만 조회한다. 예전에는 users 원본을 읽어 이메일로도 사람을 찾을 수 있었고,
+      // 검색 결과 부제목에 남의 이메일 주소를 그대로 보여줬다.
+      // 관리자 여부(isAdmin)도 일반 검색 결과에 라벨로 노출할 정보가 아니다.
       if (userDocs.status === 'fulfilled') {
         userDocs.value.docs.forEach(doc => {
           const data = doc.data();
-          if (matchesAny(queryText, data.name, data.nickname, data.nativeNickname, data.email)) {
+          if (matchesAny(queryText, data.nickname, data.nativeNickname)) {
             if (results.some(r => r.id === doc.id && r.type === 'person')) return;
 
             let roleLabel = 'Member';
@@ -215,9 +219,6 @@ export const searchService = {
             } else if (data.isDj) {
               roleLabel = 'DJ';
               roleLabelKo = 'DJ';
-            } else if (data.isAdmin) {
-              roleLabel = 'Admin';
-              roleLabelKo = '관리자';
             } else if (data.role === 'leader') {
               roleLabel = 'Leader';
               roleLabelKo = '리더';
@@ -229,9 +230,9 @@ export const searchService = {
             results.push({
               id: doc.id,
               type: 'person',
-              title: data.nickname || data.name || data.nativeNickname || 'Unknown',
-              titleKo: data.nativeNickname || data.nickname || data.name || '',
-              subtitle: data.email || '',
+              title: data.nickname || data.nativeNickname || 'Unknown',
+              titleKo: data.nativeNickname || data.nickname || '',
+              subtitle: data.career || '',
               image: data.photoURL || '',
               url: `/people/${doc.id}`,
               roleLabel,

@@ -33,6 +33,7 @@ function getNextEventDate(social: Social, language: string): string {
 
 import NamecardModal, { NamecardUser } from "@/components/profile/NamecardModal";
 import UserBadge from "@/components/common/UserBadge";
+import SocialReportPage from "./SocialReportPage";
 
 const ADMIN_UIDS = ['adminstone', '7iaZAmaYY9dNNEShmJmROI8XrtH2'];
 const isStoneHongName = (name?: string | null): boolean => {
@@ -45,6 +46,7 @@ export default function SocialHomeTab({ social, targetDate, onChatWithOrganizer,
   const [venue, setVenue] = useState<any>(null);
   const [orgProfile, setOrgProfile] = useState<any>(null);
   const [selectedNamecardUser, setSelectedNamecardUser] = useState<NamecardUser | null>(null);
+  const [showReportPage, setShowReportPage] = useState(false);
   const { t, language } = useLanguage();
 
   const venueDisplayName = language === 'KR' 
@@ -102,7 +104,7 @@ export default function SocialHomeTab({ social, targetDate, onChatWithOrganizer,
         return;
       }
 
-      userService.getUserById(primaryOrgId).then(setOrgProfile).catch(console.error);
+      userService.getPublicProfile(primaryOrgId).then(setOrgProfile).catch(console.error);
     }
   }, [primaryOrgId, primaryOrgName, primaryOrgNative]);
 
@@ -667,6 +669,22 @@ export default function SocialHomeTab({ social, targetDate, onChatWithOrganizer,
           )}
         </div>
       </div>
+
+      {/* 정보 신고/수정 요청 진입 row */}
+      <button
+        type="button"
+        onClick={() => setShowReportPage(true)}
+        className="w-full flex items-center justify-center gap-1 py-4 text-[11px] font-semibold text-[#acb3b4] active:opacity-60 transition-opacity"
+      >
+        <span>{t('social.report_row_label')}</span>
+        <span className="material-symbols-rounded text-[13px]">chevron_right</span>
+      </button>
+
+      <SocialReportPage
+        social={social}
+        isOpen={showReportPage}
+        onClose={() => setShowReportPage(false)}
+      />
 
       {selectedNamecardUser && (
         <NamecardModal

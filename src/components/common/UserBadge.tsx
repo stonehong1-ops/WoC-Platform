@@ -1,4 +1,5 @@
 'use client';
+import { PublicProfile } from '@/types/user';
 
 import React, { useEffect, useState } from 'react';
 import UserAvatar from './UserAvatar';
@@ -28,7 +29,7 @@ function fetchUserCached(uid: string) {
   const cached = userCache.get(uid);
   if (cached) return cached;
   
-  const promise = userService.getUserById(uid)
+  const promise = userService.getPublicProfile(uid)
     .then(data => {
       if (data) {
         return data;

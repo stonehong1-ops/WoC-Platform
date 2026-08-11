@@ -1,4 +1,5 @@
 'use client';
+import { PublicProfile } from '@/types/user';
 
 import React, { useState, useEffect } from 'react';
 import { chatService } from '@/lib/firebase/chatService';
@@ -27,7 +28,7 @@ function VoterList({ uids }: { uids: string[] }) {
     const fetchVoters = async () => {
       try {
         const promises = uids.map(async (uid) => {
-          const u = await userService.getUserById(uid);
+          const u = await userService.getPublicProfile(uid);
           return {
             id: uid,
             nickname: u?.nickname || t('chatroom.unknown', '알수없음')

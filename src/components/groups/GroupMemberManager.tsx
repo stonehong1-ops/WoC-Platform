@@ -67,7 +67,7 @@ const GroupMemberManager = ({ group }: { group: Group }) => {
       const membersWithProfiles = await Promise.all(memberList.map(async (member) => {
         try {
           const { userService } = await import('@/lib/firebase/userService');
-          const userProfile = await userService.getUserById(member.id);
+          const userProfile = await userService.getPublicProfile(member.id);
           return {
             ...member,
             profile: userProfile
