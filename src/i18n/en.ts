@@ -1,6 +1,10 @@
 // 영어 다국어 사전 정의 파일.
 
 export const en: Record<string, string> = {
+    'chat.download_btn': 'Save Image',
+    'chat.delete_confirm_title': 'Delete Message?',
+    'chat.delete_confirm_desc': 'This message will be permanently deleted.',
+    'social.report_row_label': 'Is any info wrong or missing? Report / request an edit',
 
     // Common
     'common.add': 'Add',

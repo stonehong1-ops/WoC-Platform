@@ -1,6 +1,10 @@
 // 한국어 다국어 사전 정의 파일.
 
 export const kr: Record<string, string> = {
+    'chat.download_btn': '이미지 저장',
+    'chat.delete_confirm_title': '메시지를 삭제하시겠습니까?',
+    'chat.delete_confirm_desc': '삭제된 메시지는 복구할 수 없습니다.',
+    'social.report_row_label': '정보가 잘못되었거나 추가할 내용이 있나요? 신고·수정 요청',
 
     // Common
     'common.add': '추가',
