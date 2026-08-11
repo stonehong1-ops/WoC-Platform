@@ -11,6 +11,9 @@ import admin from './firebaseAdmin';
  * 알림 문서)가 존재하고, 그 문서의 작성자가 요청자 본인일 때만 통과시킨다.
  */
 
+/** 사람이 아니라 앱이 남기는 메시지의 발신자 id. */
+const SYSTEM_SENDER_ID = 'system';
+
 export type PushContext =
   | { type: 'chat'; roomId?: string; messageId?: string }
   | { type: 'notification'; notificationId?: string }
@@ -81,22 +84,29 @@ export async function verifyPushContext(
 
     // 방에 속해 있다는 것만으로는 부족하다. 이 발신자가 방금 그 방에 남긴
     // 메시지가 실제로 있어야 알림을 보낼 근거가 된다.
+    let verifiedBy = 'chat_no_message_id';
     if (messageId) {
       const msgSnap = await db.collection('chat_messages').doc(messageId).get();
       if (!msgSnap.exists) return { ok: false, reason: 'chat_message_missing', allowedTargets: [] };
       const msg = msgSnap.data() || {};
-      if (msg.senderId !== senderUid) {
-        return { ok: false, reason: 'chat_not_message_author', allowedTargets: [] };
-      }
       if (msg.roomId !== roomId) {
         return { ok: false, reason: 'chat_message_room_mismatch', allowedTargets: [] };
+      }
+      if (msg.senderId === senderUid) {
+        verifiedBy = 'chat_verified';
+      } else if (msg.senderId === SYSTEM_SENDER_ID) {
+        // 입장 안내 같은 시스템 메시지는 앱이 쓴 것이라 작성자가 사람이 아니다.
+        // (실측: 최근 채팅 300건 중 30건) 이 경우엔 방에 속해 있는지로만 판단한다.
+        verifiedBy = 'chat_system_message';
+      } else {
+        return { ok: false, reason: 'chat_not_message_author', allowedTargets: [] };
       }
     }
 
     // 수신자도 같은 방에 속해 있어야 하고, 자기 자신에게는 보내지 않는다.
     const allowed = targets.filter(t => t !== senderUid && entitled(t));
     return allowed.length === targets.filter(t => t !== senderUid).length
-      ? { ok: true, reason: messageId ? 'chat_verified' : 'chat_no_message_id', allowedTargets: allowed }
+      ? { ok: true, reason: verifiedBy, allowedTargets: allowed }
       : { ok: false, reason: 'chat_target_not_participant', allowedTargets: allowed };
   }
 
