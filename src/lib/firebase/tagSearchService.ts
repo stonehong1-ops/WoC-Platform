@@ -1,18 +1,22 @@
 import { socialService } from './socialService';
 import { eventService } from './eventService';
 import { db } from './clientApp';
-import { 
-  collectionGroup, 
-  query, 
-  getDocs, 
+import {
+  collectionGroup,
+  query,
+  getDocs,
   where,
   collection,
   doc,
-  getDoc
+  getDoc,
+  limit
 } from 'firebase/firestore';
 import { Social } from '@/types/social';
 import { Event } from '@/types/event';
 import { GroupClass, Group } from '@/types/group';
+
+/** searchIndex 기반 사람 검색 시 한 번에 가져올 최대 건수 */
+const PEOPLE_SEARCH_LIMIT = 20;
 
 export interface TagSearchResult {
   type: 'group' | 'social' | 'event' | 'class' | 'people';
@@ -142,30 +146,39 @@ export const tagSearchService = {
   },
 
   /**
-   * Search people (users) by nickname
+   * Search people by nickname via the lightweight `searchIndex` collection.
+   *
+   * 이전에는 users 컬렉션 전체(424건)를 브라우저로 내려받아 클라이언트에서 필터링했다.
+   * users 문서에는 phoneNumber/email 이 들어있어 검색 한 번에 개인정보가 전부 노출됐다.
+   * searchIndex 에는 검색 UI 에 필요한 공개 필드만 들어있고, 매칭도 서버에서 끝난다.
    */
   async searchPeople(keyword: string): Promise<TagSearchResult[]> {
     if (!keyword) return [];
     try {
-      const lowerKw = keyword.toLowerCase();
-      const snap = await getDocs(collection(db, 'users'));
-      const results: TagSearchResult[] = [];
-      snap.docs.forEach(d => {
+      const lowerKw = keyword.toLowerCase().trim();
+      if (!lowerKw) return [];
+
+      const snap = await getDocs(
+        query(
+          collection(db, 'searchIndex'),
+          where('type', '==', 'person'),
+          where('keywords', 'array-contains', lowerKw),
+          limit(PEOPLE_SEARCH_LIMIT)
+        )
+      );
+
+      return snap.docs.map(d => {
         const data = d.data();
-        const nick = (data.nickname || '').toLowerCase();
-        const native = (data.nativeNickname || '').toLowerCase();
-        if (nick.includes(lowerKw) || native.includes(lowerKw)) {
-          const nativeName = data.nativeNickname || '';
-          results.push({
-            type: 'people' as const,
-            id: d.id,
-            name: nativeName ? `${data.nickname || ''} ${nativeName}` : (data.nickname || ''),
-            subtitle: data.role || '',
-            avatar: data.photoURL || '',
-          });
-        }
+        const displayName = data.displayName || '';
+        const nativeName = data.nickname || '';
+        return {
+          type: 'people' as const,
+          id: data.targetId || d.id,
+          name: nativeName ? `${displayName} ${nativeName}` : displayName,
+          subtitle: data.role || '',
+          avatar: data.photoURL || '',
+        };
       });
-      return results;
     } catch (e) {
       console.error('People search error:', e);
       return [];

@@ -362,5 +362,12 @@ service cloud.firestore {
     match /activeReportKeys/{keyId} {
       allow read, write: if request.auth != null;
     }
+    // 검색 전용 경량 인덱스. 검색 UI 에 필요한 공개 필드만 담기며
+    // email/phoneNumber 등 users 문서의 민감 필드는 포함하지 않는다.
+    // 쓰기는 Admin SDK(마이그레이션 스크립트) 로만 수행한다.
+    match /searchIndex/{docId} {
+      allow read: if request.auth != null;
+      allow write: if false;
+    }
   }
 }
