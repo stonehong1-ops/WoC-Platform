@@ -52,27 +52,6 @@ export const groupClassService = {
     }
   },
 
-  // Get all open classes count (classes + bundles across groups)
-  getOpenClassesCount: async (): Promise<number> => {
-    try {
-      const groupsSnap = await getDocs(collection(db, GROUPS_COLLECTION));
-      const classCountResults = await Promise.all(
-        groupsSnap.docs.map(async groupDoc => {
-          const [classSnap, bundleSnap] = await Promise.allSettled([
-            getDocs(collection(db, GROUPS_COLLECTION, groupDoc.id, 'classes')),
-            getDocs(collection(db, GROUPS_COLLECTION, groupDoc.id, 'bundles')),
-          ]);
-          return (classSnap.status === 'fulfilled' ? classSnap.value.size : 0)
-               + (bundleSnap.status === 'fulfilled' ? bundleSnap.value.size : 0);
-        })
-      );
-      return classCountResults.reduce((sum, c) => sum + c, 0);
-    } catch (error) {
-      console.error('getOpenClassesCount error:', error);
-      return 0;
-    }
-  },
-
   // Subscribe to calendar events
   subscribeCalendarEvents: (groupId: string, callback: (events: any[]) => void) => {
     const eventsRef = collection(db, GROUPS_COLLECTION, groupId, 'calendar_events');
