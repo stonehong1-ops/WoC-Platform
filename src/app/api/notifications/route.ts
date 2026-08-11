@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import admin from '@/lib/server/firebaseAdmin';
 import { requireUser, AuthError } from '@/lib/server/userAuth';
+import { verifyPushContext, recordPushAuthAudit, PushContext } from '@/lib/server/pushAuth';
 
 /**
  * 푸시 발송 API.
@@ -21,6 +22,17 @@ const RATE_LIMIT_WINDOW_MS = 60_000;
 
 const MAX_TITLE_LENGTH = 200;
 const MAX_MESSAGE_LENGTH = 1000;
+
+/**
+ * 발송 맥락 검증을 실제로 강제할지 여부.
+ *
+ * 인증만 통과하면 아무 uid 에게나 임의 문구를 보낼 수 있는 구멍이 남아 있어서,
+ * 요청마다 "이 알림을 유발한 행동이 실제로 있었는지"를 확인한다.
+ * 다만 배포 직후에는 캐시된 옛 클라이언트와 앱 빌드가 맥락 없이 호출한다.
+ * 그래서 먼저 검증만 돌려 기록하고(shadow), 호출 경로가 모두 확인된 뒤
+ * 환경변수로 차단을 켠다. 되돌릴 때도 재배포가 필요 없다.
+ */
+const ENFORCE_PUSH_CONTEXT = process.env.PUSH_AUTH_ENFORCE === 'true';
 
 type TargetInput = { userId?: string; unreadCount?: number };
 
@@ -57,7 +69,7 @@ export async function POST(request: Request) {
   try {
     const senderUid = await requireUser(request);
     const body = await request.json();
-    const { targets, targetUserId, title, message, data, unreadCount } = body;
+    const { targets, targetUserId, title, message, data, unreadCount, context } = body;
 
     // 토큰을 클라이언트가 실어 보내던 예전 방식은 더 이상 받지 않는다.
     if (body.tokens || (Array.isArray(targets) && targets.some((t: any) => t?.tokens))) {
@@ -94,9 +106,47 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 });
     }
 
-    // 2. 토큰은 서버에서만 조회한다.
+    // 2. 발송 맥락 검증.
+    //    수신자와의 "관계"만 보지 않는다. 알림을 유발한 문서가 실제로 있고
+    //    그 작성자가 요청자 본인인지까지 확인한다.
+    const requestedTargets = Array.from(byUserId.keys());
+    const auth = await verifyPushContext(
+      senderUid,
+      requestedTargets,
+      context as PushContext | undefined
+    );
+
+    await recordPushAuthAudit({
+      senderUid,
+      contextType: (context as PushContext | undefined)?.type || 'none',
+      reason: auth.reason,
+      passed: auth.ok,
+      targetCount: requestedTargets.length,
+      path: typeof data?.type === 'string' ? data.type : undefined,
+    });
+
+    if (!auth.ok) {
+      if (ENFORCE_PUSH_CONTEXT) {
+        return NextResponse.json(
+          { error: 'Push not permitted for this context', reason: auth.reason },
+          { status: 403 }
+        );
+      }
+      // 관찰 기간에는 막지 않는다. 어떤 경로가 걸리는지만 남긴다.
+      console.warn(`[pushAuth:shadow] would block — reason=${auth.reason} sender=${senderUid}`);
+    }
+
+    // 강제 모드에서는 검증을 통과한 수신자에게만 보낸다.
     const firestore = admin.firestore();
-    const userIds = Array.from(byUserId.keys());
+    const userIds = ENFORCE_PUSH_CONTEXT ? auth.allowedTargets : requestedTargets;
+    if (userIds.length === 0) {
+      return NextResponse.json({
+        success: true,
+        successCount: 0,
+        failureCount: 0,
+        skipped: { snoozed: 0, noToken: 0, unauthorized: requestedTargets.length },
+      });
+    }
     const userSnaps = await firestore.getAll(
       ...userIds.map(uid => firestore.collection('users').doc(uid))
     );
@@ -166,7 +216,9 @@ export async function POST(request: Request) {
         if (resp.success) return;
         const errorCode = resp.error?.code;
         const targetToken = tokenByIndex[idx];
-        failedTokens.push({ token: targetToken, error: resp.error?.message, code: errorCode });
+        // 실패 토큰 문자열은 응답에 담지 않는다. 발신자가 수신자의 기기 토큰을
+        // 알게 되면 안 된다. 원인 코드만 돌려준다.
+        failedTokens.push({ code: errorCode });
         if (
           errorCode === 'messaging/registration-token-not-registered' ||
           errorCode === 'messaging/invalid-registration-token' ||

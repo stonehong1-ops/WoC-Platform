@@ -135,6 +135,9 @@ export const chatMessageService = {
               ...(idToken ? { Authorization: `Bearer ${idToken}` } : {})
             },
             body: JSON.stringify({
+              // 서버가 "이 알림을 유발한 메시지가 실제로 있는지, 보낸 사람이
+              // 본인인지"를 확인할 수 있도록 근거 문서를 함께 넘긴다.
+              context: { type: 'chat', roomId: message.roomId, messageId: docRef.id },
               targets: targets,
               title: roomData.type === 'private' ? senderName : (roomData.name || senderName),
               message: message.type === 'text' ? message.text : (message.type === 'sticker' ? '이모티콘' : '📷 Photo'),

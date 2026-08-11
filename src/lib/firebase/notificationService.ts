@@ -87,7 +87,7 @@ export const notificationService = {
     }
     
     // 비동기 푸시 발송
-    notificationService.sendFCM(data.targetUserId, finalTitle, finalMessage, docData);
+    notificationService.sendFCM(data.targetUserId, finalTitle, finalMessage, docData, docRef.id);
     
     return docRef.id;
   },
@@ -123,7 +123,7 @@ export const notificationService = {
     }
 
     // 비동기 푸시 발송
-    notificationService.sendFCM(data.targetUserId, finalTitle, finalMessage, docData);
+    notificationService.sendFCM(data.targetUserId, finalTitle, finalMessage, docData, docRef.id);
 
     return docRef.id;
   },
@@ -392,7 +392,11 @@ export const notificationService = {
   // 대상 uid 만 서버로 보낸다. 예전에는 여기서 users/{uid} 를 읽어 fcmTokens 를
   // 그대로 실어 보냈는데, 그러면 남의 푸시 토큰이 브라우저까지 내려온다.
   // 토큰 조회와 알림 일시중지 판단은 이제 서버(/api/notifications)가 한다.
-  sendFCM: async (targetUserId: string, title: string, message: string, dataPayload: any) => {
+  //
+  // `notificationId` 는 이 푸시를 유발한 알림 문서다. 서버가 그 문서를 읽어
+  // 발신자가 실제 작성자인지, 수신자가 그 문서의 대상자인지 확인한다.
+  // 이게 없으면 로그인한 사람이 아무 uid 에게나 임의 문구를 보낼 수 있다.
+  sendFCM: async (targetUserId: string, title: string, message: string, dataPayload: any, notificationId?: string) => {
     try {
       if (!targetUserId) return;
 
@@ -404,6 +408,7 @@ export const notificationService = {
           ...(idToken ? { Authorization: `Bearer ${idToken}` } : {})
         },
         body: JSON.stringify({
+          context: { type: 'notification', notificationId },
           targetUserId,
           title: title,
           message: message,
@@ -460,7 +465,7 @@ export const notificationService = {
       createdAt: Timestamp.now() 
     });
 
-    notificationService.sendFCM(targetUserId, finalTitle, finalMessage, notificationData);
+    notificationService.sendFCM(targetUserId, finalTitle, finalMessage, notificationData, docRef.id);
 
     return docRef.id;
   }

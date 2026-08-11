@@ -398,5 +398,15 @@ service cloud.firestore {
       allow read: if true;
       allow write: if false;
     }
+
+    // 푸시 발송량 제한 카운터와 발송 권한 검증 기록. 서버(Admin SDK)만 쓰고 읽는다.
+    // 매칭되지 않은 경로는 어차피 거부되지만, 나중에 넓은 match 가 추가되더라도
+    // 열리지 않도록 명시해 둔다.
+    match /pushRateLimits/{docId} {
+      allow read, write: if false;
+    }
+    match /pushAuthAudit/{docId} {
+      allow read, write: if false;
+    }
   }
 }
