@@ -22,18 +22,28 @@ export interface AIHandoffMessage {
   taskId: string;
   from: AIHandoffAgent;
   to?: AIHandoffAgent;
-  assignee?: AIHandoffAssignee;      // TASK only
+  assignee?: AIHandoffAssignee;      // TASK/REPORT 공통
   status: AIHandoffStatus;
   title?: string;
-  content?: string;                  // TASK body
-  summary?: string;                  // REPORT body
-  changedFiles?: string[];
-  validation?: string;
-  problems?: string;
-  nextDecisionNeeded?: string;
+  content?: string;                  // TASK 본문
   scope?: AIHandoffScope;
   claimedBy?: AIHandoffAssignee;
   claimedAt?: Timestamp;
+  clientRequestId?: string;          // idempotency key (TASK, API 경유 생성 시)
+
+  // REPORT 표준 필드 - GPT가 재판단하기 쉽도록 최소 구조로 고정.
+  // 긴 walkthrough는 기본으로 남기지 않는다. 원문 로그가 필요하면 details에 담는다.
+  summary?: string;
+  changedFiles?: string[];
+  commits?: string[];
+  build?: string;
+  qa?: string;
+  deployment?: string;
+  blockers?: string;
+  nextRecommendation?: string;
+  details?: string;
+  completedAt?: Timestamp;
+
   createdAt: Timestamp;
   updatedAt?: Timestamp;
 }

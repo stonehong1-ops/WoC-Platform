@@ -108,11 +108,27 @@ export default function AiHandoffPage() {
             {m.changedFiles && m.changedFiles.length > 0 && (
               <p className="text-[10px] font-mono text-gray-400">files: {m.changedFiles.join(', ')}</p>
             )}
-            {m.problems && (
-              <p className="text-[11px] font-bold text-rose-600">⚠ {m.problems}</p>
+            {m.commits && m.commits.length > 0 && (
+              <p className="text-[10px] font-mono text-gray-400">commits: {m.commits.join(', ')}</p>
             )}
-            {m.nextDecisionNeeded && (
-              <p className="text-[11px] font-bold text-amber-700">? {m.nextDecisionNeeded}</p>
+            {(m.build || m.qa || m.deployment) && (
+              <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[10px] font-bold text-gray-500">
+                {m.build && <span>build: {m.build}</span>}
+                {m.qa && <span>QA: {m.qa}</span>}
+                {m.deployment && <span>deploy: {m.deployment}</span>}
+              </div>
+            )}
+            {m.blockers && (
+              <p className="text-[11px] font-bold text-rose-600">⚠ {m.blockers}</p>
+            )}
+            {m.nextRecommendation && (
+              <p className="text-[11px] font-bold text-amber-700">? {m.nextRecommendation}</p>
+            )}
+            {m.details && (
+              <details className="text-[10px] text-gray-400">
+                <summary className="cursor-pointer font-bold">details</summary>
+                <p className="whitespace-pre-wrap mt-1">{m.details}</p>
+              </details>
             )}
           </div>
         ))}

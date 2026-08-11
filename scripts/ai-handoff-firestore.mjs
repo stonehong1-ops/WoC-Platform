@@ -8,7 +8,7 @@
  *   node scripts/ai-handoff-firestore.mjs list [--status=READY] [--assignee=CLAUDE_SUB]
  *   node scripts/ai-handoff-firestore.mjs post-task --assignee=CLAUDE_SUB --title="..." --content="..." [--taskId=WOC-...] [--from=GPT] [--scope-files=a.ts,b.ts] [--scope-dirs=src/x,src/y]
  *   node scripts/ai-handoff-firestore.mjs claim --taskId=WOC-... --agent=CLAUDE_SUB
- *   node scripts/ai-handoff-firestore.mjs report --taskId=WOC-... --agent=CLAUDE_SUB --status=DONE --summary="..." [--changedFiles=a.ts,b.ts] [--validation=...] [--problems=...] [--next=...]
+ *   node scripts/ai-handoff-firestore.mjs report --taskId=WOC-... --agent=CLAUDE_SUB --status=DONE --summary="..." [--changedFiles=a.ts,b.ts] [--commits=hash1,hash2] [--build=PASS] [--qa=...] [--deployment=...] [--blockers=...] [--next=...] [--details=...]
  */
 import { initializeApp, cert, getApps } from "firebase-admin/app";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
@@ -186,13 +186,19 @@ async function cmdReport(args) {
     taskId: args.taskId,
     from: args.agent,
     to: "GPT",
+    assignee: args.agent,
     status: args.status,
     summary: args.summary || "",
     changedFiles: splitList(args.changedFiles) || [],
-    validation: args.validation || "",
-    problems: args.problems || "",
-    nextDecisionNeeded: args.next || "",
+    commits: splitList(args.commits) || [],
+    build: args.build || "",
+    qa: args.qa || "",
+    deployment: args.deployment || "",
+    blockers: args.blockers || "",
+    nextRecommendation: args.next || "",
+    details: args.details || "",
     createdAt: FieldValue.serverTimestamp(),
+    completedAt: FieldValue.serverTimestamp(),
   };
 
   const batch = db.batch();
