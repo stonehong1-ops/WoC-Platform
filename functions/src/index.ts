@@ -2,6 +2,8 @@ import { onRequest } from "firebase-functions/v2/https";
 import * as logger from "firebase-functions/logger";
 import puppeteer from "puppeteer";
 
+export { syncPublicProfile } from "./syncPublicProfile";
+
 export const generateCoverImage = onRequest(
   {
     memory: "2GiB",
