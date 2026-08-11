@@ -388,33 +388,32 @@ export const notificationService = {
 
 
   // FCM 공통 전송 모듈 (Private처럼 사용)
+  //
+  // 대상 uid 만 서버로 보낸다. 예전에는 여기서 users/{uid} 를 읽어 fcmTokens 를
+  // 그대로 실어 보냈는데, 그러면 남의 푸시 토큰이 브라우저까지 내려온다.
+  // 토큰 조회와 알림 일시중지 판단은 이제 서버(/api/notifications)가 한다.
   sendFCM: async (targetUserId: string, title: string, message: string, dataPayload: any) => {
     try {
       if (!targetUserId) return;
-      const userDoc = await getDoc(doc(db, 'users', targetUserId));
-      const userData = userDoc.data();
-      const tokens = userData?.fcmTokens;
 
-      if (tokens && Array.isArray(tokens) && tokens.length > 0) {
-        const idToken = await auth.currentUser?.getIdToken();
-        await fetch('/api/notifications', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(idToken ? { Authorization: `Bearer ${idToken}` } : {})
-          },
-          body: JSON.stringify({
-            tokens: tokens,
-            title: title,
-            message: message,
-            data: {
-              baseType: dataPayload.baseType,
-              category: dataPayload.category || 'SYSTEM',
-              actionUrl: dataPayload.actionUrl || ''
-            }
-          })
-        });
-      }
+      const idToken = await auth.currentUser?.getIdToken();
+      await fetch('/api/notifications', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(idToken ? { Authorization: `Bearer ${idToken}` } : {})
+        },
+        body: JSON.stringify({
+          targetUserId,
+          title: title,
+          message: message,
+          data: {
+            baseType: dataPayload.baseType,
+            category: dataPayload.category || 'SYSTEM',
+            actionUrl: dataPayload.actionUrl || ''
+          }
+        })
+      });
     } catch (e) {
       console.error('FCM sending failed (isolated):', e);
     }

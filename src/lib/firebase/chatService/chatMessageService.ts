@@ -117,36 +117,14 @@ export const chatMessageService = {
         }
 
         // 대상자들의 FCM 토큰 수집 (N+1 쿼리 루프 병렬 비동기 개선)
-        const targets: Array<{ userId: string; tokens: string[]; unreadCount: number }> = [];
-
-        if (targetUserIds.length > 0) {
-          const userDocs = await Promise.all(
-            targetUserIds.map(pId => getDoc(doc(db, USERS_COLLECTION, pId)))
-          );
-          
-          for (const pDoc of userDocs) {
-            if (pDoc.exists()) {
-              const pId = pDoc.id;
-              const pData = pDoc.data();
-
-              if (pData.notificationSnoozedUntil) {
-                const snoozedUntil = pData.notificationSnoozedUntil.toDate?.() || new Date(pData.notificationSnoozedUntil);
-                if (snoozedUntil > new Date()) {
-                  continue;
-                }
-              }
-              const userTokens = (pData.fcmTokens && Array.isArray(pData.fcmTokens)) ? pData.fcmTokens : [];
-              if (userTokens.length > 0) {
-                const chatUnread = (roomData.unreadCounts?.[pId] || 0) + 1;
-                targets.push({
-                  userId: pId,
-                  tokens: Array.from(new Set(userTokens)),
-                  unreadCount: chatUnread
-                });
-              }
-            }
-          }
-        }
+        // 대상 uid 와 뱃지 카운트만 넘긴다.
+        // 예전에는 여기서 참여자들의 users 문서를 읽어 fcmTokens 를 실어 보냈는데,
+        // 그러면 남의 푸시 토큰이 브라우저까지 내려온다.
+        // 토큰 조회와 알림 일시중지 판단은 서버(/api/notifications)가 처리한다.
+        const targets = targetUserIds.map(pId => ({
+          userId: pId,
+          unreadCount: (roomData.unreadCounts?.[pId] || 0) + 1
+        }));
 
         if (targets.length > 0) {
           const idToken = await auth.currentUser?.getIdToken();
