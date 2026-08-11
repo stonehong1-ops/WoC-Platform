@@ -25,6 +25,7 @@ export interface Venue {
   rating?: number;
   price?: string;
   owner?: string;
+  ownerId?: string;
   contact?: string;
   isRepresentative?: boolean;
   societyId?: string;            // 'tango' | 'yoga' | ... (undefined = tango)
