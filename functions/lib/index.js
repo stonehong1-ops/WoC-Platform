@@ -1,11 +1,13 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.generateCoverImage = exports.syncPublicProfile = void 0;
+exports.generateCoverImage = exports.syncSearchIndex = exports.syncPublicProfile = void 0;
 const https_1 = require("firebase-functions/v2/https");
 const logger = require("firebase-functions/logger");
 const puppeteer_1 = require("puppeteer");
 var syncPublicProfile_1 = require("./syncPublicProfile");
 Object.defineProperty(exports, "syncPublicProfile", { enumerable: true, get: function () { return syncPublicProfile_1.syncPublicProfile; } });
+var syncSearchIndex_1 = require("./syncSearchIndex");
+Object.defineProperty(exports, "syncSearchIndex", { enumerable: true, get: function () { return syncSearchIndex_1.syncSearchIndex; } });
 exports.generateCoverImage = (0, https_1.onRequest)({
     memory: "2GiB",
     timeoutSeconds: 60,

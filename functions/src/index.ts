@@ -3,6 +3,7 @@ import * as logger from "firebase-functions/logger";
 import puppeteer from "puppeteer";
 
 export { syncPublicProfile } from "./syncPublicProfile";
+export { syncSearchIndex } from "./syncSearchIndex";
 
 export const generateCoverImage = onRequest(
   {
