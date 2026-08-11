@@ -152,8 +152,10 @@ export async function recordPushAuthAudit(entry: {
   path?: string;
 }): Promise<void> {
   try {
+    // Firestore 는 undefined 를 값으로 받지 않는다. 비어 있는 필드는 아예 빼고 쓴다.
+    const clean = Object.fromEntries(Object.entries(entry).filter(([, v]) => v !== undefined));
     await admin.firestore().collection('pushAuthAudit').add({
-      ...entry,
+      ...clean,
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
       // 관찰 기간이 지나면 정리할 수 있도록 만료 시각을 함께 남긴다.
       expiresAt: admin.firestore.Timestamp.fromMillis(Date.now() + 14 * 24 * 60 * 60 * 1000),
